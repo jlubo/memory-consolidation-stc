@@ -1,0 +1,10 @@
+#!/bin/sh
+rm -f code.zip
+zip -q -D code.zip * -x *.out *.o *.txt
+g++ -std=c++11 \
+    -O2 NetworkMain.cpp \
+    -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default \
+    -Wno-unused-result \
+    -lboost_serialization -static \
+    -o "net.out"
+rm code.zip

@@ -1,0 +1,37 @@
+#!/bin/sh
+mkdir STET
+cp 2N1S_alt.out STET
+mkdir WTET
+cp 2N1S_alt.out WTET
+mkdir SLFS
+cp 2N1S_alt.out SLFS
+mkdir WLFS
+cp 2N1S_alt.out WLFS
+
+num_trials=100
+
+cd STET
+for (( i=1; i <= $num_trials; ++i ))
+do
+    ./2N1S_alt.out -learn=STET -Ca_pre=1.0 -Ca_post=0.2758 -purpose= 
+done
+
+cd ../WTET
+for (( i=1; i <= $num_trials; ++i ))
+do
+    ./2N1S_alt.out -learn=WTET -Ca_pre=1.0 -Ca_post=0.2758 -purpose= 
+done
+
+cd ../SLFS
+for (( i=1; i <= $num_trials; ++i ))
+do
+    ./2N1S_alt.out -learn=SLFS -Ca_pre=1.0 -Ca_post=0.2758 -purpose= 
+done
+
+cd ../WLFS
+for (( i=1; i <= $num_trials; ++i ))
+do
+    ./2N1S_alt.out -learn=WLFS -Ca_pre=1.0 -Ca_post=0.2758 -purpose= 
+done
+
+cd ..
