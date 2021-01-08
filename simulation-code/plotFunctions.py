@@ -2,12 +2,12 @@
 ### Code to create plots of the neurons and synaptic weights in the network via Matplotlib ###
 ##############################################################################################
 
-### Copyright 2017-2021 Jannik Luboeinski ###
-### licensed under Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0), except the function "shiftedColorMap" ###
+### Copyright 2017-2021 Jannik Luboeinski
+### licensed under Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0), except the function "shiftedColorMap"
 
-### Uses the function shiftedColorMap - ###
-### Copyright 2014 stackoverflow.com user Paul H  ###
-### licensed under CC-BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/) ###
+### Uses the function shiftedColorMap -
+### Copyright 2014 stackoverflow.com user Paul H
+### licensed under CC-BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/)
 
 import numpy as np
 import matplotlib.pyplot as plt
