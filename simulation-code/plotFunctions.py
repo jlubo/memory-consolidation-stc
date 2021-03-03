@@ -16,7 +16,8 @@ from matplotlib import cm
 
 plot_folder = 'network_plots/' # folder for plot output
 log_shift = 1.03 # shift before taking logarithm
-rel_epsilon = 0.01 # percentage of maximum plasticity value that has to be exceeded to acknowledge occurrence of plasticity
+epsilon = 1e-11 # very small number that is counted as zero
+rel_epsilon = 1e-4 # fraction of maximum plasticity value that has to be exceeded to acknowledge occurrence of plasticity
 np.set_printoptions(precision=8, threshold=1e10, linewidth=200) # precision for number output
 
 # shiftedColorMap
@@ -84,9 +85,9 @@ def logScale_h(x, h_0):
 	xprime = x - h_0
 	h_max = 2*h_0
 
-	neg_vals = (xprime < -(h_max*rel_epsilon/100))
-	pos_vals = (xprime > (h_max*rel_epsilon/100))
-	noconn = (np.abs(x) < (h_max*rel_epsilon/100)) # no connection exists
+	neg_vals = (xprime < -(h_max*rel_epsilon))
+	pos_vals = (xprime > (h_max*rel_epsilon))
+	noconn = (np.abs(x) < (h_max*rel_epsilon)) # no connection exists
 
 	comp1 = neg_vals * (-h_0 * np.log(-xprime+log_shift)/np.log(log_shift+h_0) + h_0)
 	comp2 = pos_vals * (h_0 * np.log(xprime+log_shift)/np.log(log_shift+h_0) + h_0)
@@ -97,8 +98,8 @@ def logScale_h(x, h_0):
 def logScale_z(x, z_max):
 	return x # to disable logarithmic scale
 
-	comp1 = (x < -(z_max*rel_epsilon/100)) * -np.log(-x+log_shift)/np.log(log_shift+z_max) # log_shift+1 because 1 is the maximum value x could reach
-	comp2 = (x > (z_max*rel_epsilon/100)) * np.log(x+log_shift)/np.log(log_shift+z_max)
+	comp1 = (x < -(z_max*rel_epsilon)) * -np.log(-x+log_shift)/np.log(log_shift+z_max) # log_shift+1 because 1 is the maximum value x could reach
+	comp2 = (x > (z_max*rel_epsilon)) * np.log(x+log_shift)/np.log(log_shift+z_max)
 
 	return comp1 + comp2
 
@@ -108,12 +109,12 @@ def logScale_w(x, h_0, z_max):
 
 	#return x + (np.abs(x) < (w_max*rel_epsilon/100)) * h_0 # to disable logarithmic scale
 
-	neg_vals = (xprime < -(w_max*rel_epsilon/100)) # significant LTD
-	pos_vals = (xprime > (w_max*rel_epsilon/100)) # significant LTP
-	noconn = (np.abs(x) < (w_max*rel_epsilon/100)) # no connection exists
+	neg_vals = (xprime < -(w_max*rel_epsilon)) # significant LTD
+	pos_vals = (xprime > (w_max*rel_epsilon)) # significant LTP
+	noconn = (np.abs(x) < (w_max*rel_epsilon)) # no connection exists
 
-	comp1 = neg_vals * (-h_0 * np.log(-xprime+log_shift)/np.log(log_shift+h_0) + h_0)
-	comp2 = pos_vals * (h_0 * np.log(xprime+log_shift)/np.log(log_shift+h_0) + h_0)
+	comp1 = neg_vals * (-h_0 * np.log(-xprime*neg_vals+log_shift)/np.log(log_shift+h_0) + h_0)
+	comp2 = pos_vals * (h_0 * np.log(xprime*pos_vals+log_shift)/np.log(log_shift+h_0) + h_0)
 	comp3 = np.logical_or(np.logical_not(np.logical_or(neg_vals, pos_vals)), noconn) * h_0 # neither LTP nor LTD, or no connection exists -> at h_0
 
 	return comp1 + comp2 + comp3 # log_shift+h_0 because h_0 is the maximum value the shifted xprime can reach
@@ -158,7 +159,7 @@ def readWeightMatrixData(filename, Nl):
 			z[i][j] = float(value2[j])
 
 	f.close()
-	connections = (h > 0)
+	connections = (h > epsilon)
 
 	return connections, h, z, v
 

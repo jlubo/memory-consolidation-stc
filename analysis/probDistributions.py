@@ -83,13 +83,17 @@ def plotDistributions(nppath, timestamp, add, Nl, time, core):
 	v_CA = v.flatten()[np.in1d(all, core)]
 	v_control = v.flatten()[np.logical_not(np.in1d(all, core))]
 
-	binh = np.concatenate((np.arange(np.min(h), np.max(h), (np.max(h)-np.min(h)) / 100), np.max(h)), axis=None) # create range of bins for marginalProbDist(h...)
-	binz = np.concatenate((np.arange(np.min(z), np.max(z), (np.max(z)-np.min(z)) / 100), np.max(z)), axis=None) # create range of bins for marginalProbDist(z...)
-	binv = np.concatenate((np.arange(np.min(v), np.max(v), (np.max(v)-np.min(v)) / 100), np.max(v)), axis=None) # create range of bins for marginalProbDist(v...)
+	hstep = (np.max(h)-np.min(h)) / 100
+	zstep = (np.max(z)-np.min(z)) / 100
+	vstep = (np.max(v)-np.min(v)) / 100
 
-	valh = np.arange(np.min(h), np.max(h), (np.max(h)-np.min(h)) / 100) + (np.max(h)-np.min(h)) / 200 # use mean values instead of lower bounds of the bins as values
-	valz = np.arange(np.min(z), np.max(z), (np.max(z)-np.min(z)) / 100) + (np.max(z)-np.min(z)) / 200 # use mean values instead of lower bounds of the bins as values
-	valv = np.arange(np.min(v), np.max(v), (np.max(v)-np.min(v)) / 100) + (np.max(v)-np.min(v)) / 200 # use mean values instead of lower bounds of the bins as values
+	binh = np.concatenate((np.linspace(np.min(h), np.max(h), 100), np.max(h)), axis=None) # create range of bins for marginalProbDist(h...)
+	binz = np.concatenate((np.linspace(np.min(z), np.max(z), 100), np.max(z)), axis=None) # create range of bins for marginalProbDist(z...)
+	binv = np.concatenate((np.linspace(np.min(v), np.max(v), 100), np.max(v)), axis=None) # create range of bins for marginalProbDist(v...)
+
+	valh = np.linspace(np.min(h), np.max(h), 100) + hstep/2 # use mean values instead of lower bounds of the bins as values
+	valz = np.linspace(np.min(z), np.max(z), 100) + zstep/2 # use mean values instead of lower bounds of the bins as values
+	valv = np.linspace(np.min(v), np.max(v), 100) + vstep/2 # use mean values instead of lower bounds of the bins as values
 
 	buf, ph_CA_within = marginalProbDist(h_CA_within, binning = True, bin_edges = binh)
 	buf, ph_CA_outgoing = marginalProbDist(h_CA_outgoing, binning = True, bin_edges = binh)
@@ -124,7 +128,8 @@ def plotDistributions(nppath, timestamp, add, Nl, time, core):
 	else:
 		f = open("plot_dist.gpl", "w")
 		f.write("#set terminal png size 1024,640 enhanced\nset terminal pdf enhanced\n\n" + \
-		        "set style fill transparent solid 0.8 noborder\n" + \
+		        "#set style fill transparent solid 0.8 noborder\n" + \
+				"set style fill transparent pattern 4 bo\n" + \
 		        "set log y\nset format y \"%.0e\"\nset yrange [3e-06:1]\nset key outside\n\n")
 
 	f.write("set output \"" + timestamp + "_eweight_dist_" + time + add + ".pdf\"\n")
@@ -158,11 +163,11 @@ def plotDistributions(nppath, timestamp, add, Nl, time, core):
 # Nl: the number of excitatory neurons in one line of a quadratic grid
 # time: the time that at which the weights shall be read out
 # coreA: array of indices of the first cell assembly (core) neurons
-# coreB: array of indices of the second cell assembly (core) neurons
-# coreC: array of indices of the third cell assembly (core) neurons
-def plotDistributions3CAs(nppath, timestamp, add, Nl, time, coreA, coreB, coreC):
+# coreB [optional]: array of indices of the second cell assembly (core) neurons
+# coreC [optional]: array of indices of the third cell assembly (core) neurons
+def plotDistributions3CAs(nppath, timestamp, add, Nl, time, coreA, coreB = None, coreC = None):
 
-	# look for data file [timestamp]_net_[time].txt
+	# Look for data file ("*_net_*", if only already averaged file "*_net_av_*" is available, exception is raised)
 	path = ""
 	rawpaths = Path(nppath)
 
@@ -171,10 +176,16 @@ def plotDistributions3CAs(nppath, timestamp, add, Nl, time, coreA, coreB, coreC)
 		tmppath = str(x)
 
 		if (timestamp + "_net_" + time + ".txt") in tmppath:
+			already_averaged = False
+			path = tmppath
+		elif path == "" and (timestamp + "_net_av_" + time + ".txt") in tmppath:
+			already_averaged = True
 			path = tmppath
 
 	if path == "":
-		raise FileNotFoundError('"' + timestamp + '_net_' + time + '.txt" was not found')
+		raise FileNotFoundError('neither "' + timestamp + '_net_' + time_for_readout + '.txt" nor "' + timestamp + '_net_av_' + time_for_readout + '.txt" was found')
+	elif already_averaged == True:
+		raise FileNotFoundError('only "' + timestamp + '_net_av_' + time_for_readout + '.txt" was found, not "' + timestamp + '_net_' + time_for_readout + '.txt", which is needed for information-theoretic computations')
 
 	# read data from file
 	try:
@@ -194,67 +205,230 @@ def plotDistributions3CAs(nppath, timestamp, add, Nl, time, coreA, coreB, coreC)
 			mask_coreA[syn_pre,syn_post] = True
 
 	mask_coreB = np.zeros((N_tot, N_tot), dtype=bool)
-	for syn_pre in coreB:
-		for syn_post in coreB:
-			mask_coreB[syn_pre,syn_post] = True
+	if coreB is not None:
+		for syn_pre in coreB:
+			for syn_post in coreB:
+				mask_coreB[syn_pre,syn_post] = True
 
 	mask_coreC = np.zeros((N_tot, N_tot), dtype=bool)
-	for syn_pre in coreC:
-		for syn_post in coreC:
-			mask_coreC[syn_pre,syn_post] = True
+	if coreC is not None:
+		for syn_pre in coreC:
+			for syn_post in coreC:
+				mask_coreC[syn_pre,syn_post] = True
+
+	# find control synapses (all synapses that are not within a cell assembly)
+	mask_control = np.logical_not(np.logical_or(mask_coreA, np.logical_or(mask_coreB, mask_coreC)))
+
+	# find exclusive intersections
+	mask_I_AB = np.logical_and( np.logical_and(mask_coreA, mask_coreB), np.logical_not(mask_coreC) )
+	mask_I_AC = np.logical_and( np.logical_and(mask_coreA, mask_coreC), np.logical_not(mask_coreB) )
+	mask_I_BC = np.logical_and( np.logical_and(mask_coreB, mask_coreC), np.logical_not(mask_coreA) )
+	mask_I_ABC = np.logical_and( mask_coreA, np.logical_and(mask_coreB, mask_coreC) )
+
+	# remove intersections from exclusive cores
+	mask_coreA = np.logical_and(mask_coreA, \
+	             np.logical_and(np.logical_not(mask_I_AB), \
+				 np.logical_and(np.logical_not(mask_I_AC), np.logical_not(mask_I_ABC))))
+	mask_coreB = np.logical_and(mask_coreB, \
+	             np.logical_and(np.logical_not(mask_I_AB), \
+				 np.logical_and(np.logical_not(mask_I_BC), np.logical_not(mask_I_ABC))))
+	mask_coreC = np.logical_and(mask_coreC, \
+	             np.logical_and(np.logical_not(mask_I_AC), \
+				 np.logical_and(np.logical_not(mask_I_BC), np.logical_not(mask_I_ABC))))
+
+	# tests (each should yield true)
+	'''print("Test:", not np.any(np.logical_and(mask_coreA, mask_coreB)))
+	print("Test:", not np.any(np.logical_and(mask_coreA, mask_coreC)))
+	print("Test:", not np.any(np.logical_and(mask_coreB, mask_coreC)))
+	print("Test:", not np.any(np.logical_and(mask_I_AB, mask_I_BC)))
+	print("Test:", not np.any(np.logical_and(mask_I_AB, mask_I_AC)))
+	print("Test:", not np.any(np.logical_and(mask_I_AB, mask_I_ABC)))
+	print("Test:", not np.any(np.logical_and(mask_I_AC, mask_I_BC)))
+	print("Test:", not np.any(np.logical_and(mask_I_AC, mask_I_ABC)))
+	print("Test:", not np.any(np.logical_and(mask_I_BC, mask_I_ABC)))
+	print("Test:", not np.any(np.logical_and(mask_control, mask_coreA)))
+	print("Test:", not np.any(np.logical_and(mask_control, mask_coreB)))
+	print("Test:", not np.any(np.logical_and(mask_control, mask_coreC)))
+	print("Test:", not np.any(np.logical_and(mask_control, mask_I_AB)))
+	print("Test:", not np.any(np.logical_and(mask_control, mask_I_AC)))
+	print("Test:", not np.any(np.logical_and(mask_control, mask_I_BC)))
+	print("Test:", not np.any(np.logical_and(mask_control, mask_I_ABC)))
+	print("Test:", not np.any(np.logical_and(mask_coreA, mask_I_AB)))
+	print("Test:", not np.any(np.logical_and(mask_coreA, mask_I_AC)))
+	print("Test:", not np.any(np.logical_and(mask_coreA, mask_I_BC)))
+	print("Test:", not np.any(np.logical_and(mask_coreA, mask_I_ABC)))
+	print("Test:", not np.any(np.logical_and(mask_coreB, mask_I_AB)))
+	print("Test:", not np.any(np.logical_and(mask_coreB, mask_I_AC)))
+	print("Test:", not np.any(np.logical_and(mask_coreB, mask_I_BC)))
+	print("Test:", not np.any(np.logical_and(mask_coreB, mask_I_ABC)))
+	print("Test:", not np.any(np.logical_and(mask_coreC, mask_I_AB)))
+	print("Test:", not np.any(np.logical_and(mask_coreC, mask_I_AC)))
+	print("Test:", not np.any(np.logical_and(mask_coreC, mask_I_BC)))
+	print("Test:", not np.any(np.logical_and(mask_coreC, mask_I_ABC)))'''
+
 
 	h_coreA = h[mask_coreA]
 	h_coreB = h[mask_coreB]
 	h_coreC = h[mask_coreC]
+	h_I_AB = h[mask_I_AB]
+	h_I_AC = h[mask_I_AC]
+	h_I_BC = h[mask_I_BC]
+	h_I_ABC = h[mask_I_ABC]
+	h_control = h[mask_control]
 
 	z_coreA = z[mask_coreA]
 	z_coreB = z[mask_coreB]
 	z_coreC = z[mask_coreC]
+	z_I_AB = z[mask_I_AB]
+	z_I_AC = z[mask_I_AC]
+	z_I_BC = z[mask_I_BC]
+	z_I_ABC = z[mask_I_ABC]
+	z_control = z[mask_control]
 
-	binh = np.concatenate((np.arange(np.min(h), np.max(h), (np.max(h)-np.min(h)) / 100), np.max(h)), axis=None) # create range of bins for marginalProbDist(h...)
-	binz = np.concatenate((np.arange(np.min(z), np.max(z), (np.max(z)-np.min(z)) / 100), np.max(z)), axis=None) # create range of bins for marginalProbDist(z...)
+	# mean and standard deviation of the subpopulations
+	#mean_z_coreA = np.mean(z_coreA)
+	#mean_z_coreB = np.mean(z_coreB)
+	#mean_z_coreC = np.mean(z_coreC)
+	#mean_z_I_AB = np.mean(z_I_AB)
+	#mean_z_I_AC = np.mean(z_I_AC)
+	#mean_z_I_BC = np.mean(z_I_BC)
+	#mean_z_I_ABC = np.mean(z_I_ABC)
+	#mean_z_control = np.mean(z_control)
+	#sd_z_coreA = np.std(z_coreA)
+	#sd_z_coreB = np.std(z_coreB)
+	#sd_z_coreC = np.std(z_coreC)
+	#sd_z_I_AB = np.std(z_I_AB)
+	#sd_z_I_AC = np.std(z_I_AC)
+	#sd_z_I_BC = np.std(z_I_BC)
+	#sd_z_I_ABC = np.std(z_I_ABC)
+	#sd_z_control = np.std(z_control)
 
-	valh = np.arange(np.min(h), np.max(h), (np.max(h)-np.min(h)) / 100) + (np.max(h)-np.min(h)) / 200 # use mean values instead of lower bounds of the bins as values
-	valz = np.arange(np.min(z), np.max(z), (np.max(z)-np.min(z)) / 100) + (np.max(z)-np.min(z)) / 200 # use mean values instead of lower bounds of the bins as values
+	hstep = (np.max(h)-np.min(h)) / 100
+	zstep = (np.max(z)-np.min(z)) / 100
 
-	buf, ph_coreA = marginalProbDist(h_coreA, binning = True, bin_edges = binh)
-	buf, ph_coreB = marginalProbDist(h_coreB, binning = True, bin_edges = binh)
-	buf, ph_coreC = marginalProbDist(h_coreC, binning = True, bin_edges = binh)
-	buf, pz_coreA = marginalProbDist(z_coreA, binning = True, bin_edges = binz)
-	buf, pz_coreB = marginalProbDist(z_coreB, binning = True, bin_edges = binz)
-	buf, pz_coreC = marginalProbDist(z_coreC, binning = True, bin_edges = binz)
+	binh = np.concatenate((np.linspace(np.min(h), np.max(h), 100), np.max(h)), axis=None) # create range of bins for marginalProbDist(h...)
+	binz = np.concatenate((np.linspace(np.min(z), np.max(z), 100), np.max(z)), axis=None) # create range of bins for marginalProbDist(z...)
 
-	f = open(timestamp + "_eweight_dist_" + time + add + ".txt", "w")
+	valh = np.linspace(np.min(h), np.max(h), 100) + hstep/2 # use mean values instead of lower bounds of the bins as values
+	valz = np.linspace(np.min(z), np.max(z), 100) + zstep/2 # use mean values instead of lower bounds of the bins as values
+
+	numconn = len(h[connections])
+
+	buf, ph_coreA = marginalProbDist(h_coreA, binning = True, bin_edges = binh, norm = numconn)
+	buf, pz_coreA = marginalProbDist(z_coreA, binning = True, bin_edges = binz, norm = numconn)
+	if coreB is not None:
+		buf, ph_coreB = marginalProbDist(h_coreB, binning = True, bin_edges = binh, norm = numconn)
+		buf, pz_coreB = marginalProbDist(z_coreB, binning = True, bin_edges = binz, norm = numconn)
+		if h_I_AB.size > 0:
+			buf, ph_I_AB = marginalProbDist(h_I_AB, binning = True, bin_edges = binh, norm = numconn)
+			buf, pz_I_AB = marginalProbDist(z_I_AB, binning = True, bin_edges = binz, norm = numconn)
+	if coreC is not None:
+		buf, ph_coreC = marginalProbDist(h_coreC, binning = True, bin_edges = binh, norm = numconn)
+		buf, pz_coreC = marginalProbDist(z_coreC, binning = True, bin_edges = binz, norm = numconn)
+		if h_I_AC.size > 0:
+			buf, ph_I_AC = marginalProbDist(h_I_AC, binning = True, bin_edges = binh, norm = numconn)
+			buf, pz_I_AC = marginalProbDist(z_I_AC, binning = True, bin_edges = binz, norm = numconn)
+		if h_I_BC.size > 0:
+			buf, ph_I_BC = marginalProbDist(h_I_BC, binning = True, bin_edges = binh, norm = numconn)
+			buf, pz_I_BC = marginalProbDist(z_I_BC, binning = True, bin_edges = binz, norm = numconn)
+		if h_I_ABC.size > 0:
+			buf, ph_I_ABC = marginalProbDist(h_I_ABC, binning = True, bin_edges = binh, norm = numconn)
+			buf, pz_I_ABC = marginalProbDist(z_I_ABC, binning = True, bin_edges = binz, norm = numconn)
+	buf, ph_control = marginalProbDist(h_control, binning = True, bin_edges = binh, norm = numconn)
+	buf, pz_control = marginalProbDist(z_control, binning = True, bin_edges = binz, norm = numconn)
+
+	# Write weight distribution data files
+	fh = open(timestamp + "_eweight_dist_" + time + add + ".txt", "w")
+	fz = open(timestamp + "_lweight_dist_" + time + add + ".txt", "w")
+
 	for i in range(len(valh)):
-		f.write(str(valh[i]) + "\t\t" + str(ph_coreA[i]) + "\t\t" + str(ph_coreB[i]) + "\t\t" + \
-		        str(ph_coreC[i]) + "\n")
-	f.close()
+		fh.write(str(valh[i]) + "\t\t" + str(ph_coreA[i]) + "\t\t")
+		fz.write(str(valz[i]) + "\t\t" + str(pz_coreA[i]) + "\t\t")
 
-	f = open(timestamp + "_lweight_dist_" + time + add + ".txt", "w")
-	for i in range(len(valz)):
-		f.write(str(valz[i]) + "\t\t" + str(pz_coreA[i]) + "\t\t" + str(pz_coreB[i]) + "\t\t" + \
-		        str(pz_coreC[i]) + "\n")
-	f.close()
+		if coreB is not None:
+			fh.write(str(ph_coreB[i]) + "\t\t")
+			fz.write(str(pz_coreB[i]) + "\t\t")
+
+			if h_I_AB.size > 0:
+				fh.write(str(ph_I_AB[i]) + "\t\t")
+				fz.write(str(pz_I_AB[i]) + "\t\t")
+			else:
+				fh.write("nan\t\t")
+				fz.write("nan\t\t")
+		else:
+			fh.write("nan\t\tnan\t\t")
+			fz.write("nan\t\tnan\t\t")
+
+		if coreC is not None:
+			fh.write(str(ph_coreC[i]) + "\t\t")
+			fz.write(str(pz_coreC[i]) + "\t\t")
+
+			if h_I_AC.size > 0:
+				fh.write(str(ph_I_AC[i]) + "\t\t")
+				fz.write(str(pz_I_AC[i]) + "\t\t")
+			else:
+				fh.write("nan\t\t")
+				fz.write("nan\t\t")
+
+			if h_I_BC.size > 0:
+				fh.write(str(ph_I_BC[i]) + "\t\t")
+				fz.write(str(pz_I_BC[i]) + "\t\t")
+			else:
+				fh.write("nan\t\t")
+				fz.write("nan\t\t")
+
+			if h_I_ABC.size > 0:
+				fh.write(str(ph_I_ABC[i]) + "\t\t")
+				fz.write(str(pz_I_ABC[i]) + "\t\t")
+			else:
+				fh.write("nan\t\t")
+				fz.write("nan\t\t")
+		else:
+			fh.write("nan\t\tnan\t\tnan\t\tnan\t\t")
+			fz.write("nan\t\tnan\t\tnan\t\tnan\t\t")
+		fh.write(str(ph_control[i]) + "\n")
+		fz.write(str(pz_control[i]) + "\n")
+
+	fh.close()
+	fz.close()
 
 	if os.path.exists("plot_dist.gpl"):
 		f = open("plot_dist.gpl", "a")
 	else:
 		f = open("plot_dist.gpl", "w")
 		f.write("#set terminal png size 1024,640 enhanced\nset terminal pdf enhanced\n\n" + \
-		        "set style fill transparent solid 0.8 noborder\n" + \
+		        "set style fill transparent pattern 4 bo\n" + \
 		        "set log y\nset format y \"%.0e\"\nset yrange [3e-06:1]\nset key outside\n\n")
 
 	f.write("set output \"" + timestamp + "_eweight_dist_" + time + add + ".pdf\"\n")
 	f.write("set xlabel \"Early-phase weight / nC\"\nset ylabel \"Relative frequency\"\n")
-	f.write("plot [0.3:0.9] \"" + timestamp + "_eweight_dist_" + time + add + ".txt\" using 1:($1 > 0 ? $2 : $2) t \"A\" with boxes, \\\n" + \
-	        "\"\" using 1:($1 > 0 ? $3 : $3) t \"B\" with boxes, \\\n" + \
-	        "\"\" using 1:($1 > 0 ? $4 : $4) t \"C\" with boxes\n")
+	f.write("plot [0.3:0.9] \"" + timestamp + "_eweight_dist_" + time + add + ".txt\" using 1:($1 > 0 ? $2 : $2) t \"A\" with boxes, \\\n")
+	if coreB is not None:
+		f.write("\"\" using 1:($1 > 0 ? $3 : $3) t \"B\" with boxes, \\\n")
+	if coreC is not None:
+		f.write("\"\" using 1:($1 > 0 ? $5 : $5) t \"C\" with boxes, \\\n")
+	if coreB is not None:
+		f.write("\"\" using 1:($1 > 0 ? $4 : $4) t \"I_{AB}\" with boxes, \\\n")
+	if coreC is not None:
+		f.write("\"\" using 1:($1 > 0 ? $6 : $6) t \"I_{AC}\" with boxes, \\\n")
+		f.write("\"\" using 1:($1 > 0 ? $7 : $7) t \"I_{BC}\" with boxes, \\\n")
+		f.write("\"\" using 1:($1 > 0 ? $8 : $8) t \"I_{ABC}\" with boxes, \\\n")
+	f.write("\"\" using 1:($1 > 0 ? $9 : $9) t \"control\" lc rgb \"#eeeeee\" with boxes\n")
 
 	f.write("\nset output \"" + timestamp + "_lweight_dist_" + time + add + ".pdf\"\n")
 	f.write("set xlabel \"Late-phase weight\"\nset ylabel \"Relative frequency\"\nset format y \"%.0e\"\n")
-	f.write("plot \"" + timestamp + "_lweight_dist_" + time + add + ".txt\" using 1:($1 > 0 ? $2 : $2) t \"A\" with boxes, \\\n" + \
-	        "\"\" using 1:($1 > 0 ? $3 : $3) t \"B\" with boxes, \\\n" + \
-	        "\"\" using 1:($1 > 0 ? $4 : $4) t \"C\" with boxes\n")
+	f.write("plot \"" + timestamp + "_lweight_dist_" + time + add + ".txt\" using 1:($1 > 0 ? $2 : $2) t \"A\" with boxes, \\\n")
+	if coreB is not None:
+		f.write("\"\" using 1:($1 > 0 ? $3 : $3) t \"B\" with boxes, \\\n")
+	if coreC is not None:
+		f.write("\"\" using 1:($1 > 0 ? $5 : $5) t \"C\" with boxes, \\\n")
+	if coreB is not None:
+		f.write("\"\" using 1:($1 > 0 ? $4 : $4) t \"I_{AB}\" with boxes, \\\n")
+	if coreC is not None:
+		f.write("\"\" using 1:($1 > 0 ? $6 : $6) t \"I_{AC}\" with boxes, \\\n")
+		f.write("\"\" using 1:($1 > 0 ? $7 : $7) t \"I_{BC}\" with boxes, \\\n")
+		f.write("\"\" using 1:($1 > 0 ? $8 : $8) t \"I_{ABC}\" with boxes, \\\n")
+	f.write("\"\" using 1:($1 > 0 ? $9 : $9) t \"control\" lc rgb \"#eeeeee\" with boxes fill transparent pattern 4\n")
 
 	f.close()
 
@@ -284,8 +458,9 @@ def mapToBins(a, b):
 # a: array of outcomes (e.g., array of activities of all neurons in a network or array of weights of all synapses in a network)
 # binning [optional]: specifies if bins are used to discretize the values of the distribution
 # bin_edges [optional]: pre-specified range of binning edges; only applicable if binning is used
+# norm [optional]: value by which to normalize
 # return: array of values and corresponding array of their probabilities
-def marginalProbDist(a, binning = False, bin_edges = None):
+def marginalProbDist(a, binning = False, bin_edges = None, norm = None):
 
 	if binning == True:
 
@@ -302,14 +477,16 @@ def marginalProbDist(a, binning = False, bin_edges = None):
 		freq_of_values = np.histogram(a, bin_edges)[0] # create histogram of activity value occurrences
 
 		#values, freq_of_values = np.unique(mapToBins(a, bin_edges), return_counts=True, axis=0) # yields the same result
-
-		freq_of_values = freq_of_values / np.sum(freq_of_values) # normalize
-
 	else:
 		#a = np.sort(a)
 		values_mean, freq_of_values = np.unique(a, return_counts=True) # determine and count occuring activities
 		freq_of_values = freq_of_values / np.sum(freq_of_values) # normalize
 		#dist = np.asarray(values, freq_of_values).T # create distribution
+
+	if norm is None:
+		freq_of_values = freq_of_values / np.sum(freq_of_values) # normalize only over this quantity
+	else:
+		freq_of_values = freq_of_values / norm # normalize over all values
 
 	return values_mean, freq_of_values
 

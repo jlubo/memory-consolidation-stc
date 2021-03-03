@@ -12,7 +12,8 @@ Furthermore, the package contains Python scripts to analyze the data produced by
 
 If you make use of the code or the binaries, please cite our paper:
 
-	Luboeinski, J. and Tetzlaff, C. (2020). Memory consolidation and improvement by synaptic tagging and capture in recurrent neural networks. bioRxiv preprint.
+	Luboeinski, J., Tetzlaff, C. Memory consolidation and improvement by synaptic tagging and capture in recurrent neural networks. Commun. Biol. 4, 275 (2021). 
+	https://doi.org/10.1038/s42003-021-01778-y
 	
 The paper presents the model that underlies the simulation code provided here, as well as findings derived from the model.
 However, the code contains additional features that have not been used in publications yet. Please feel free
@@ -54,7 +55,7 @@ The directory 'simulation-bin/' contains the following sample shell scripts:
 * 'run3' - learn a memory representation, save the network state, and recall after 10 seconds; load the network state, apply intermediate stimulation, let the memory representation consolidate, and recall after 8 hours
 * 'run_2N1S' - reproduce single-synapse data resulting from basic induction protocols for synaptic plasticity
 
-The file 'connections.txt' contains the default connectivity matrix used in Luboeinski and Tetzlaff, bioRxiv, 2020. If this file is absent, the simulation program will automatically generate a new network structure.
+The file 'connections.txt' contains the default connectivity matrix used in Luboeinski and Tetzlaff, Commun. Biol., 2020. If this file is absent, the simulation program will automatically generate a new network structure.
 
 
 ## Analysis scripts

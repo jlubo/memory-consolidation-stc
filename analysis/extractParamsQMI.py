@@ -24,11 +24,14 @@ ref_time = "11.0" # readout time for the reference firing rate or weight distrib
 # filename: a string
 # return: true if presumably there is a timestamp, false if not
 def hasTimestamp(filename):
-	if filename[2] == "-" and filename[5] == "-" and filename[8] == "_" and \
-	   filename[11] == "-" and filename[14] == "-":
-		return True
-	else:
-		return False
+	try:
+		if filename[2] == "-" and filename[5] == "-" and filename[8] == "_" and \
+		   filename[11] == "-" and filename[14] == "-":
+			return True
+	except:
+		pass
+			
+	return False
 
 # readParams
 # Reads some parameters from a "[timestamp]_PARAMS.txt" file
@@ -77,8 +80,8 @@ def readParams(path):
 			rprot = segs[2]
 		elif segs[0] == "recall" and segs[1] == "fraction":
 			recall_fraction = segs[3]
-		elif segs[0] == "pc":
-			pc = float(segs[2])
+		elif segs[0] == "pc" or segs[0] == "p_c":
+			p_c = float(segs[2])
 		elif segs[0] == "w_ei":
 			w_ei = float(segs[2])
 		elif segs[0] == "w_ie":
@@ -89,8 +92,8 @@ def readParams(path):
 			theta_pro_c = float(segs[2])
 		elif segs[0] == "N_stim":
 			N_stim = int(segs[2])
-		elif segs[0] == "I_const":
-			I_const = float(segs[2])
+		elif segs[0] == "I_const" or segs[0] == "I_0":
+			I_0 = float(segs[2])
 		elif segs[0] == "dt":
 			dt = float(segs[2])
 		elif segs[0] == "core" and segs[len(segs)-2] == "radius":
@@ -101,7 +104,7 @@ def readParams(path):
 	if r_CA == -1 and s_CA == -1: # is not specified in the parameter file of older data
 		r_CA = int(input('Enter the radius of the stimulated core: '))
 
-	return [w_ei, w_ie, w_ii, pc, Ca_pre, Ca_post, theta_p, theta_d, lprot, rprot, dt, theta_pro_c, s_CA, N_stim, I_const, R_mem, recall_fraction]
+	return [w_ei, w_ie, w_ii, p_c, Ca_pre, Ca_post, theta_p, theta_d, lprot, rprot, dt, theta_pro_c, s_CA, N_stim, I_0, R_mem, recall_fraction]
 
 # extractRecursion
 # Recursively looks for data directories and extracts parameters and the Q and MI measures from them

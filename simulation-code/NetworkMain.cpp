@@ -130,7 +130,7 @@ int main(int argc, char** argv)
 			theta_pro_D = read;
 		else if (strstr(argv[i], "-I_0=") == argv[i] || strstr(argv[i], "-I_const=") == argv[i])
 			I_0 = read;
-		else if (strstr(argv[i], "-Nl=") == argv[i])
+		else if (strstr(argv[i], "-Nl_exc=") == argv[i] || strstr(argv[i], "-Nl=") == argv[i])
 			Nl = int(read);
 		else if (strstr(argv[i], "-Nl_inh=") == argv[i])
 			Nl_inh = int(read);

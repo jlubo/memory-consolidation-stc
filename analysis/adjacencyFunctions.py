@@ -16,6 +16,7 @@ core_recall = core[0:int(np.floor(recall_fraction*core.shape[0]))]
 core_norecall = core[np.logical_not(np.in1d(core, core_recall))]
 
 Nl = 40 # number of excitatory neurons in one line (Nl^2 is the total number of excitatory neurons)
+h_0 = 0.420075 # nC, initial synaptic weight and normalization factor for z
 
 all = np.arange(Nl**2)
 noncore = all[np.logical_not(np.in1d(all, core))]
@@ -64,7 +65,7 @@ def loadWeightMatrix(filename):
             if i < Nl and j < Nl:
                 v[i][j] = float(value0[j])
             h[i][j] = float(value1[j])
-            z[i][j] = float(value2[j])
+            z[i][j] = h_0*float(value2[j])
 
     f.close()
     adj = (h > epsilon)
@@ -80,6 +81,7 @@ def loadAdjacencyMatrix(filename):
 # getConnectivity
 # Computes and prints the connectivity within the adjacency matrix
 # pr [optional]: specifies if result is printed
+# return: the connectivity as a value between 0 and 1
 def getConnectivity(pr = True):
 	nconn = np.sum(adj > 0)
 	line = adj.shape[0]
@@ -91,6 +93,7 @@ def getConnectivity(pr = True):
 # getConnectivityInCore
 # Computes and prints the connectivity within the core
 # pr [optional]: specifies if result is printed
+# return: the connectivity as a value between 0 and 1
 def getConnectivityInCore(pr = True):
 	connections_within_core = 0
 	N_core = len(core)
@@ -110,6 +113,7 @@ def getConnectivityInCore(pr = True):
 # i: neuron index
 # j: neuron index
 # pr [optional]: specifies if result is printed
+# return: true or false
 def areConnected(i, j, pr = True):
 	global adj
 
@@ -126,6 +130,7 @@ def areConnected(i, j, pr = True):
 # Prints and returns all the neurons from which neuron i receives inputs
 # i: neuron index
 # pr [optional]: specifies if result is printed
+# return: array of neuron numbers
 def incomingConnections(i, pr = True):
 	global adj
 	inc = np.where(adj[:, i] == 1)[0]
@@ -138,6 +143,7 @@ def incomingConnections(i, pr = True):
 # Prints and returns all the neurons to which neuron i provides input
 # i: neuron index
 # pr [optional]: specifies if result is printed
+# return: array of neuron numbers
 def outgoingConnections(i, pr = True):
 	global adj
 	out = np.where(adj[i, :] == 1)[0]
@@ -150,6 +156,7 @@ def outgoingConnections(i, pr = True):
 # Prints and returns all the early-phase synaptic weights incoming to neuron i
 # i: neuron index
 # pr [optional]: specifies if result is printed
+# return: array of early-phase weights in units of nC
 def incomingEarlyPhaseWeights(i, pr = True):
 	global adj
 	global h
@@ -165,6 +172,7 @@ def incomingEarlyPhaseWeights(i, pr = True):
 # Prints and returns all the early-phase synaptic weights outgoing from neuron i
 # i: neuron index
 # pr [optional]: specifies if result is printed
+# return: array of early-phase weights in units of nC
 def outgoingEarlyPhaseWeights(i, pr = True):
 	global adj
 	global h
@@ -180,6 +188,7 @@ def outgoingEarlyPhaseWeights(i, pr = True):
 # Prints and returns all the core neurons from which neuron i receives inputs
 # i: neuron index
 # pr [optional]: specifies if result is printed
+# return: array of neuron numbers
 def connectionsFromCore(i, pr = True):
 	global adj
 	cfc = core[np.in1d(core, incomingConnections(i, False))].flatten()
@@ -192,6 +201,7 @@ def connectionsFromCore(i, pr = True):
 # Prints and returns all the recall-stimulated core neurons from which neuron i receives inputs
 # i: neuron index
 # pr [optional]: specifies if result is printed
+# return: array of neuron numbers
 def connectionsFromRSCore(i, pr = True):
 	global adj
 	cfrsc = core_recall[np.in1d(core_recall, incomingConnections(i, False))].flatten()
@@ -204,6 +214,7 @@ def connectionsFromRSCore(i, pr = True):
 # Prints and returns all the early-phase synaptic weights incoming to neuron i from a given set of neurons
 # i: neuron index
 # set: the set of presynaptic neurons
+# return: array of early-phase weights in units of nC
 def earlyPhaseWeightsFromSet(i, set):
 	global adj
 	global h
@@ -217,6 +228,7 @@ def earlyPhaseWeightsFromSet(i, set):
 # Prints and returns all the early-phase synaptic weights incoming to neuron i from core neurons
 # i: neuron index
 # pr [optional]: specifies if result is printed
+# return: array of early-phase weights in units of nC
 def earlyPhaseWeightsFromCore(i, pr = True):
 	inc_h = earlyPhaseWeightsFromSet(i, core)
 	if pr:
@@ -228,6 +240,7 @@ def earlyPhaseWeightsFromCore(i, pr = True):
 # Prints and returns all the early-phase synaptic weights incoming to neuron i from recall-stimulated core neurons
 # i: neuron index
 # pr [optional]: specifies if result is printed
+# return: array of early-phase weights in units of nC
 def earlyPhaseWeightsFromRSCore(i, pr = True):
 	inc_h = earlyPhaseWeightsFromSet(i, core_recall)
 	if pr:
@@ -239,6 +252,7 @@ def earlyPhaseWeightsFromRSCore(i, pr = True):
 # Prints and returns all the early-phase synaptic weights outgoing to core neurons from neuron i
 # i: neuron index
 # pr [optional]: specifies if result is printed
+# return: array of early-phase weights in units of nC
 def earlyPhaseWeightsToCore(i, pr = True):
 	global adj
 	global h
@@ -254,6 +268,7 @@ def earlyPhaseWeightsToCore(i, pr = True):
 # Prints and returns all the late-phase synaptic weights incoming to neuron i from a given set of neurons
 # i: neuron index
 # set: the set of presynaptic neurons
+# return: array of late-phase weights in units of nC
 def latePhaseWeightsFromSet(i, set):
 	global adj
 	global z
@@ -267,6 +282,7 @@ def latePhaseWeightsFromSet(i, set):
 # Prints and returns all the late-phase synaptic weights incoming to neuron i from core neurons
 # i: neuron index
 # pr [optional]: specifies if result is printed
+# return: array of late-phase weights in units of nC
 def latePhaseWeightsFromCore(i, pr = True):
 	inc_z = latePhaseWeightsFromSet(i, core)
 	if pr:
@@ -278,6 +294,7 @@ def latePhaseWeightsFromCore(i, pr = True):
 # Prints and returns all the late-phase synaptic weights outgoing to core neurons from neuron i
 # i: neuron index
 # pr [optional]: specifies if result is printed
+# return: array of late-phase weights in units of nC
 def latePhaseWeightsToCore(i, pr = True):
 	global adj
 	global z
@@ -295,6 +312,7 @@ def latePhaseWeightsToCore(i, pr = True):
 # set: the first set of neurons (presynaptic)
 # set2 [optional]: the seconds set of neurons (postsynaptic); if not specified, connections within "set" are considered
 # pr [optional]: specifies if result shall be printed
+# return: early-phase weight in units of nC
 def meanEarlyPhaseWeight(set, set2 = [], pr = True):
 	summed_weight = 0
 	connection_num = 0
@@ -326,6 +344,7 @@ def meanEarlyPhaseWeight(set, set2 = [], pr = True):
 # set: the first set of neurons (presynaptic)
 # set2 [optional]: the seconds set of neurons (postsynaptic); if not specified, connections within "set" are considered
 # pr [optional]: specifies if result shall be printed
+# return: early-phase weight in units of nC
 def sdEarlyPhaseWeight(set, set2 = [], pr = True):
 	mean = meanEarlyPhaseWeight(set, set2, False)
 	summed_qu_dev = 0
@@ -352,6 +371,7 @@ def sdEarlyPhaseWeight(set, set2 = [], pr = True):
 # set: the first set of neurons (presynaptic)
 # set2 [optional]: the seconds set of neurons (postsynaptic); if not specified, connections within "set" are considered
 # pr [optional]: specifies if result shall be printed
+# return: late-phase weight in units of nC
 def meanLatePhaseWeight(set, set2 = [], pr = True):
 	summed_weight = 0
 	connection_num = 0
@@ -383,6 +403,7 @@ def meanLatePhaseWeight(set, set2 = [], pr = True):
 # set: the first set of neurons (presynaptic)
 # set2 [optional]: the seconds set of neurons (postsynaptic); if not specified, connections within "set" are considered
 # pr [optional]: specifies if result shall be printed
+# return: late-phase weight in units of nC
 def sdLatePhaseWeight(set, set2 = [], pr = True):
 	mean = meanLatePhaseWeight(set, set2, False)
 	summed_qu_dev = 0
@@ -408,6 +429,7 @@ def sdLatePhaseWeight(set, set2 = [], pr = True):
 # Prints and returns all the core neurons to which neuron i provides input
 # i: neuron index
 # pr [optional]: specifies if result is printed
+# return: array of neuron numbers
 def connectionsToCore(i, pr = True):
 	global adj
 	ctc = core[np.in1d(core, outgoingConnections(i, False))].flatten()
@@ -420,6 +442,7 @@ def connectionsToCore(i, pr = True):
 # Prints and returns all the recall-stimulated core neurons to which neuron i provides input
 # i: neuron index
 # pr [optional]: specifies if result is printed
+# return: array of neuron numbers
 def connectionsToRSCore(i, pr = True):
 	global adj
 	ctrsc = core_recall[np.in1d(core_recall, outgoingConnections(i, False))].flatten()
@@ -432,6 +455,7 @@ def connectionsToRSCore(i, pr = True):
 # Prints and returns all the non-core neurons to which neuron i provides input
 # i: neuron index
 # pr [optional]: specifies if result is printed
+# return: array of neuron numbers
 def connectionsToNonCore(i, pr = True):
 	global adj
 	outg = outgoingConnections(i, False)
@@ -458,7 +482,7 @@ def setRhombCore(core_center, core_radius):
 			core = np.append(core, np.array([core_center+i*Nl+j]))
 
 # printMeanWeights
-# Prints mean and standard deviation of CA, outgoing, incoming, and control weight
+# Prints mean and standard deviation of CA, outgoing, incoming, and control weight in units of nC
 def printMeanWeights():
 	print("--------------------------------")
 	print("Core -> core ('CA'):")

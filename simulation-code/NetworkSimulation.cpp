@@ -78,7 +78,7 @@ int net_output_period; // number of timesteps to pass for the next network plot
 vector<int> net_output {}; // vector of times for selected network plots
 
 #ifdef SEEK_I_0
-double *seekic; // pointer to a variable to communicate with NetworkBatch class while seeking I_0
+double *seekic; // pointer to a variable to communicate with the main(...) function while seeking I_0
 #endif
 
 /*** saveParams ***
@@ -233,7 +233,7 @@ double getMaxDev()
 /*** simulate ***
  * Runs the network simulation *
  * - working_dir: working directory *
- * - first_sim: tells if this is the first simulation run by the batch code *
+ * - first_sim: tells if this is the first simulation run by the main(...) function *
  * - _purpose: a short text describing the purpose of this simulation */
 int simulate(string working_dir, bool first_sim, string _purpose)
 {
@@ -351,7 +351,7 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 
 #endif
 	// Output with general information
-	// if this is the first simulation of this batch (first_sim = true), use time stamp from NetworkBatch.cpp, else, set a new time stamp
+	// if this is the first simulation run by the main(...) function (first_sim = true), use time stamp from NetworkMain.cpp, else, set a new time stamp
 	cout << "\x1b[33mNetwork simulation with N_exc = " << pow2(Nl) << ", N_inh = " << pow2(Nl_inh)
 		  << ", t_max = " << t_max << " s (" << dateStr("", !first_sim) << ")\x1b[0m" << endl;
 	cout << "Learning protocol: " << prot_learn << endl;
@@ -1102,7 +1102,7 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 
 #ifdef SEEK_I_0
 /*** setSeekICVar ***
- * Sets the variable to communicate with NetworkBatch class for seeking I_0 */
+ * Sets the variable to communicate with the main(...) function for seeking I_0 */
 void setSeekICVar(double *_seekic)
 {
 	seekic = _seekic;

@@ -85,8 +85,6 @@ def corrMatrix(timestamp, fr_mat1, fr_mat2, suffix):
 
 	return cm
 
-
-####################################
 # corrBetweenSubPop
 # timestamp: timestamp string that labels the data set
 # cm: the correlation matrix

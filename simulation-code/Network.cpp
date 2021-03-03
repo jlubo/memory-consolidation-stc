@@ -1483,7 +1483,7 @@ double getMeanCProteinAmount(int n, int off=0) const
 /*** getSDCProteinAmount ***
  * Returns the standard deviation of the protein amount (over all neurons within the given set) *
  * - double mean: the mean of the protein amount within the given set
- * - int n: the number of neurons that shall be considered (e.g., n=Nl^2 for all excitatory neurons, or n=N for all neurons) *
+ * - int n: the number of neurons that shall be considered (e.g., n=Nl_exc^2 for all excitatory neurons, or n=N for all neurons) *
  * - int off [optional]: the offset that defines at which neuron number the considered range begins *
  * - return: the std. dev. of the protein amount */
 double getSDCProteinAmount(double mean, int n, int off=0) const
@@ -1492,10 +1492,10 @@ double getSDCProteinAmount(double mean, int n, int off=0) const
 
 	for (int i=off; i < (n+off); i++)
 	{
-		pa_sd += neurons[i].getCProteinAmount();
+		pa_sd += pow2(neurons[i].getCProteinAmount() - mean);
 	}
 
-	pa_sd /= n;
+	pa_sd = sqrt(pa_sd / n);
 
 	return pa_sd;
 }
