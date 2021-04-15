@@ -6,8 +6,8 @@
 ### Copyright 2018-2021 Jannik Luboeinski
 ### licensed under Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 
-from readWeightData import *
-from probDistributions import *
+from utilityFunctions import *
+from valueDistributions import *
 import numpy as np
 from pathlib import Path
 
@@ -18,26 +18,28 @@ np.set_printoptions(threshold=1e10, linewidth=200) # extend console print range 
 # the reference distribution
 # nppath: path to the network_plots directory to read the data from
 # timestamp: a string containing date and time (to access correct paths)
-# Nl: the number of excitatory neurons in one line of a quadratic grid
+# Nl_exc: the number of excitatory neurons in one line of a quadratic grid
 # time_for_activity: the time that at which the activites shall be read out (some time during recall)
 # time_ref: the reference time (for getting the activity distribution during learning)
 # core: the neurons in the cell assembly (for stipulation; only required if no activity distribution during learning is available)
-def calculateMIa(nppath, timestamp, Nl, time_for_activity, time_ref = "11.0", core = np.array([])):
+def calculateMIa(nppath, timestamp, Nl_exc, time_for_activity, time_ref = "11.0", core = np.array([])):
 
 	if time_ref: # use reference firing rate distribution from data (for learned cell assembly)
 		times_for_readout_list = [time_ref, time_for_activity] # the simulation times at which the activities shall be read out
+		print("Using reference distribution at " + time_ref + "...")
 	else: # use model firing rate distribution (for stipulated cell assembly)
 		times_for_readout_list = [time_for_activity]
-		v_model = np.zeros(Nl**2)
-		v_model[core] = 1 # entropy/MI of this distribution for Nl=40: 0.4689956
-		v_model = np.reshape(v_model, (Nl,Nl))
+		v_model = np.zeros(Nl_exc**2)
+		v_model[core] = 1 # entropy/MI of this distribution for Nl_exc=40: 0.4689956
+		v_model = np.reshape(v_model, (Nl_exc,Nl_exc))
+		print("Using stipulated reference distribution...")
 
-	connections = [np.zeros((Nl**2,Nl**2)) for x in times_for_readout_list]
-	h = [np.zeros((Nl**2,Nl**2)) for x in times_for_readout_list]
-	z = [np.zeros((Nl**2,Nl**2)) for x in times_for_readout_list]
-	v = [np.zeros((Nl,Nl)) for x in times_for_readout_list]
+	connections = [np.zeros((Nl_exc**2,Nl_exc**2)) for x in times_for_readout_list]
+	h = [np.zeros((Nl_exc**2,Nl_exc**2)) for x in times_for_readout_list]
+	z = [np.zeros((Nl_exc**2,Nl_exc**2)) for x in times_for_readout_list]
+	v = [np.zeros((Nl_exc,Nl_exc)) for x in times_for_readout_list]
 
-	v_array = np.zeros(Nl*Nl) # data array
+	v_array = np.zeros(Nl_exc*Nl_exc) # data array
 
 	rawpaths = Path(nppath)
 
@@ -58,7 +60,7 @@ def calculateMIa(nppath, timestamp, Nl, time_for_activity, time_ref = "11.0", co
 			raise FileNotFoundError('"' + timestamp + '_net_' + time_for_readout + '.txt" was not found')
 
 		try:
-			connections[i], h[i], z[i], v[i] = readWeightMatrixData(path, Nl)
+			connections[i], h[i], z[i], v[i] = readWeightMatrixData(path, Nl_exc)
 
 		except ValueError:
 			raise

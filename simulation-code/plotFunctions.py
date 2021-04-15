@@ -122,9 +122,9 @@ def logScale_w(x, h_0, z_max):
 # readWeightMatrixData
 # Reads complete weight matrix data from a file
 # filename: name of the file to read the data from
-# Nl: number of neurons in one row/column
+# Nl_exc: number of excitatory neurons in one row/column
 # return: the adjacency matrix, the early-phase weight matrix, the late-phase weight matrix, the firing rate vector
-def readWeightMatrixData(filename, Nl):
+def readWeightMatrixData(filename, Nl_exc):
 
 	# read weight matrices and firing rates from file
 	with open(plot_folder + filename) as f:
@@ -137,23 +137,23 @@ def readWeightMatrixData(filename, Nl):
 
 	rows = len(rawmatrix_v)
 
-	if (rows != len(rawmatrix_v[0].split('\t\t'))) or (rows != Nl):
+	if (rows != len(rawmatrix_v[0].split('\t\t'))) or (rows != Nl_exc):
 		print('Data file error in "' + filename + '"')
 		f.close()
 		exit()
 
-	v = np.zeros((Nl,Nl))
-	h = np.zeros((Nl**2,Nl**2))
-	z = np.zeros((Nl**2,Nl**2))
+	v = np.zeros((Nl_exc,Nl_exc))
+	h = np.zeros((Nl_exc**2,Nl_exc**2))
+	z = np.zeros((Nl_exc**2,Nl_exc**2))
 
-	for i in range(Nl**2):
-		if i < Nl:
+	for i in range(Nl_exc**2):
+		if i < Nl_exc:
 			value0 = rawmatrix_v[i].split('\t\t')
 		value1 = rawmatrix_h[i].split('\t\t')
 		value2 = rawmatrix_z[i].split('\t\t')
 
-		for j in range(Nl**2):
-			if i < Nl and j < Nl:
+		for j in range(Nl_exc**2):
+			if i < Nl_exc and j < Nl_exc:
 				v[i][j] = float(value0[j])
 			h[i][j] = float(value1[j])
 			z[i][j] = float(value2[j])
@@ -169,9 +169,9 @@ def readWeightMatrixData(filename, Nl):
 # h_0: initial early-phase weight
 # z_min: minimum late-phase weight
 # z_max: maximum late-phase weight
-# Nl: number of neurons in one row/column
+# Nl_exc: number of excitatory neurons in one row/column
 # title [optional]: main title of the figure
-def plotWeights(filename, h_0, z_min, z_max, Nl, title = "Weight matrices"):
+def plotWeights(filename, h_0, z_min, z_max, Nl_exc, title = "Weight matrices"):
 
 	# normalization factors
 	h_max = 2*h_0
@@ -183,7 +183,7 @@ def plotWeights(filename, h_0, z_min, z_max, Nl, title = "Weight matrices"):
 	cmasymmetric_w = shiftedColorMap(cm.seismic, start=0, midpoint=h_0/w_max, stop=1, name='asymmetric_w')
 
 	# read weight matrix data
-	connections, h, z, v = readWeightMatrixData(filename, Nl)
+	connections, h, z, v = readWeightMatrixData(filename, Nl_exc)
 	connections = np.flip(connections, 0)
 	h = np.flip(h, 0)
 	z = np.flip(z, 0)
@@ -192,7 +192,7 @@ def plotWeights(filename, h_0, z_min, z_max, Nl, title = "Weight matrices"):
 	v_max = np.amax(v)
 	if v_max == 0.0:
         	v_max = 1.0
-	v_data = v.reshape(int(Nl),int(Nl)) / v_max
+	v_data = v.reshape(int(Nl_exc),int(Nl_exc)) / v_max
 
 	# plotting
 	plt.figure(figsize=(20,12))
@@ -244,9 +244,9 @@ def plotWeights(filename, h_0, z_min, z_max, Nl, title = "Weight matrices"):
 # h_0: initial early-phase weight
 # z_min: minimum late-phase weight
 # z_max: maximum late-phase weight
-# Nl: number of neurons in one row/column
+# Nl_exc: number of excitatory neurons in one row/column
 # title [optional]: main title of the figure
-def plotWeightDiffs(filename1, filename2, h_0, z_min, z_max, Nl, title = "Weight matrices"):
+def plotWeightDiffs(filename1, filename2, h_0, z_min, z_max, Nl_exc, title = "Weight matrices"):
 
 	# Colormaps for Calcium simulation
 	# colormaps for h and z
@@ -258,8 +258,8 @@ def plotWeightDiffs(filename1, filename2, h_0, z_min, z_max, Nl, title = "Weight
 	w_max = h_max + h_0 * z_max
 
 	# read weight matrix data
-	connections1, h1, z1, v1 = readWeightMatrixData(filename1, Nl)
-	connections2, h2, z2, v2 = readWeightMatrixData(filename2, Nl)
+	connections1, h1, z1, v1 = readWeightMatrixData(filename1, Nl_exc)
+	connections2, h2, z2, v2 = readWeightMatrixData(filename2, Nl_exc)
 
 	if (connections1 != connections2).any():
 		print("Not the same connectivity, plot cannot be created!")
@@ -274,7 +274,7 @@ def plotWeightDiffs(filename1, filename2, h_0, z_min, z_max, Nl, title = "Weight
 	v_max = np.amax(v)
 	if v_max == 0.0:
         	v_max = 1.0
-	v_data = v.reshape(int(Nl),int(Nl)) / v_max
+	v_data = v.reshape(int(Nl_exc),int(Nl_exc)) / v_max
 
 	# plotting
 	plt.figure(figsize=(20,12))
@@ -324,10 +324,10 @@ def plotWeightDiffs(filename1, filename2, h_0, z_min, z_max, Nl, title = "Weight
 # h_0: initial early-phase weight
 # z_min: minimum late-phase weight
 # z_max: maximum late-phase weight
-# Nl: number of neurons in one row/column
+# Nl_exc: number of excitatory neurons in one row/column
 # already_averaged: specifies if a data file shall be created
 # title [optional]: main title of the figure
-def plotAveragedWeights(filename, h_0, z_min, z_max, Nl, already_averaged, title = "Averaged incoming and outgoing weights"):
+def plotAveragedWeights(filename, h_0, z_min, z_max, Nl_exc, already_averaged, title = "Averaged incoming and outgoing weights"):
 
 	# colormaps for h and z
 	cmh0center = shiftedColorMap(cm.seismic, start=0, midpoint=0.5, stop=1.0, name='h0center')
@@ -347,26 +347,26 @@ def plotAveragedWeights(filename, h_0, z_min, z_max, Nl, already_averaged, title
 		rawdata = rawdata.split('\n')
 		nn = len(rawdata)-1
 
-		if nn != 2*Nl*Nl:
+		if nn != 2*Nl_exc*Nl_exc:
 			print('Data file error in "' + filename + '"')
 			print(nn)
 			f.close()
 			exit()
 
-		v = np.zeros((Nl,Nl))
-		h_inc = np.zeros((Nl,Nl))
-		h_out = np.zeros((Nl,Nl))
-		z_inc = np.zeros((Nl,Nl))
-		z_out = np.zeros((Nl,Nl))
-		w_inc = np.zeros((Nl,Nl))
-		w_out = np.zeros((Nl,Nl))
+		v = np.zeros((Nl_exc,Nl_exc))
+		h_inc = np.zeros((Nl_exc,Nl_exc))
+		h_out = np.zeros((Nl_exc,Nl_exc))
+		z_inc = np.zeros((Nl_exc,Nl_exc))
+		z_out = np.zeros((Nl_exc,Nl_exc))
+		w_inc = np.zeros((Nl_exc,Nl_exc))
+		w_out = np.zeros((Nl_exc,Nl_exc))
 
 		for n in range(nn):
-			n2 = n % (Nl*Nl)
-			i = (n2 - (n2 % Nl)) // Nl # row number
-			j = n2 % Nl # column number
+			n2 = n % (Nl_exc*Nl_exc)
+			i = (n2 - (n2 % Nl_exc)) // Nl_exc # row number
+			j = n2 % Nl_exc # column number
 
-			if n < Nl*Nl:
+			if n < Nl_exc*Nl_exc:
 				values = rawdata[n].split()
 				h_inc[i][j] = logScale_h(float(values[0]), h_0) / h_max
 				h_out[i][j] = logScale_h(float(values[1]), h_0) / h_max
@@ -459,26 +459,26 @@ def plotAveragedWeights(filename, h_0, z_min, z_max, Nl, already_averaged, title
 	else:
 
 		# read weight matrix data
-		connections, h, z, v = readWeightMatrixData(filename, Nl)
+		connections, h, z, v = readWeightMatrixData(filename, Nl_exc)
 
 		# change filename
 		filename_av = filename.replace('_net_', '_net_av_')
 
 		# find firing rate maximum and reshape array
 		v_max = np.amax(v)
-		v_data = v.reshape(int(Nl),int(Nl))
+		v_data = v.reshape(int(Nl_exc),int(Nl_exc))
 
 		# average incoming (axis=0) synaptic weights per neuron
 		con_count = np.sum(connections, axis=0)
 		con_count[con_count == 0] = 1
-		h_incoming = np.array(np.sum(h, axis=0) / con_count).reshape(int(Nl),int(Nl))
-		z_incoming = np.array(np.sum(z, axis=0) / con_count).reshape(int(Nl),int(Nl))
+		h_incoming = np.array(np.sum(h, axis=0) / con_count).reshape(int(Nl_exc),int(Nl_exc))
+		z_incoming = np.array(np.sum(z, axis=0) / con_count).reshape(int(Nl_exc),int(Nl_exc))
 
 		# average outgoing (axis=1) synaptic weights per neuron
 		con_count = np.sum(connections, axis=1)
 		con_count[con_count == 0] = 1
-		h_outgoing = np.array(np.sum(h, axis=1) / con_count).reshape(int(Nl),int(Nl))
-		z_outgoing = np.array(np.sum(z, axis=1) / con_count).reshape(int(Nl),int(Nl))
+		h_outgoing = np.array(np.sum(h, axis=1) / con_count).reshape(int(Nl_exc),int(Nl_exc))
+		z_outgoing = np.array(np.sum(z, axis=1) / con_count).reshape(int(Nl_exc),int(Nl_exc))
 
 		# plotting
 		plt.figure(figsize=(6,12))
@@ -559,25 +559,6 @@ def plotAveragedWeights(filename, h_0, z_min, z_max, Nl, already_averaged, title
 		f.write("z_incoming =\r\n" + str(z_incoming) + "\r\n\r\n\r\n")
 		f.write("z_outgoing =\r\n" + str(z_outgoing) + "\r\n\r\n\r\n")
 		f.close()
-
-
-# getRhombCore
-# Returns the neurons belonging to a rhomb-shaped core in a quadratic grid
-# core_center: the central neuron of the rhomb
-# core_radius: the "radius" of the rhomb
-# Nl: number of neurons in one row/column
-# return: the neurons belonging to the core in a numpy array
-def getRhombCore(core_center, core_radius, Nl):
-
-	core = np.array([], dtype=np.int32)
-	core_size = 2*core_radius**2 + 2*core_radius + 1
-
-	for i in range(-core_radius, core_radius+1, 1):
-		num_cols = (core_radius-abs(i))
-
-		for j in range(-num_cols, num_cols+1, 1):
-			core = np.append(core, np.array([core_center+i*Nl+j]))
-	return core
 
 # earlyPhaseWeightsFromCore
 # Returns all the early-phase synaptic weights incoming to neuron i from core neurons
@@ -669,10 +650,10 @@ def latePhaseWeightsToCore(i, adj, z, core):
 # h_0: initial early-phase weight
 # z_min: minimum late-phase weight
 # z_max: maximum late-phase weight
-# Nl: number of neurons in one row/column
-# r_CA: radius of the cell assembly core
+# Nl_exc: number of excitatory neurons in one row/column
+# s_CA: size of the cell assembly core
 # title [optional]: main title of the figure
-def plotAveragedSubPopWeights(filename, h_0, z_min, z_max, Nl, r_CA, title = "Averaged incoming weights from subpopulations"):
+def plotAveragedSubPopWeights(filename, h_0, z_min, z_max, Nl_exc, s_CA, title = "Averaged incoming weights from subpopulations"):
 
 	# colormaps for h and z
 	cmh0center = shiftedColorMap(cm.seismic, start=0, midpoint=0.5, stop=1.0, name='h0center')
@@ -683,7 +664,7 @@ def plotAveragedSubPopWeights(filename, h_0, z_min, z_max, Nl, r_CA, title = "Av
 	w_max = h_max + h_0 * z_max
 
 	# read weight matrix data
-	connections, h, z, v = readWeightMatrixData(filename, Nl)
+	connections, h, z, v = readWeightMatrixData(filename, Nl_exc)
 	print("=========================\nData from: " + filename)
 
 	# change filename
@@ -693,19 +674,19 @@ def plotAveragedSubPopWeights(filename, h_0, z_min, z_max, Nl, r_CA, title = "Av
 	v_max = np.amax(v)
 	if v_max == 0.0:
         	v_max = 1.0
-	v_data = v.reshape(int(Nl),int(Nl)) / v_max
+	v_data = v.reshape(int(Nl_exc),int(Nl_exc)) / v_max
 
 	# average synaptic weight from core neurons and from control neurons for all neurons
-	core = getRhombCore(820, r_CA, Nl)
+	core = np.arange(s_CA)
 
-	h_core_inc = np.zeros((Nl*Nl))
-	z_core_inc = np.zeros((Nl*Nl))
-	#h_core_out = np.zeros((Nl*Nl))
-	#z_core_out = np.zeros((Nl*Nl))
-	h_control_inc = np.zeros((Nl*Nl))
-	z_control_inc = np.zeros((Nl*Nl))
+	h_core_inc = np.zeros((Nl_exc*Nl_exc))
+	z_core_inc = np.zeros((Nl_exc*Nl_exc))
+	#h_core_out = np.zeros((Nl_exc*Nl_exc))
+	#z_core_out = np.zeros((Nl_exc*Nl_exc))
+	h_control_inc = np.zeros((Nl_exc*Nl_exc))
+	z_control_inc = np.zeros((Nl_exc*Nl_exc))
 
-	for i in range(Nl*Nl):
+	for i in range(Nl_exc*Nl_exc):
 		weights = earlyPhaseWeightsFromCore(i, connections, h, core)
 		if weights != []:
 			h_core_inc[i] = np.sum(weights) / len(weights)
@@ -730,10 +711,10 @@ def plotAveragedSubPopWeights(filename, h_0, z_min, z_max, Nl, r_CA, title = "Av
 
 
 	# compute mean synaptic weight from core to core, from core to control, from control to core and from control to control
-	core_mask = np.in1d(np.arange(Nl*Nl), core) # boolean mask of exc. population, entries are True for core neurons
+	core_mask = np.in1d(np.arange(Nl_exc*Nl_exc), core) # boolean mask of exc. population, entries are True for core neurons
 	control_mask = np.logical_not(core_mask) # boolean mask of exc. population, entries are True for control neurons
 	core_size = len(core)
-	control_size = Nl*Nl - core_size
+	control_size = Nl_exc*Nl_exc - core_size
 
 	mean_h_core_core = np.sum(h_core_inc[core_mask]) / core_size
 	mean_h_core_control = np.sum(h_core_inc[control_mask]) / control_size
@@ -756,12 +737,12 @@ def plotAveragedSubPopWeights(filename, h_0, z_min, z_max, Nl, r_CA, title = "Av
 	print("mean_z_control_control = " + str(mean_z_control_control))
 
 	# reshape neuron arrays for plotting
-	h_core_inc = h_core_inc.reshape(int(Nl),int(Nl))
-	z_core_inc = z_core_inc.reshape(int(Nl),int(Nl))
-	#h_core_out = h_core_out.reshape(int(Nl),int(Nl))
-	#z_core_out = z_core_out.reshape(int(Nl),int(Nl))
-	h_control_inc = h_control_inc.reshape(int(Nl),int(Nl))
-	z_control_inc = z_control_inc.reshape(int(Nl),int(Nl))
+	h_core_inc = h_core_inc.reshape(int(Nl_exc),int(Nl_exc))
+	z_core_inc = z_core_inc.reshape(int(Nl_exc),int(Nl_exc))
+	#h_core_out = h_core_out.reshape(int(Nl_exc),int(Nl_exc))
+	#z_core_out = z_core_out.reshape(int(Nl_exc),int(Nl_exc))
+	h_control_inc = h_control_inc.reshape(int(Nl_exc),int(Nl_exc))
+	z_control_inc = z_control_inc.reshape(int(Nl_exc),int(Nl_exc))
 
 	# plotting
 	plt.figure(figsize=(6,12))
@@ -858,10 +839,10 @@ def plotAveragedSubPopWeights(filename, h_0, z_min, z_max, Nl, r_CA, title = "Av
 # h_0: initial early-phase weight
 # z_min: minimum late-phase weight
 # z_max: maximum late-phase weight
-# Nl: number of neurons in one row/column
-# r_CA: radius of the cell assembly core
+# Nl_exc: number of excitatory neurons in one row/column
+# s_CA: size of the cell assembly core
 # title [optional]: main title of the figure
-def plotTotalSubPopWeights(filename, h_0, z_min, z_max, Nl, r_CA, title = "Total incoming weights from subpopulations"):
+def plotTotalSubPopWeights(filename, h_0, z_min, z_max, Nl_exc, s_CA, title = "Total incoming weights from subpopulations"):
 
 	# colormaps for h and z
 	cmh0center = shiftedColorMap(cm.seismic, start=0, midpoint=0.5, stop=1.0, name='h0center')
@@ -872,7 +853,7 @@ def plotTotalSubPopWeights(filename, h_0, z_min, z_max, Nl, r_CA, title = "Total
 	w_max = h_max + h_0 * z_max
 
 	# read weight matrix data
-	connections, h, z, v = readWeightMatrixData(filename, Nl)
+	connections, h, z, v = readWeightMatrixData(filename, Nl_exc)
 	print("=========================\nData from: " + filename)
 
 	# change filename
@@ -882,19 +863,19 @@ def plotTotalSubPopWeights(filename, h_0, z_min, z_max, Nl, r_CA, title = "Total
 	v_max = np.amax(v)
 	if v_max == 0.0:
         	v_max = 1.0
-	v_data = v.reshape(int(Nl),int(Nl)) / v_max
+	v_data = v.reshape(int(Nl_exc),int(Nl_exc)) / v_max
 
 	# average synaptic weight from core neurons and from control neurons for all neurons
-	core = getRhombCore(820, r_CA, Nl)
+	core = np.arange(s_CA)
 
-	h_core_inc = np.zeros((Nl*Nl))
-	z_core_inc = np.zeros((Nl*Nl))
-	#h_core_out = np.zeros((Nl*Nl))
-	#z_core_out = np.zeros((Nl*Nl))
-	h_control_inc = np.zeros((Nl*Nl))
-	z_control_inc = np.zeros((Nl*Nl))
+	h_core_inc = np.zeros((Nl_exc*Nl_exc))
+	z_core_inc = np.zeros((Nl_exc*Nl_exc))
+	#h_core_out = np.zeros((Nl_exc*Nl_exc))
+	#z_core_out = np.zeros((Nl_exc*Nl_exc))
+	h_control_inc = np.zeros((Nl_exc*Nl_exc))
+	z_control_inc = np.zeros((Nl_exc*Nl_exc))
 
-	for i in range(Nl*Nl):
+	for i in range(Nl_exc*Nl_exc):
 		weights = earlyPhaseWeightsFromCore(i, connections, h, core)
 		h_core_inc[i] = np.sum(weights)
 
@@ -914,12 +895,12 @@ def plotTotalSubPopWeights(filename, h_0, z_min, z_max, Nl, r_CA, title = "Total
 		z_control_inc[i] = np.sum(weights)
 
 	# reshape neuron arrays for plotting
-	h_core_inc = h_core_inc.reshape(int(Nl),int(Nl))
-	z_core_inc = z_core_inc.reshape(int(Nl),int(Nl))
-	#h_core_out = h_core_out.reshape(int(Nl),int(Nl))
-	#z_core_out = z_core_out.reshape(int(Nl),int(Nl))
-	h_control_inc = h_control_inc.reshape(int(Nl),int(Nl))
-	z_control_inc = z_control_inc.reshape(int(Nl),int(Nl))
+	h_core_inc = h_core_inc.reshape(int(Nl_exc),int(Nl_exc))
+	z_core_inc = z_core_inc.reshape(int(Nl_exc),int(Nl_exc))
+	#h_core_out = h_core_out.reshape(int(Nl_exc),int(Nl_exc))
+	#z_core_out = z_core_out.reshape(int(Nl_exc),int(Nl_exc))
+	h_control_inc = h_control_inc.reshape(int(Nl_exc),int(Nl_exc))
+	z_control_inc = z_control_inc.reshape(int(Nl_exc),int(Nl_exc))
 
 	# plotting
 	plt.figure(figsize=(6,12))

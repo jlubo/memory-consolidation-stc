@@ -1,0 +1,13 @@
+#!/bin/sh
+
+cd OVERLAP10/B
+cp "../../../../activation/net_activation.out" .
+cp "../run" .
+cp "../../../1. Priming/OVERLAP10/B/connections.txt" connections.txt
+cp "../../../1. Priming/OVERLAP10/B/"*/network_plots/*_net_3620.0.txt coupling_strengths.txt
+cp "../../../../../../analysis/overlapParadigms.py" .
+cp "../../../../../../analysis/utilityFunctions.py" .
+cp "../../../../../../analysis/assemblyAvalancheStatistics.py" .
+screen -d -m /bin/sh run
+
+cd ../..

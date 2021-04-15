@@ -1,0 +1,15 @@
+#!/bin/sh
+
+./net_activation.out -Nl=50 -Nl_inh=25 -t_max=180 -N_stim=25 -pc=0.1 -learn= -recall= -w_ei=2 -w_ie=3.5 -w_ii=3.5 -output_period=10 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Spont. act."
+./net_activation.out -Nl=50 -Nl_inh=25 -t_max=180 -N_stim=25 -pc=0.1 -learn= -recall= -w_ei=2 -w_ie=3.5 -w_ii=3.5 -output_period=10 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Spont. act."
+./net_activation.out -Nl=50 -Nl_inh=25 -t_max=180 -N_stim=25 -pc=0.1 -learn= -recall= -w_ei=2 -w_ie=3.5 -w_ii=3.5 -output_period=10 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Spont. act."
+./net_activation.out -Nl=50 -Nl_inh=25 -t_max=180 -N_stim=25 -pc=0.1 -learn= -recall= -w_ei=2 -w_ie=3.5 -w_ii=3.5 -output_period=10 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Spont. act."
+./net_activation.out -Nl=50 -Nl_inh=25 -t_max=180 -N_stim=25 -pc=0.1 -learn= -recall= -w_ei=2 -w_ie=3.5 -w_ii=3.5 -output_period=10 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Spont. act."
+./net_activation.out -Nl=50 -Nl_inh=25 -t_max=180 -N_stim=25 -pc=0.1 -learn= -recall= -w_ei=2 -w_ie=3.5 -w_ii=3.5 -output_period=10 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Spont. act."
+./net_activation.out -Nl=50 -Nl_inh=25 -t_max=180 -N_stim=25 -pc=0.1 -learn= -recall= -w_ei=2 -w_ie=3.5 -w_ii=3.5 -output_period=10 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Spont. act."
+./net_activation.out -Nl=50 -Nl_inh=25 -t_max=180 -N_stim=25 -pc=0.1 -learn= -recall= -w_ei=2 -w_ie=3.5 -w_ii=3.5 -output_period=10 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Spont. act."
+./net_activation.out -Nl=50 -Nl_inh=25 -t_max=180 -N_stim=25 -pc=0.1 -learn= -recall= -w_ei=2 -w_ie=3.5 -w_ii=3.5 -output_period=10 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Spont. act."
+./net_activation.out -Nl=50 -Nl_inh=25 -t_max=180 -N_stim=25 -pc=0.1 -learn= -recall= -w_ei=2 -w_ie=3.5 -w_ii=3.5 -output_period=10 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Spont. act."
+
+python3 assemblyAvalancheStatistics.py "OVERLAP15 no AC, no ABC" 0.01 10 False
+

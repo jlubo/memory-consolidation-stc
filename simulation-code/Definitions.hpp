@@ -43,6 +43,27 @@
 #define CREATE_SCRIPT 1 // creates a gnuplot file for a plot showing the detailed interneuronal connections within the excitatory network
 #define CREATE_PLOT 2 // creates the gnuplot file
 
+// CELL ASSEMBLIES
+#define FIRST 1 // simply use the first block of neurons in the network as the assembly (would equal a hypothetical "OVERLAP100")
+#define SECOND 2 // simply use the second distinct block of neurons in the network as the assembly (would equal a hypothetical "OVERLAP0")
+#define OVERLAP10_2ND 3 // use a second block of neurons as the assembly, overlapping by 10% with the first assembly
+#define OVERLAP15_2ND 4 // use a second block of neurons as the assembly, overlapping by 15% with the first assembly
+#define OVERLAP20_2ND 5 // use a second block of neurons as the assembly, overlapping by 20% with the first assembly
+#define THIRD 6 // simply use the third distinct block of neurons in the network as the assembly
+#define OVERLAP10_3RD 7 // use a third block of neurons as the assembly, overlapping by 5% with the first assembly exclusively, by 5% with the second assembly exclusively, and by 5% with both
+#define OVERLAP10_3RD_NO_ABC 8 // use a third block of neurons as the assembly, overlapping by 10% with the first assembly exclusively, and by 10% with the second assembly exclusively
+#define OVERLAP10_3RD_NO_AC_NO_ABC 9 // use a third block of neurons as the assembly, overlapping by 10% with the first assembly exclusively
+#define OVERLAP10_3RD_NO_BC_NO_ABC 10 // use a third block of neurons as the assembly, overlapping by 10% with the second assembly exclusively
+#define OVERLAP15_3RD 11 // use a third block of neurons as the assembly, overlapping by 7.5% with the first assembly exclusively, by 7.5% with the second assembly exclusively, and by 7.5% with both
+#define OVERLAP15_3RD_NO_ABC 12 // use a third block of neurons as the assembly, overlapping by 15% with the first assembly exclusively, and by 15% with the second assembly exclusively
+#define OVERLAP15_3RD_NO_AC_NO_ABC 13 // use a third block of neurons as the assembly, overlapping by 15% with the first assembly exclusively
+#define OVERLAP15_3RD_NO_BC_NO_ABC 14 // use a third block of neurons as the assembly, overlapping by 15% with the second assembly exclusively
+#define OVERLAP20_3RD 15 // use a third block of neurons as the assembly, overlapping by 10% with the first assembly exclusively, by 10% with the second assembly exclusively, and by 10% with both
+#define OVERLAP20_3RD_NO_ABC 16 // use a third block of neurons as the assembly, overlapping by 20% with the first assembly exclusively, and by 20% with the second assembly exclusively
+#define OVERLAP20_3RD_NO_AC_NO_ABC 17 // use a third block of neurons as the assembly, overlapping by 20% with the first assembly exclusively
+#define OVERLAP20_3RD_NO_BC_NO_ABC 18 // use a third block of neurons as the assembly, overlapping by 20% with the second assembly exclusively
+#define RAND 19 // use randomly selected neurons as the assembly
+
 // PLASTICITY
 #define CALCIUM 1 // use the calcium model as plasticity mechanism (early phase only)
 #define CALCIUM_AND_STC 2 // use the calcium model with synaptic and capture as plasticity mechanism

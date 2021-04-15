@@ -1,0 +1,11 @@
+#!/bin/sh
+
+./netA.out -Nl=50 -Nl_inh=25 -t_max=30 -N_stim=25 -pc=0.1 -learn= -recall=F100D1at10 -r=0.2 -z_max=1 -w_ei=2 -w_ie=3.5 -w_ii=3.5 -output_period=10 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="RecallA"
+./netB.out -Nl=50 -Nl_inh=25 -t_max=60 -N_stim=25 -pc=0.1 -learn= -recall=F100D1at40 -r=0.2 -z_max=1 -w_ei=2 -w_ie=3.5 -w_ii=3.5 -output_period=10 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="RecallB"
+./netC.out -Nl=50 -Nl_inh=25 -t_max=90 -N_stim=25 -pc=0.1 -learn= -recall=F100D1at70 -r=0.2 -z_max=1 -w_ei=2 -w_ie=3.5 -w_ii=3.5 -output_period=10 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="RecallC"
+
+cat *RecallA/*spike_raster.txt > spike_raster.txt
+cat *RecallB/*spike_raster.txt >> spike_raster.txt
+cat *RecallC/*spike_raster.txt >> spike_raster.txt
+
+python3 assemblyAvalancheStatistics.py "NOOVERLAP" 0.01 10 False

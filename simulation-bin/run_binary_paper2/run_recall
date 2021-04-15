@@ -1,0 +1,5 @@
+#!/bin/sh
+
+cd recall/
+/bin/sh "runner"
+cd ..

@@ -1,6 +1,6 @@
 #######################################################################################
 ### Functions that serve to analyze the connectivity, early- and late-phase weights ###
-###                in a network that contains a cell assembly                       ###
+###              in a network that contains multiple cell assemblies                ###
 #######################################################################################
 
 ### Copyright 2019-2021 Jannik Luboeinski
@@ -8,18 +8,9 @@
 
 import numpy as np
 import sys
+from utilityFunctions import cond_print
 
-# the assembly core (the neurons that receive learning stimulation) and the recall neurons (the neurons that receive recall stimulation)
-core = np.arange(350)
-recall_fraction = 0.5
-core_recall = core[0:int(np.floor(recall_fraction*core.shape[0]))]
-core_norecall = core[np.logical_not(np.in1d(core, core_recall))]
-
-Nl = 40 # number of excitatory neurons in one line (Nl^2 is the total number of excitatory neurons)
 h_0 = 0.420075 # nC, initial synaptic weight and normalization factor for z
-
-all = np.arange(Nl**2)
-noncore = all[np.logical_not(np.in1d(all, core))]
 
 np.set_printoptions(precision=8, threshold=1e10, linewidth=200)
 epsilon = 1e-9
@@ -27,9 +18,9 @@ epsilon = 1e-9
 # loadWeightMatrix
 # Loads complete weight matrix from a file (only for excitatory neurons, though)
 # filename: name of the file to read the data from
+# N_pop: the number of neurons in the considered population
 # return: the adjacency matrix, the early-phase weight matrix, the late-phase weight matrix, the firing rate vector
-def loadWeightMatrix(filename):
-
+def loadWeightMatrix(filename, N_pop):
     global h
     global z
     global adj
@@ -45,24 +36,25 @@ def loadWeightMatrix(filename):
     rawmatrix_v = rawdata[2].split('\n')
 
     rows = len(rawmatrix_v)
+    N_pop_row = int(round(np.sqrt(N_pop))) # one row of neurons when the population is aligned in a square
 
-    if (rows != len(rawmatrix_v[0].split('\t\t'))) or (rows != Nl):
+    if (rows != len(rawmatrix_v[0].split('\t\t'))) or (rows != N_pop_row):
         print('Data file error in "' + filename + '"')
         f.close()
         exit()
 
-    v = np.zeros((Nl,Nl))
-    h = np.zeros((Nl**2,Nl**2))
-    z = np.zeros((Nl**2,Nl**2))
+    v = np.zeros((N_pop_row,N_pop_row))
+    h = np.zeros((N_pop,N_pop))
+    z = np.zeros((N_pop,N_pop))
 
-    for i in range(Nl**2):
-        if i < Nl:
+    for i in range(N_pop):
+        if i < N_pop_row:
             value0 = rawmatrix_v[i].split('\t\t')
         value1 = rawmatrix_h[i].split('\t\t')
         value2 = rawmatrix_z[i].split('\t\t')
 
-        for j in range(Nl**2):
-            if i < Nl and j < Nl:
+        for j in range(N_pop):
+            if i < N_pop_row and j < N_pop_row:
                 v[i][j] = float(value0[j])
             h[i][j] = float(value1[j])
             z[i][j] = h_0*float(value2[j])
@@ -86,26 +78,7 @@ def getConnectivity(pr = True):
 	nconn = np.sum(adj > 0)
 	line = adj.shape[0]
 	ret = nconn / (line**2 - line)
-	if (pr):
-		print("Connectivity of adjacency matrix: " + str(ret))
-	return ret
-
-# getConnectivityInCore
-# Computes and prints the connectivity within the core
-# pr [optional]: specifies if result is printed
-# return: the connectivity as a value between 0 and 1
-def getConnectivityInCore(pr = True):
-	connections_within_core = 0
-	N_core = len(core)
-
-	for n in core:
-		connections_within_core += len(connectionsFromCore(n, False))
-
-	ret = connections_within_core / (N_core**2 - N_core)
-
-	if pr:
-		print("Connectivity within core: " + str(ret))
-
+	cond_print(pr, "Connectivity of adjacency matrix: " + str(ret))
 	return ret
 
 # areConnected
@@ -118,12 +91,10 @@ def areConnected(i, j, pr = True):
 	global adj
 
 	if adj[i][j] == 1:
-		if pr:
-			print("Connection " + str(i) + "->" + str(j) + " does exist!")
+		cond_print(pr, "Connection " + str(i) + "->" + str(j) + " does exist!")
 		return True
 	elif adj[i][j] == 0:
-		if pr:
-			print("Connection " + str(i) + "->" + str(j) + " does NOT exist!")
+		cond_print(pr, "Connection " + str(i) + "->" + str(j) + " does NOT exist!")
 		return False
 
 # incomingConnections
@@ -134,8 +105,7 @@ def areConnected(i, j, pr = True):
 def incomingConnections(i, pr = True):
 	global adj
 	inc = np.where(adj[:, i] == 1)[0]
-	if pr:
-		print("Incoming connections to " + str(i) + " (" + str(len(inc)) + "): \n" + str(inc))
+	cond_print(pr, "Incoming connections to " + str(i) + " (" + str(len(inc)) + "): \n" + str(inc))
 
 	return inc
 
@@ -147,8 +117,7 @@ def incomingConnections(i, pr = True):
 def outgoingConnections(i, pr = True):
 	global adj
 	out = np.where(adj[i, :] == 1)[0]
-	if pr:
-		print("Outgoing connections from " + str(i) + " (" + str(len(out)) + "): \n" + str(out))
+	cond_print(pr, "Outgoing connections from " + str(i) + " (" + str(len(out)) + "): \n" + str(out))
 
 	return out
 
@@ -163,8 +132,7 @@ def incomingEarlyPhaseWeights(i, pr = True):
 	hi = h[:, i]
 	adj_connections = (adj[:, i] == 1)
 	inc = hi[adj_connections]
-	if pr:
-		print("Incoming early-phase weights to " + str(i) + " (" + str(len(inc)) + "): \n" + str(inc))
+	cond_print(pr, "Incoming early-phase weights to " + str(i) + " (" + str(len(inc)) + "): \n" + str(inc))
 
 	return inc
 
@@ -179,36 +147,9 @@ def outgoingEarlyPhaseWeights(i, pr = True):
 	hi = h[i, :]
 	adj_connections = (adj[i, :] == 1)
 	out = hi[adj_connections]
-	if pr:
-		print("Outgoing early-phase weights from " + str(i) + " (" + str(len(out)) + "): \n" + str(out))
+	cond_print(pr, "Outgoing early-phase weights from " + str(i) + " (" + str(len(out)) + "): \n" + str(out))
 
 	return out
-
-# connectionsFromCore
-# Prints and returns all the core neurons from which neuron i receives inputs
-# i: neuron index
-# pr [optional]: specifies if result is printed
-# return: array of neuron numbers
-def connectionsFromCore(i, pr = True):
-	global adj
-	cfc = core[np.in1d(core, incomingConnections(i, False))].flatten()
-	if pr:
-		print("Connections from core to neuron " + str(i) + " (" + str(len(cfc)) + "): \n" + str(cfc))
-
-	return cfc
-
-# connectionsFromRSCore
-# Prints and returns all the recall-stimulated core neurons from which neuron i receives inputs
-# i: neuron index
-# pr [optional]: specifies if result is printed
-# return: array of neuron numbers
-def connectionsFromRSCore(i, pr = True):
-	global adj
-	cfrsc = core_recall[np.in1d(core_recall, incomingConnections(i, False))].flatten()
-	if pr:
-		print("Connections from recall-stim. core to neuron " + str(i) + " (" + str(len(cfrsc)) + "): \n" + str(cfrsc))
-
-	return cfrsc
 
 # earlyPhaseWeightsFromSet
 # Prints and returns all the early-phase synaptic weights incoming to neuron i from a given set of neurons
@@ -224,46 +165,6 @@ def earlyPhaseWeightsFromSet(i, set):
 
 	return inc_h
 
-# earlyPhaseWeightsFromCore
-# Prints and returns all the early-phase synaptic weights incoming to neuron i from core neurons
-# i: neuron index
-# pr [optional]: specifies if result is printed
-# return: array of early-phase weights in units of nC
-def earlyPhaseWeightsFromCore(i, pr = True):
-	inc_h = earlyPhaseWeightsFromSet(i, core)
-	if pr:
-		print("Incoming early-phase weights from core to neuron " + str(i) + " (" + str(len(inc_h)) + "): \n" + str(inc_h))
-
-	return inc_h
-
-# earlyPhaseWeightsFromRSCore
-# Prints and returns all the early-phase synaptic weights incoming to neuron i from recall-stimulated core neurons
-# i: neuron index
-# pr [optional]: specifies if result is printed
-# return: array of early-phase weights in units of nC
-def earlyPhaseWeightsFromRSCore(i, pr = True):
-	inc_h = earlyPhaseWeightsFromSet(i, core_recall)
-	if pr:
-		print("Incoming early-phase weights from recall-stim. core to neuron " + str(i) + " (" + str(len(inc_h)) + "): \n" + str(inc_h))
-
-	return inc_h
-
-# earlyPhaseWeightsToCore
-# Prints and returns all the early-phase synaptic weights outgoing to core neurons from neuron i
-# i: neuron index
-# pr [optional]: specifies if result is printed
-# return: array of early-phase weights in units of nC
-def earlyPhaseWeightsToCore(i, pr = True):
-	global adj
-	global h
-	hi = h[i, :]
-	adj_connections = np.logical_and(adj[i, :] == 1, np.in1d(np.arange(len(hi)), core))
-	out_h = hi[adj_connections]
-	if pr:
-		print("Outgoing early-phase weights from neuron " + str(i) + " to core (" + str(len(out_h)) + "): \n" + str(out_h))
-
-	return out_h
-
 # latePhaseWeightsFromSet
 # Prints and returns all the late-phase synaptic weights incoming to neuron i from a given set of neurons
 # i: neuron index
@@ -278,34 +179,6 @@ def latePhaseWeightsFromSet(i, set):
 
 	return inc_z
 
-# latePhaseWeightsFromCore
-# Prints and returns all the late-phase synaptic weights incoming to neuron i from core neurons
-# i: neuron index
-# pr [optional]: specifies if result is printed
-# return: array of late-phase weights in units of nC
-def latePhaseWeightsFromCore(i, pr = True):
-	inc_z = latePhaseWeightsFromSet(i, core)
-	if pr:
-		print("Incoming late-phase weights from core to neuron " + str(i) + " (" + str(len(inc_z)) + "): \n" + str(inc_z))
-
-	return inc_z
-
-# latePhaseWeightsToCore
-# Prints and returns all the late-phase synaptic weights outgoing to core neurons from neuron i
-# i: neuron index
-# pr [optional]: specifies if result is printed
-# return: array of late-phase weights in units of nC
-def latePhaseWeightsToCore(i, pr = True):
-	global adj
-	global z
-	zi = z[i, :]
-	adj_connections = np.logical_and(adj[i, :] == 1, np.in1d(np.arange(len(zi)), core))
-	out_z = zi[adj_connections]
-	if pr:
-		print("Outgoing late-phase weights from neuron " + str(i) + " to core (" + str(len(out_z)) + "): \n" + str(out_z))
-
-	return out_z
-
 # meanEarlyPhaseWeight
 # Returns the mean early-phase synaptic weight between two sets of neurons; prints the connectivity
 # and the mean early-phase weight
@@ -313,29 +186,30 @@ def latePhaseWeightsToCore(i, pr = True):
 # set2 [optional]: the seconds set of neurons (postsynaptic); if not specified, connections within "set" are considered
 # pr [optional]: specifies if result shall be printed
 # return: early-phase weight in units of nC
-def meanEarlyPhaseWeight(set, set2 = [], pr = True):
+def meanEarlyPhaseWeight(set, set2 = None, pr = True):
 	summed_weight = 0
 	connection_num = 0
-	self_set = False
 
-	if len(set2) <= 0:
+	if set2 is None:
 		set2 = set # consider internal connections within "set" if "set2" is not specified
-		self_set = True
 
 	for n in set2:
 		inc_weights = earlyPhaseWeightsFromSet(n, set)
 		summed_weight += np.sum(inc_weights)
 		connection_num += len(inc_weights)
 
-	ret = summed_weight / connection_num
+	if connection_num > 0:
+		ret = summed_weight / connection_num
 
-	if pr:
-		if self_set:
-			print("Self-connectivity: " + str(connection_num / (len(set)**2 - len(set))))
+		if set2 is None:
+			cond_print(pr, "Self-connectivity: " + str(connection_num / (len(set)**2 - len(set))))
 		else:
-			print("Connectivity: " + str(connection_num / (len(set)*len(set2))))
+			cond_print(pr, "Connectivity: " + str(connection_num / (len(set)*len(set2))))
+	else:
+		ret = np.nan
+		cond_print(pr, "Connectivity: none")
 
-		print("Mean early-phase weight: " + str(ret))
+	cond_print(pr, "Mean early-phase weight: " + str(ret))
 
 	return ret
 
@@ -345,12 +219,12 @@ def meanEarlyPhaseWeight(set, set2 = [], pr = True):
 # set2 [optional]: the seconds set of neurons (postsynaptic); if not specified, connections within "set" are considered
 # pr [optional]: specifies if result shall be printed
 # return: early-phase weight in units of nC
-def sdEarlyPhaseWeight(set, set2 = [], pr = True):
+def sdEarlyPhaseWeight(set, set2 = None, pr = True):
 	mean = meanEarlyPhaseWeight(set, set2, False)
 	summed_qu_dev = 0
 	connection_num = 0
 
-	if len(set2) <= 0:
+	if set2 is None:
 		set2 = set # consider internal connections within "set" if "set2" is not specified
 
 	for n in set2:
@@ -358,12 +232,15 @@ def sdEarlyPhaseWeight(set, set2 = [], pr = True):
 		summed_qu_dev += np.sum(qu_devs)
 		connection_num += len(qu_devs)
 
-	ret = np.sqrt(summed_qu_dev / (connection_num-1))
+	if connection_num > 1:
+		ret = np.sqrt(summed_qu_dev / (connection_num-1))
+	else:
+		ret = np.nan
 
-	if pr:
-		print("Std. dev. of early-phase weight: " + str(ret))
+	cond_print(pr, "Std. dev. of early-phase weight: " + str(ret))
 
 	return ret
+
 
 # meanLatePhaseWeight
 # Returns the mean late-phase synaptic weight between two sets of neurons; prints the connectivity
@@ -372,29 +249,35 @@ def sdEarlyPhaseWeight(set, set2 = [], pr = True):
 # set2 [optional]: the seconds set of neurons (postsynaptic); if not specified, connections within "set" are considered
 # pr [optional]: specifies if result shall be printed
 # return: late-phase weight in units of nC
-def meanLatePhaseWeight(set, set2 = [], pr = True):
+def meanLatePhaseWeight(set, set2 = None, pr = True):
 	summed_weight = 0
 	connection_num = 0
-	self_set = False
 
-	if len(set2) <= 0:
+	if set2 is None:
 		set2 = set # consider internal connections within "set" if "set2" is not specified
-		self_set = True
 
 	for n in set2:
 		inc_weights = latePhaseWeightsFromSet(n, set)
 		summed_weight += np.sum(inc_weights)
 		connection_num += len(inc_weights)
 
-	ret = summed_weight / connection_num
+	if connection_num > 0:
+		ret = summed_weight / connection_num
+	else:
+		ret = np.nan
 
-	if pr:
-		if self_set:
-			print("Self-connectivity: " + str(connection_num / (len(set)**2 - len(set))))
+	if connection_num > 0:
+		ret = summed_weight / connection_num
+
+		if set2 is None:
+			cond_print(pr, "Self-connectivity: " + str(connection_num / (len(set)**2 - len(set))))
 		else:
-			print("Connectivity: " + str(connection_num / (len(set)*len(set2))))
+			cond_print(pr, "Connectivity: " + str(connection_num / (len(set)*len(set2))))
+	else:
+		ret = np.nan
+		cond_print(pr, "Connectivity: none")
 
-		print("Mean late-phase weight: " + str(ret))
+	cond_print(pr, "Mean late-phase weight: " + str(ret))
 
 	return ret
 
@@ -417,73 +300,783 @@ def sdLatePhaseWeight(set, set2 = [], pr = True):
 		summed_qu_dev += np.sum(qu_devs)
 		connection_num += len(qu_devs)
 
-	ret = np.sqrt(summed_qu_dev / (connection_num-1))
+	if connection_num > 1:
+		ret = np.sqrt(summed_qu_dev / (connection_num-1))
+	else:
+		ret = np.nan
 
-	if pr:
-		print("Std. dev. of late-phase weight: " + str(ret))
+	cond_print(pr, "Std. dev. of late-phase weight: " + str(ret))
 
 	return ret
 
+# meanCoreWeights
+# Computes the mean weights in cores (including intersections) and appends them, together with
+# the time for readout, to a file
+# ts: timestamp of the data file to read
+# time_for_readout: the time of the data file to read
+# coreA: array of indices of the first cell assembly (core) neurons
+# coreB: array of indices of the second cell assembly (core) neurons
+# coreC: array of indices of the third cell assembly (core) neurons
+# N_pop: the number of neurons in the considered population
+# pr [optional]: specifies if result shall be printed
+def meanCoreWeights(ts, time_for_readout, coreA, coreB, coreC, N_pop, pr = True):
 
-# connectionsToCore
-# Prints and returns all the core neurons to which neuron i provides input
-# i: neuron index
-# pr [optional]: specifies if result is printed
-# return: array of neuron numbers
-def connectionsToCore(i, pr = True):
-	global adj
-	ctc = core[np.in1d(core, outgoingConnections(i, False))].flatten()
-	if pr:
-		print("Connections from neuron " + str(i) + " to core (" + str(len(ctc)) + "): \n" + str(ctc))
+	cond_print(pr, "##############################################")
+	cond_print(pr, "At time", time_for_readout)
+	loadWeightMatrix(ts + "_net_" + time_for_readout + ".txt", N_pop)
+	f = open("cores_mean_tot_weights.txt", "a")
 
-	return ctc
+	f.write(time_for_readout + "\t\t")
 
-# connectionsToRSCore
-# Prints and returns all the recall-stimulated core neurons to which neuron i provides input
-# i: neuron index
-# pr [optional]: specifies if result is printed
-# return: array of neuron numbers
-def connectionsToRSCore(i, pr = True):
-	global adj
-	ctrsc = core_recall[np.in1d(core_recall, outgoingConnections(i, False))].flatten()
-	if pr:
-		print("Connections from neuron " + str(i) + " to recall-stim. core (" + str(len(ctrsc)) + "): \n" + str(ctrsc))
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "A -> A:")
+	hm = meanEarlyPhaseWeight(coreA, coreA, pr)
+	hsd = sdEarlyPhaseWeight(coreA, coreA, pr)
+	zm = meanLatePhaseWeight(coreA, coreA, pr)
+	zsd = sdLatePhaseWeight(coreA, coreA, pr)
+	f.write(str(hm + zm) + "\t\t")
+	f.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
 
-	return ctrsc
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "B -> B:")
+	hm = meanEarlyPhaseWeight(coreB, coreB, pr)
+	hsd = sdEarlyPhaseWeight(coreB, coreB, pr)
+	zm = meanLatePhaseWeight(coreB, coreB, pr)
+	zsd = sdLatePhaseWeight(coreB, coreB, pr)
+	f.write(str(hm + zm) + "\t\t")
+	f.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
 
-# connectionsToNonCore
-# Prints and returns all the non-core neurons to which neuron i provides input
-# i: neuron index
-# pr [optional]: specifies if result is printed
-# return: array of neuron numbers
-def connectionsToNonCore(i, pr = True):
-	global adj
-	outg = outgoingConnections(i, False)
-	ctnc = outg[np.negative(np.in1d(outg, core))]
-	if pr:
-		print("Connections from neuron " + str(i) + " to non-core neurons (" + str(len(ctnc)) + "): \n" + str(ctnc))
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "C -> C:")
+	hm = meanEarlyPhaseWeight(coreC, coreC, pr)
+	hsd = sdEarlyPhaseWeight(coreC, coreC, pr)
+	zm = meanLatePhaseWeight(coreC, coreC, pr)
+	zsd = sdLatePhaseWeight(coreC, coreC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	f.write(str(np.sqrt(hsd**2 + zsd**2)) + "\n")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
 
-	return ctnc
+	f.close()
 
-# setRhombCore
-# Sets a rhomb-shaped core depending on given center and radius
-# core_center: the central neuron of the rhomb
-# core_radius: the "radius" of the rhomb
-def setRhombCore(core_center, core_radius):
-	global core
+# meanWeightMatrix
+# Computes the abstract mean weight matrix and write the outcome to a file
+# ts: timestamp of the data file to read
+# time_for_readout: the time of the data file to read
+# coreA: array of indices of the first cell assembly (core) neurons
+# coreB: array of indices of the second cell assembly (core) neurons
+# coreC: array of indices of the third cell assembly (core) neurons
+# N_pop: the number of neurons in the considered population
+# pr [optional]: specifies if result shall be printed
+def meanWeightMatrix(ts, time_for_readout, coreA, coreB, coreC, N_pop, pr = True):
+	# define the whole considered population
+	all = np.arange(N_pop)
 
-	core = np.array([], dtype=np.int32)
-	core_size = 2*core_radius**2 + 2*core_radius + 1
+	# determine masks of whole cores
+	mask_coreA = np.in1d(all, coreA) # boolean matrix of neurons in whole core A
+	mask_coreB = np.in1d(all, coreB) # boolean matrix of neurons in whole core B
+	mask_coreC = np.in1d(all, coreC) # boolean matrix of neurons in whole core C
 
-	for i in range(-core_radius, core_radius+1, 1):
-		num_cols = (core_radius-abs(i))
+	# determine exclusive intersections
+	mask_I_AB = np.logical_and( np.logical_and(mask_coreA, mask_coreB), np.logical_not(mask_coreC) )
+	mask_I_AC = np.logical_and( np.logical_and(mask_coreA, mask_coreC), np.logical_not(mask_coreB) )
+	mask_I_BC = np.logical_and( np.logical_and(mask_coreB, mask_coreC), np.logical_not(mask_coreA) )
+	mask_I_ABC = np.logical_and( mask_coreA, np.logical_and(mask_coreB, mask_coreC) )
+	I_AB = all[mask_I_AB]
+	I_AC = all[mask_I_AC]
+	I_BC = all[mask_I_BC]
+	I_ABC = all[mask_I_ABC]
 
-		for j in range(-num_cols, num_cols+1, 1):
-			core = np.append(core, np.array([core_center+i*Nl+j]))
+	# determine exclusive cores by removing exclusive intersections from whole cores
+	exA = all[np.logical_and(mask_coreA, \
+	                         np.logical_and(np.logical_not(mask_I_AB), \
+	                                        np.logical_and(np.logical_not(mask_I_AC), np.logical_not(mask_I_ABC))))]
+	exB = all[np.logical_and(mask_coreB, \
+	                         np.logical_and(np.logical_not(mask_I_AB), \
+	                                        np.logical_and(np.logical_not(mask_I_BC), np.logical_not(mask_I_ABC))))]
+	exC = all[np.logical_and(mask_coreC, \
+	                         np.logical_and(np.logical_not(mask_I_AC), \
+	                                        np.logical_and(np.logical_not(mask_I_BC), np.logical_not(mask_I_ABC))))]
 
-# printMeanWeights
-# Prints mean and standard deviation of CA, outgoing, incoming, and control weight in units of nC
-def printMeanWeights():
+	# determine control subpopulation
+	control = all[np.logical_not(np.in1d(all, np.concatenate([I_ABC, I_AB, I_AC, I_BC,
+	                                                          coreA, coreB, coreC])))]  # all neurons that are not part of an assembly
+
+	cond_print(pr, "##############################################")
+	cond_print(pr, "At time", time_for_readout)
+	loadWeightMatrix(ts + "_net_" + time_for_readout + ".txt", N_pop)
+	f = open("mean_tot_weights_" + time_for_readout + ".txt", "w")
+	fsd = open("sd_tot_weights_" + time_for_readout + ".txt", "w")
+
+	### OUTGOING FROM I_ABC ###########################
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_ABC -> I_ABC:")
+	hm = meanEarlyPhaseWeight(I_ABC, I_ABC, pr)
+	hsd = sdEarlyPhaseWeight(I_ABC, I_ABC, pr)
+	zm = meanLatePhaseWeight(I_ABC, I_ABC, pr)
+	zsd = sdLatePhaseWeight(I_ABC, I_ABC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_ABC -> I_AC:")
+	hm = meanEarlyPhaseWeight(I_ABC, I_AC, pr)
+	hsd = sdEarlyPhaseWeight(I_ABC, I_AC, pr)
+	zm = meanLatePhaseWeight(I_ABC, I_AC, pr)
+	zsd = sdLatePhaseWeight(I_ABC, I_AC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_ABC -> ~A:")
+	hm = meanEarlyPhaseWeight(I_ABC, exA, pr)
+	hsd = sdEarlyPhaseWeight(I_ABC, exA, pr)
+	zm = meanLatePhaseWeight(I_ABC, exA, pr)
+	zsd = sdLatePhaseWeight(I_ABC, exA, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_ABC -> I_AB:")
+	hm = meanEarlyPhaseWeight(I_ABC, I_AB, pr)
+	hsd = sdEarlyPhaseWeight(I_ABC, I_AB, pr)
+	zm = meanLatePhaseWeight(I_ABC, I_AB, pr)
+	zsd = sdLatePhaseWeight(I_ABC, I_AB, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_ABC -> ~B:")
+	hm = meanEarlyPhaseWeight(I_ABC, exB, pr)
+	hsd = sdEarlyPhaseWeight(I_ABC, exB, pr)
+	zm = meanLatePhaseWeight(I_ABC, exB, pr)
+	zsd = sdLatePhaseWeight(I_ABC, exB, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_ABC -> I_BC:")
+	hm = meanEarlyPhaseWeight(I_ABC, I_BC, pr)
+	hsd = sdEarlyPhaseWeight(I_ABC, I_BC, pr)
+	zm = meanLatePhaseWeight(I_ABC, I_BC, pr)
+	zsd = sdLatePhaseWeight(I_ABC, I_BC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_ABC -> ~C:")
+	hm = meanEarlyPhaseWeight(I_ABC, exC, pr)
+	hsd = sdEarlyPhaseWeight(I_ABC, exC, pr)
+	zm = meanLatePhaseWeight(I_ABC, exC, pr)
+	zsd = sdLatePhaseWeight(I_ABC, exC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_ABC -> Control:")
+	hm = meanEarlyPhaseWeight(I_ABC, control, pr)
+	hsd = sdEarlyPhaseWeight(I_ABC, control, pr)
+	zm = meanLatePhaseWeight(I_ABC, control, pr)
+	zsd = sdLatePhaseWeight(I_ABC, control, pr)
+	f.write(str(hm + zm) + "\n")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\n")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	### OUTGOING FROM I_AC ###########################
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_AC -> I_ABC:")
+	hm = meanEarlyPhaseWeight(I_AC, I_ABC, pr)
+	hsd = sdEarlyPhaseWeight(I_AC, I_ABC, pr)
+	zm = meanLatePhaseWeight(I_AC, I_ABC, pr)
+	zsd = sdLatePhaseWeight(I_AC, I_ABC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_AC -> I_AC:")
+	hm = meanEarlyPhaseWeight(I_AC, I_AC, pr)
+	hsd = sdEarlyPhaseWeight(I_AC, I_AC, pr)
+	zm = meanLatePhaseWeight(I_AC, I_AC, pr)
+	zsd = sdLatePhaseWeight(I_AC, I_AC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_AC -> ~A:")
+	hm = meanEarlyPhaseWeight(I_AC, exA, pr)
+	hsd = sdEarlyPhaseWeight(I_AC, exA, pr)
+	zm = meanLatePhaseWeight(I_AC, exA, pr)
+	zsd = sdLatePhaseWeight(I_AC, exA, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_AC -> I_AB:")
+	hm = meanEarlyPhaseWeight(I_AC, I_AB, pr)
+	hsd = sdEarlyPhaseWeight(I_AC, I_AB, pr)
+	zm = meanLatePhaseWeight(I_AC, I_AB, pr)
+	zsd = sdLatePhaseWeight(I_AC, I_AB, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_AC -> ~B:")
+	hm = meanEarlyPhaseWeight(I_AC, exB, pr)
+	hsd = sdEarlyPhaseWeight(I_AC, exB, pr)
+	zm = meanLatePhaseWeight(I_AC, exB, pr)
+	zsd = sdLatePhaseWeight(I_AC, exB, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_AC -> I_BC:")
+	hm = meanEarlyPhaseWeight(I_AC, I_BC, pr)
+	hsd = sdEarlyPhaseWeight(I_AC, I_BC, pr)
+	zm = meanLatePhaseWeight(I_AC, I_BC, pr)
+	zsd = sdLatePhaseWeight(I_AC, I_BC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_AC -> ~C:")
+	hm = meanEarlyPhaseWeight(I_AC, exC, pr)
+	hsd = sdEarlyPhaseWeight(I_AC, exC, pr)
+	zm = meanLatePhaseWeight(I_AC, exC, pr)
+	zsd = sdLatePhaseWeight(I_AC, exC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_AC -> Control:")
+	hm = meanEarlyPhaseWeight(I_AC, control, pr)
+	hsd = sdEarlyPhaseWeight(I_AC, control, pr)
+	zm = meanLatePhaseWeight(I_AC, control, pr)
+	zsd = sdLatePhaseWeight(I_AC, control, pr)
+	f.write(str(hm + zm) + "\n")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\n")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	### OUTGOING FROM ~A ###########################
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "~A -> I_ABC:")
+	hm = meanEarlyPhaseWeight(exA, I_ABC, pr)
+	hsd = sdEarlyPhaseWeight(exA, I_ABC, pr)
+	zm = meanLatePhaseWeight(exA, I_ABC, pr)
+	zsd = sdLatePhaseWeight(exA, I_ABC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "~A -> I_AC:")
+	hm = meanEarlyPhaseWeight(exA, I_AC, pr)
+	hsd = sdEarlyPhaseWeight(exA, I_AC, pr)
+	zm = meanLatePhaseWeight(exA, I_AC, pr)
+	zsd = sdLatePhaseWeight(exA, I_AC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "~A -> ~A:")
+	hm = meanEarlyPhaseWeight(exA, exA, pr)
+	hsd = sdEarlyPhaseWeight(exA, exA, pr)
+	zm = meanLatePhaseWeight(exA, exA, pr)
+	zsd = sdLatePhaseWeight(exA, exA, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "~A -> I_AB:")
+	hm = meanEarlyPhaseWeight(exA, I_AB, pr)
+	hsd = sdEarlyPhaseWeight(exA, I_AB, pr)
+	zm = meanLatePhaseWeight(exA, I_AB, pr)
+	zsd = sdLatePhaseWeight(exA, I_AB, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "~A -> ~B:")
+	hm = meanEarlyPhaseWeight(exA, exB, pr)
+	hsd = sdEarlyPhaseWeight(exA, exB, pr)
+	zm = meanLatePhaseWeight(exA, exB, pr)
+	zsd = sdLatePhaseWeight(exA, exB, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "~A -> I_BC:")
+	hm = meanEarlyPhaseWeight(exA, I_BC, pr)
+	hsd = sdEarlyPhaseWeight(exA, I_BC, pr)
+	zm = meanLatePhaseWeight(exA, I_BC, pr)
+	zsd = sdLatePhaseWeight(exA, I_BC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "~A -> ~C:")
+	hm = meanEarlyPhaseWeight(exA, exC, pr)
+	hsd = sdEarlyPhaseWeight(exA, exC, pr)
+	zm = meanLatePhaseWeight(exA, exC, pr)
+	zsd = sdLatePhaseWeight(exA, exC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "~A -> Control:")
+	hm = meanEarlyPhaseWeight(exA, control, pr)
+	hsd = sdEarlyPhaseWeight(exA, control, pr)
+	zm = meanLatePhaseWeight(exA, control, pr)
+	zsd = sdLatePhaseWeight(exA, control, pr)
+	f.write(str(hm + zm) + "\n")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\n")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	### OUTGOING FROM I_AB ###########################
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_AB -> I_ABC:")
+	hm = meanEarlyPhaseWeight(I_AB, I_ABC, pr)
+	hsd = sdEarlyPhaseWeight(I_AB, I_ABC, pr)
+	zm = meanLatePhaseWeight(I_AB, I_ABC, pr)
+	zsd = sdLatePhaseWeight(I_AB, I_ABC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_AB -> I_AC:")
+	hm = meanEarlyPhaseWeight(I_AB, I_AC, pr)
+	hsd = sdEarlyPhaseWeight(I_AB, I_AC, pr)
+	zm = meanLatePhaseWeight(I_AB, I_AC, pr)
+	zsd = sdLatePhaseWeight(I_AB, I_AC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_AB -> ~A:")
+	hm = meanEarlyPhaseWeight(I_AB, exA, pr)
+	hsd = sdEarlyPhaseWeight(I_AB, exA, pr)
+	zm = meanLatePhaseWeight(I_AB, exA, pr)
+	zsd = sdLatePhaseWeight(I_AB, exA, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_AB -> I_AB:")
+	hm = meanEarlyPhaseWeight(I_AB, I_AB, pr)
+	hsd = sdEarlyPhaseWeight(I_AB, I_AB, pr)
+	zm = meanLatePhaseWeight(I_AB, I_AB, pr)
+	zsd = sdLatePhaseWeight(I_AB, I_AB, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_AB -> ~B:")
+	hm = meanEarlyPhaseWeight(I_AB, exB, pr)
+	hsd = sdEarlyPhaseWeight(I_AB, exB, pr)
+	zm = meanLatePhaseWeight(I_AB, exB, pr)
+	zsd = sdLatePhaseWeight(I_AB, exB, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_AB -> I_BC:")
+	hm = meanEarlyPhaseWeight(I_AB, I_BC, pr)
+	hsd = sdEarlyPhaseWeight(I_AB, I_BC, pr)
+	zm = meanLatePhaseWeight(I_AB, I_BC, pr)
+	zsd = sdLatePhaseWeight(I_AB, I_BC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_AB -> ~C:")
+	hm = meanEarlyPhaseWeight(I_AB, exC, pr)
+	hsd = sdEarlyPhaseWeight(I_AB, exC, pr)
+	zm = meanLatePhaseWeight(I_AB, exC, pr)
+	zsd = sdLatePhaseWeight(I_AB, exC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_AB -> Control:")
+	hm = meanEarlyPhaseWeight(I_AB, control, pr)
+	hsd = sdEarlyPhaseWeight(I_AB, control, pr)
+	zm = meanLatePhaseWeight(I_AB, control, pr)
+	zsd = sdLatePhaseWeight(I_AB, control, pr)
+	f.write(str(hm + zm) + "\n")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\n")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	### OUTGOING FROM ~B ###########################
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "~B -> I_ABC:")
+	hm = meanEarlyPhaseWeight(exB, I_ABC, pr)
+	hsd = sdEarlyPhaseWeight(exB, I_ABC, pr)
+	zm = meanLatePhaseWeight(exB, I_ABC, pr)
+	zsd = sdLatePhaseWeight(exB, I_ABC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "~B -> I_AC:")
+	hm = meanEarlyPhaseWeight(exB, I_AC, pr)
+	hsd = sdEarlyPhaseWeight(exB, I_AC, pr)
+	zm = meanLatePhaseWeight(exB, I_AC, pr)
+	zsd = sdLatePhaseWeight(exB, I_AC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "~B -> ~A:")
+	hm = meanEarlyPhaseWeight(exB, exA, pr)
+	hsd = sdEarlyPhaseWeight(exB, exA, pr)
+	zm = meanLatePhaseWeight(exB, exA, pr)
+	zsd = sdLatePhaseWeight(exB, exA, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "~B -> I_AB:")
+	hm = meanEarlyPhaseWeight(exB, I_AB, pr)
+	hsd = sdEarlyPhaseWeight(exB, I_AB, pr)
+	zm = meanLatePhaseWeight(exB, I_AB, pr)
+	zsd = sdLatePhaseWeight(exB, I_AB, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "~B -> ~B:")
+	hm = meanEarlyPhaseWeight(exB, exB, pr)
+	hsd = sdEarlyPhaseWeight(exB, exB, pr)
+	zm = meanLatePhaseWeight(exB, exB, pr)
+	zsd = sdLatePhaseWeight(exB, exB, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "~B -> I_BC:")
+	hm = meanEarlyPhaseWeight(exB, I_BC, pr)
+	hsd = sdEarlyPhaseWeight(exB, I_BC, pr)
+	zm = meanLatePhaseWeight(exB, I_BC, pr)
+	zsd = sdLatePhaseWeight(exB, I_BC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "~B -> ~C:")
+	hm = meanEarlyPhaseWeight(exB, exC, pr)
+	hsd = sdEarlyPhaseWeight(exB, exC, pr)
+	zm = meanLatePhaseWeight(exB, exC, pr)
+	zsd = sdLatePhaseWeight(exB, exC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "~B -> Control:")
+	hm = meanEarlyPhaseWeight(exB, control, pr)
+	hsd = sdEarlyPhaseWeight(exB, control, pr)
+	zm = meanLatePhaseWeight(exB, control, pr)
+	zsd = sdLatePhaseWeight(exB, control, pr)
+	f.write(str(hm + zm) + "\n")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\n")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	### OUTGOING FROM I_BC ###########################
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_BC -> I_ABC:")
+	hm = meanEarlyPhaseWeight(I_BC, I_ABC, pr)
+	hsd = sdEarlyPhaseWeight(I_BC, I_ABC, pr)
+	zm = meanLatePhaseWeight(I_BC, I_ABC, pr)
+	zsd = sdLatePhaseWeight(I_BC, I_ABC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_BC -> I_AC:")
+	hm = meanEarlyPhaseWeight(I_BC, I_AC, pr)
+	hsd = sdEarlyPhaseWeight(I_BC, I_AC, pr)
+	zm = meanLatePhaseWeight(I_BC, I_AC, pr)
+	zsd = sdLatePhaseWeight(I_BC, I_AC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_BC -> ~A:")
+	hm = meanEarlyPhaseWeight(I_BC, exA, pr)
+	hsd = sdEarlyPhaseWeight(I_BC, exA, pr)
+	zm = meanLatePhaseWeight(I_BC, exA, pr)
+	zsd = sdLatePhaseWeight(I_BC, exA, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_BC -> I_AB:")
+	hm = meanEarlyPhaseWeight(I_BC, I_AB, pr)
+	hsd = sdEarlyPhaseWeight(I_BC, I_AB, pr)
+	zm = meanLatePhaseWeight(I_BC, I_AB, pr)
+	zsd = sdLatePhaseWeight(I_BC, I_AB, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_BC -> ~B:")
+	hm = meanEarlyPhaseWeight(I_BC, exB, pr)
+	hsd = sdEarlyPhaseWeight(I_BC, exB, pr)
+	zm = meanLatePhaseWeight(I_BC, exB, pr)
+	zsd = sdLatePhaseWeight(I_BC, exB, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_BC -> I_BC:")
+	hm = meanEarlyPhaseWeight(I_BC, I_BC, pr)
+	hsd = sdEarlyPhaseWeight(I_BC, I_BC, pr)
+	zm = meanLatePhaseWeight(I_BC, I_BC, pr)
+	zsd = sdLatePhaseWeight(I_BC, I_BC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_BC -> ~C:")
+	hm = meanEarlyPhaseWeight(I_BC, exC, pr)
+	hsd = sdEarlyPhaseWeight(I_BC, exC, pr)
+	zm = meanLatePhaseWeight(I_BC, exC, pr)
+	zsd = sdLatePhaseWeight(I_BC, exC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "I_BC -> Control:")
+	hm = meanEarlyPhaseWeight(I_BC, control, pr)
+	hsd = sdEarlyPhaseWeight(I_BC, control, pr)
+	zm = meanLatePhaseWeight(I_BC, control, pr)
+	zsd = sdLatePhaseWeight(I_BC, control, pr)
+	f.write(str(hm + zm) + "\n")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\n")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+
+	### OUTGOING FROM ~C ###########################
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "~C -> I_ABC:")
+	hm = meanEarlyPhaseWeight(exC, I_ABC, pr)
+	hsd = sdEarlyPhaseWeight(exC, I_ABC, pr)
+	zm = meanLatePhaseWeight(exC, I_ABC, pr)
+	zsd = sdLatePhaseWeight(exC, I_ABC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "~C -> I_AC:")
+	hm = meanEarlyPhaseWeight(exC, I_AC, pr)
+	hsd = sdEarlyPhaseWeight(exC, I_AC, pr)
+	zm = meanLatePhaseWeight(exC, I_AC, pr)
+	zsd = sdLatePhaseWeight(exC, I_AC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "~C -> ~A:")
+	hm = meanEarlyPhaseWeight(exC, exA, pr)
+	hsd = sdEarlyPhaseWeight(exC, exA, pr)
+	zm = meanLatePhaseWeight(exC, exA, pr)
+	zsd = sdLatePhaseWeight(exC, exA, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "~C -> I_AB:")
+	hm = meanEarlyPhaseWeight(exC, I_AB, pr)
+	hsd = sdEarlyPhaseWeight(exC, I_AB, pr)
+	zm = meanLatePhaseWeight(exC, I_AB, pr)
+	zsd = sdLatePhaseWeight(exC, I_AB, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "~C -> ~B:")
+	hm = meanEarlyPhaseWeight(exC, exB, pr)
+	hsd = sdEarlyPhaseWeight(exC, exB, pr)
+	zm = meanLatePhaseWeight(exC, exB, pr)
+	zsd = sdLatePhaseWeight(exC, exB, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "~C -> I_BC:")
+	hm = meanEarlyPhaseWeight(exC, I_BC, pr)
+	hsd = sdEarlyPhaseWeight(exC, I_BC, pr)
+	zm = meanLatePhaseWeight(exC, I_BC, pr)
+	zsd = sdLatePhaseWeight(exC, I_BC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "~C -> ~C:")
+	hm = meanEarlyPhaseWeight(exC, exC, pr)
+	hsd = sdEarlyPhaseWeight(exC, exC, pr)
+	zm = meanLatePhaseWeight(exC, exC, pr)
+	zsd = sdLatePhaseWeight(exC, exC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "~C -> Control:")
+	hm = meanEarlyPhaseWeight(exC, control, pr)
+	hsd = sdEarlyPhaseWeight(exC, control, pr)
+	zm = meanLatePhaseWeight(exC, control, pr)
+	zsd = sdLatePhaseWeight(exC, control, pr)
+	f.write(str(hm + zm) + "\n")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\n")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	### OUTGOING FROM Control ###########################
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "Control -> I_ABC:")
+	hm = meanEarlyPhaseWeight(control, I_ABC, pr)
+	hsd = sdEarlyPhaseWeight(control, I_ABC, pr)
+	zm = meanLatePhaseWeight(control, I_ABC, pr)
+	zsd = sdLatePhaseWeight(control, I_ABC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "Control -> I_AC:")
+	hm = meanEarlyPhaseWeight(control, I_AC, pr)
+	hsd = sdEarlyPhaseWeight(control, I_AC, pr)
+	zm = meanLatePhaseWeight(control, I_AC, pr)
+	zsd = sdLatePhaseWeight(control, I_AC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "Control -> ~A:")
+	hm = meanEarlyPhaseWeight(control, exA, pr)
+	hsd = sdEarlyPhaseWeight(control, exA, pr)
+	zm = meanLatePhaseWeight(control, exA, pr)
+	zsd = sdLatePhaseWeight(control, exA, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "Control -> I_AB:")
+	hm = meanEarlyPhaseWeight(control, I_AB, pr)
+	hsd = sdEarlyPhaseWeight(control, I_AB, pr)
+	zm = meanLatePhaseWeight(control, I_AB, pr)
+	zsd = sdLatePhaseWeight(control, I_AB, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "Control -> ~B:")
+	hm = meanEarlyPhaseWeight(control, exB, pr)
+	hsd = sdEarlyPhaseWeight(control, exB, pr)
+	zm = meanLatePhaseWeight(control, exB, pr)
+	zsd = sdLatePhaseWeight(control, exB, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "Control -> I_BC:")
+	hm = meanEarlyPhaseWeight(control, I_BC, pr)
+	hsd = sdEarlyPhaseWeight(control, I_BC, pr)
+	zm = meanLatePhaseWeight(control, I_BC, pr)
+	zsd = sdLatePhaseWeight(control, I_BC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "Control -> ~C:")
+	hm = meanEarlyPhaseWeight(control, exC, pr)
+	hsd = sdEarlyPhaseWeight(control, exC, pr)
+	zm = meanLatePhaseWeight(control, exC, pr)
+	zsd = sdLatePhaseWeight(control, exC, pr)
+	f.write(str(hm + zm) + "\t\t")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\t\t")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	cond_print(pr, "--------------------------------")
+	cond_print(pr, "Control -> Control:")
+	hm = meanEarlyPhaseWeight(control, control, pr)
+	hsd = sdEarlyPhaseWeight(control, control, pr)
+	zm = meanLatePhaseWeight(control, control, pr)
+	zsd = sdLatePhaseWeight(control, control, pr)
+	f.write(str(hm + zm) + "\n")
+	fsd.write(str(np.sqrt(hsd**2 + zsd**2)) + "\n")
+	cond_print(pr, "Mean total weight: " + str(hm + zm))
+
+	f.close()
+	fsd.close()
+
+
+# printMeanWeightsSingleCA
+# Computes and prints mean and standard deviation of CA, outgoing, incoming, and control weight in units of nC
+# ts: timestamp of the data file to read
+# time_for_readout: the time of the data file to read
+# N_pop: the number of neurons in the considered population
+# core: array of indices of the cell assembly (core) neurons
+def printMeanWeightsSingleCA(ts, time_for_readout, core, N_pop):
+
+	all = np.arange(N_pop) # the whole considered population
+	noncore = all[np.logical_not(np.in1d(all, core))] # the neurons outside the core
+
+	print("##############################################")
+	print("At time", time_for_readout)
+	loadWeightMatrix(ts + "_net_" + time_for_readout + ".txt", N_pop)
+
 	print("--------------------------------")
 	print("Core -> core ('CA'):")
 	hm = meanEarlyPhaseWeight(core)
@@ -516,11 +1109,14 @@ def printMeanWeights():
 	sdLatePhaseWeight(noncore)
 	print("Mean total weight: " + str(hm + zm))
 
+
 ##############################################################################################
 # main
 # Reads datasets from two simulations and computes mean CA, outgoing, incoming and control weights (early- and late-phase)
+# as for Luboeinski and Tetzlaff, 2021 (https://doi.org/10.1038/s42003-021-01778-y)
 # argv[]: timestamps of two simulations
 
+# example call from shell: python3 adjacencyFunctions.py "19-11-28_21-07-55" "19-11-28_22-10-17"
 if __name__ == "__main__":
 
 	if len(sys.argv) < 3:
@@ -530,22 +1126,21 @@ if __name__ == "__main__":
 		ts1 = str(sys.argv[1]) # timestamp for simulation data before consolidation
 		ts2 = str(sys.argv[2]) # timestamp for simulation data after consolidation
 
+	core = np.arange(150) # define the cell assembly core
+	N_pop = 1600
+
 	print("##############################################")
 	print("Before 10s-recall:")
-	loadWeightMatrix(ts1 + "_net_20.0.txt")
-	printMeanWeights()
+	printMeanWeightsSingleCA(ts1, "20.0", core, N_pop)
 
 	print("##############################################")
 	print("After 10s-recall:")
-	loadWeightMatrix(ts1 + "_net_20.1.txt")
-	printMeanWeights()
+	printMeanWeightsSingleCA(ts1, "20.1", core, N_pop)
 
 	print("##############################################")
 	print("Before 8h-recall:")
-	loadWeightMatrix(ts2 + "_net_28810.0.txt")
-	printMeanWeights()
+	printMeanWeightsSingleCA(ts2, "28810.0", core, N_pop)
 
 	print("##############################################")
 	print("After 8h-recall:")
-	loadWeightMatrix(ts2 + "_net_28810.1.txt")
-	printMeanWeights()
+	printMeanWeightsSingleCA(ts2, "28810.1", core, N_pop)

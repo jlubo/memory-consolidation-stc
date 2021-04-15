@@ -1,0 +1,53 @@
+#!/bin/sh
+rm -f saved_state.txt
+./net50.out -Nl_exc=40 -Nl_inh=20 -t_max=30 -N_stim=25 -pc=0.1 -learn=TRIPLETf100 -recall=F100D1at20.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Learning, 10s-recall"
+mv -f saved_state0.txt saved_state.txt
+./net50.out -Nl_exc=40 -Nl_inh=20 -t_max=28820 -N_stim=25 -pc=0.1 -learn= -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Consolidation, 8h-recall"
+
+rm -f saved_state.txt
+./net100.out -Nl_exc=40 -Nl_inh=20 -t_max=30 -N_stim=25 -pc=0.1 -learn=TRIPLETf100 -recall=F100D1at20.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Learning, 10s-recall"
+mv -f saved_state0.txt saved_state.txt
+./net100.out -Nl_exc=40 -Nl_inh=20 -t_max=28820 -N_stim=25 -pc=0.1 -learn= -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Consolidation, 8h-recall"
+
+rm -f saved_state.txt
+./net150.out -Nl_exc=40 -Nl_inh=20 -t_max=30 -N_stim=25 -pc=0.1 -learn=TRIPLETf100 -recall=F100D1at20.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Learning, 10s-recall"
+mv -f saved_state0.txt saved_state.txt
+./net150.out -Nl_exc=40 -Nl_inh=20 -t_max=28820 -N_stim=25 -pc=0.1 -learn= -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Consolidation, 8h-recall"
+
+rm -f saved_state.txt
+./net200.out -Nl_exc=40 -Nl_inh=20 -t_max=30 -N_stim=25 -pc=0.1 -learn=TRIPLETf100 -recall=F100D1at20.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Learning, 10s-recall"
+mv -f saved_state0.txt saved_state.txt
+./net200.out -Nl_exc=40 -Nl_inh=20 -t_max=28820 -N_stim=25 -pc=0.1 -learn= -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Consolidation, 8h-recall"
+
+rm -f saved_state.txt
+./net250.out -Nl_exc=40 -Nl_inh=20 -t_max=30 -N_stim=25 -pc=0.1 -learn=TRIPLETf100 -recall=F100D1at20.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Learning, 10s-recall"
+mv -f saved_state0.txt saved_state.txt
+./net250.out -Nl_exc=40 -Nl_inh=20 -t_max=28820 -N_stim=25 -pc=0.1 -learn= -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Consolidation, 8h-recall"
+
+rm -f saved_state.txt
+./net300.out -Nl_exc=40 -Nl_inh=20 -t_max=30 -N_stim=25 -pc=0.1 -learn=TRIPLETf100 -recall=F100D1at20.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Learning, 10s-recall"
+mv -f saved_state0.txt saved_state.txt
+./net300.out -Nl_exc=40 -Nl_inh=20 -t_max=28820 -N_stim=25 -pc=0.1 -learn= -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Consolidation, 8h-recall"
+
+rm -f saved_state.txt
+./net350.out -Nl_exc=40 -Nl_inh=20 -t_max=30 -N_stim=25 -pc=0.1 -learn=TRIPLETf100 -recall=F100D1at20.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Learning, 10s-recall"
+mv -f saved_state0.txt saved_state.txt
+./net350.out -Nl_exc=40 -Nl_inh=20 -t_max=28820 -N_stim=25 -pc=0.1 -learn= -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Consolidation, 8h-recall"
+
+rm -f saved_state.txt
+./net400.out -Nl_exc=40 -Nl_inh=20 -t_max=30 -N_stim=25 -pc=0.1 -learn=TRIPLETf100 -recall=F100D1at20.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Learning, 10s-recall"
+mv -f saved_state0.txt saved_state.txt
+./net400.out -Nl_exc=40 -Nl_inh=20 -t_max=28820 -N_stim=25 -pc=0.1 -learn= -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Consolidation, 8h-recall"
+
+rm -f saved_state.txt
+./net450.out -Nl_exc=40 -Nl_inh=20 -t_max=30 -N_stim=25 -pc=0.1 -learn=TRIPLETf100 -recall=F100D1at20.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Learning, 10s-recall"
+mv -f saved_state0.txt saved_state.txt
+./net450.out -Nl_exc=40 -Nl_inh=20 -t_max=28820 -N_stim=25 -pc=0.1 -learn= -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Consolidation, 8h-recall"
+
+rm -f saved_state.txt
+./net500.out -Nl_exc=40 -Nl_inh=20 -t_max=30 -N_stim=25 -pc=0.1 -learn=TRIPLETf100 -recall=F100D1at20.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Learning, 10s-recall"
+mv -f saved_state0.txt saved_state.txt
+./net500.out -Nl_exc=40 -Nl_inh=20 -t_max=28820 -N_stim=25 -pc=0.1 -learn= -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Consolidation, 8h-recall"
+
+rm -f saved_state.txt
+

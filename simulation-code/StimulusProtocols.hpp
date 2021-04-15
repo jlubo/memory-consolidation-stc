@@ -34,12 +34,13 @@ void stimFunc(Stimulus* st, double frequency, double w_stim, int N_stim, double 
  * Creates a Stimulus object according to specified stimulation protocols *
  * - prot_learn: string specifying the learning protocol that shall be used *
  * - prot_recall: string specifying the learning protocol that shall be used *
- * - dt: duration of one time step in seconds *
+ * - dt: duration of one timestep in seconds *
  * - w_stim: coupling strength between input layer and receiving layer *
  * - N_stim: number of neurons in the input layer *
  * - tau_syn: the synaptic time constant *
+ * - logf: pointer to log file handle (for printing interesting information) *
  * - return: Stimulus object */
-Stimulus createStimulusFromProtocols(string prot_learn, string prot_recall, double dt, double w_stim, int N_stim, double tau_syn)
+Stimulus createStimulusFromProtocols(string prot_learn, string prot_recall, double dt, double w_stim, int N_stim, double tau_syn, ofstream* logf)
 {
 	Stimulus st(dt); // new Stimulus object
 	double frequency; // stimulation frequency
@@ -151,6 +152,31 @@ Stimulus createStimulusFromProtocols(string prot_learn, string prot_recall, doub
 		stimFunc(&st, frequency, w_stim, N_stim, tau_syn, index); // actually add stimulation to the interval
 
 	}
+	else if (strstr(pt, "TRIPLETat") == pt) // "generic" TRIPLET protocol
+	{
+		double duration, at;
+		char* pt2 = strstr(pt, "at");
+
+		frequency = 100.0; // Hz
+
+		if (pt2 > 0) // if time of occurrence is specified
+		{
+			pt2 += 2; // skip 'a' and 't'
+			at = atof(pt2);
+		}
+		else // "standard" TRIPLET at t = 10.0 s
+		{
+			at = 10.0;
+		}
+
+		index = st.addStimulationInterval(int(round(at/dt)), int(round((at + 0.1)/dt))); // add start and end time of stimulation
+		stimFunc(&st, frequency, w_stim, N_stim, tau_syn, index); // actually add stimulation to the interval
+		index = st.addStimulationInterval(int(round((at + 0.5)/dt)), int(round((at + 0.6)/dt))); // add start and end time of stimulation
+		stimFunc(&st, frequency, w_stim, N_stim, tau_syn, index); // actually add stimulation to the interval
+		index = st.addStimulationInterval(int(round((at + 1.0)/dt)), int(round((at + 1.1)/dt))); // add start and end time of stimulation
+		stimFunc(&st, frequency, w_stim, N_stim, tau_syn, index); // actually add stimulation to the interval
+
+	}
 	else if (!prot_learn.compare("TESTA"))
 	{
 		frequency = 50.0; // Hz
@@ -166,23 +192,9 @@ Stimulus createStimulusFromProtocols(string prot_learn, string prot_recall, doub
 		//index = st.addStimulationInterval(int(round(3.0/dt)), int(round(3.1/dt))); // add start and end time of stimulation
 		//stimFunc(&st, 2*frequency, w_stim, N_stim, tau_syn, index); // actually add stimulation to the interval
 	}
-	else if (!prot_learn.compare("TEST10"))
+	else 
 	{
-		frequency = 100.0; // Hz
-		index = st.addStimulationInterval(int(round(1.0/dt)), int(round(2.0/dt))); // add start and end time of stimulation
-		stimFunc(&st, frequency, w_stim, N_stim, tau_syn, index); // actually add stimulation to the interval
-	}
-	else if (!prot_learn.compare("TEST3"))
-	{
-		frequency = 100.0; // Hz
-		index = st.addStimulationInterval(int(round(1.0/dt)), int(round(1.3/dt))); // add start and end time of stimulation
-		stimFunc(&st, frequency, w_stim, N_stim, tau_syn, index); // actually add stimulation to the interval
-	}
-	else if (!prot_learn.compare("TESTSAV"))
-	{
-		frequency = 100.0; // Hz
-		index = st.addStimulationInterval(int(round(0.1/dt)), int(round(0.2/dt))); // add start and end time of stimulation
-		stimFunc(&st, frequency, w_stim, N_stim, tau_syn, index); // actually add stimulation to the interval
+		*logf << "No known learning protocol specified." << endl;
 	}
 
 	// recall protocol:
@@ -242,7 +254,12 @@ Stimulus createStimulusFromProtocols(string prot_learn, string prot_recall, doub
 		//index = st.addStimulationInterval(int(round(3.0/dt)), int(round(3.2/dt))); // add start and end time of stimulation
 		index = st.addStimulationInterval(int(round(0.2/dt)), int(round(0.205/dt))); // add start and end time of stimulation
 		stimFunc(&st, frequency, w_stim, N_stim, tau_syn, index); // actually add stimulation to the interval
+	}	
+	else 
+	{
+		*logf << "No known recall protocol specified." << endl;
 	}
+
 
 #if STIM_PREPROC == ON
 	st.preProcess();
@@ -253,8 +270,8 @@ Stimulus createStimulusFromProtocols(string prot_learn, string prot_recall, doub
 
 /*** createOscillStimulus ***
  * Creates a Stimulus object with sinusoidal oscillating input during the whole simulation *
- * - dt: duration of one time step in seconds *
- * - tb_max: number of time steps for the whole simulation *
+ * - dt: duration of one timestep in seconds *
+ * - tb_max: number of timesteps for the whole simulation *
  * - period: period for the sine-shaped input current *
  * - mean: mean value for the sine-shaped input current *
  * - amplitude: amplitude for the sine-shaped input current *

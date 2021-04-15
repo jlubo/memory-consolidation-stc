@@ -36,10 +36,10 @@ friend class boost::serialization::access;
 private:
 
 /*** Computational parameters ***/
-double dt; // s, one time step for numerical simulation
+double dt; // s, one timestep for numerical simulation
 int N; // total number of excitatory plus inhibitory neurons
-int t_syn_delay_steps; // constant t_syn_delay converted to time steps
-int t_Ca_delay_steps; // constant t_Ca_delay converted to time steps
+int t_syn_delay_steps; // constant t_syn_delay converted to timesteps
+int t_Ca_delay_steps; // constant t_Ca_delay converted to timesteps
 
 /*** State variables ***/
 vector<Neuron> neurons; // vector of all N neuron instances (first excitatory, then inhibitory)
@@ -59,10 +59,10 @@ double* sum_h_diff_d; // sum of E-LTD changes for each postsynaptic neuron
 protected:
 
 /*** Physical parameters ***/
-int Nl; // number of neurons in one line (row or column) of the exc. population (better choose an odd number, for there exists a "central" neuron)
+int Nl_exc; // number of neurons in one line (row or column) of the exc. population (better choose an odd number, for there exists a "central" neuron)
 int Nl_inh; // number of neurons in one line (row or column) of the inh. population (better choose an odd number, for there exists a "central" neuron)
 double tau_syn; // s, the synaptic time constant
-double t_syn_delay; // s, the synaptic transmission delay for PSPs - has to be at least one time step!
+double t_syn_delay; // s, the synaptic transmission delay for PSPs - has to be at least one timestep!
 double p_c; // connection probability (prob. that a directed connection exists)
 double w_ee; // nC, magnitude of excitatory PSP effecting an excitatory postsynaptic neuron
 double w_ei; // nC, magnitude of excitatory PSP effecting an inhibitory postsynaptic neuron
@@ -70,7 +70,7 @@ double w_ie; // nC, magnitude of inhibitory PSP effecting an excitatory postsyna
 double w_ii; // nC, magnitude of inhibitory PSP effecting an inhibitory postsynaptic neuron
 
 /*** Plasticity parameters ***/
-double t_Ca_delay; // s, delay for spikes to affect calcium dynamics - has to be at least one time step!
+double t_Ca_delay; // s, delay for spikes to affect calcium dynamics - has to be at least one timestep!
 double Ca_pre; // s^-1, increase in calcium current evoked by presynaptic spike
 double Ca_post; // s^-1, increase in calcium current evoked by postsynaptic spike
 double tau_Ca; // s, time constant for calcium dynamics
@@ -134,19 +134,19 @@ int tb_max_sum_diff_d; // time bin at which max_sum_diff_d was encountered
  * aware that it starts with zero, unlike i and j *
  * - int i: the row where the neuron is located *
  * - int j: the column where the neuron is located */
-#define cNN(i, j) (((i)-1)*Nl + ((j)-1))
+#define cNN(i, j) (((i)-1)*Nl_exc + ((j)-1))
 
 /*** row (macro) ***
  * Returns the row number for excitatory neuron n, be  *
  * aware that it starts with one, unlike the consecutive number *
  * - int n: the consecutive neuron number */
-#define row(n) (rowG(n, Nl))
+#define row(n) (rowG(n, Nl_exc))
 
 /*** col (macro) ***
  * Returns the column number for excitatory neuron n, be  *
  * aware that it starts with one, unlike the consecutive number *
  * - int n: the consecutive neuron number */
-#define col(n) (colG(n, Nl))
+#define col(n) (colG(n, Nl_exc))
 
 /*** symm (macro) ***
  * Returns the number of the symmetric element for an element given  *
@@ -172,7 +172,7 @@ bool shallBeConnected(int m, int n)
 	}
 #else
 	// exc.->exc. synapse
-	if (m < pow2(Nl) && n < pow2(Nl))
+	if (m < pow2(Nl_exc) && n < pow2(Nl_exc))
 	{
 		if (u_dist(rg) <= p_c) // draw random number
 		{
@@ -183,7 +183,7 @@ bool shallBeConnected(int m, int n)
 	}
 
 	// exc.->inh. synapse
-	else if (m < pow2(Nl) && n >= pow2(Nl))
+	else if (m < pow2(Nl_exc) && n >= pow2(Nl_exc))
 	{
 		if (u_dist(rg) <= p_c) // draw random number
 		{
@@ -195,7 +195,7 @@ bool shallBeConnected(int m, int n)
 	}
 
 	// inh.->exc. synapse
-	else if (m >= pow2(Nl) && n < pow2(Nl))
+	else if (m >= pow2(Nl_exc) && n < pow2(Nl_exc))
 	{
 		if (u_dist(rg) <= p_c) // draw random number
 		{
@@ -206,7 +206,7 @@ bool shallBeConnected(int m, int n)
 	}
 
 	// inh.->inh. synapse
-	else if (m >= pow2(Nl) && n >= pow2(Nl))
+	else if (m >= pow2(Nl_exc) && n >= pow2(Nl_exc))
 	{
 		if (u_dist(rg) <= p_c) // draw random number
 		{
@@ -238,7 +238,7 @@ void saveNetworkParams(ofstream *f) const
 {
 	*f << endl;
 	*f << "Network parameters:" << endl;
-	*f << "N_exc = " << pow2(Nl) << " (" << Nl << " x " << Nl << ")" << endl;
+	*f << "N_exc = " << pow2(Nl_exc) << " (" << Nl_exc << " x " << Nl_exc << ")" << endl;
 	*f << "N_inh = " << pow2(Nl_inh) << " (" << Nl_inh << " x " << Nl_inh << ")" << endl;
 	*f << "tau_syn = "
 #if SYNAPSE_MODEL == DELTA
@@ -275,15 +275,17 @@ void saveNetworkParams(ofstream *f) const
 	*f << "gamma_d = " << gamma_d << endl;
 	*f << "theta_p = " << theta_p << endl;
 	*f << "theta_d = " << theta_d << endl;
-	*f << "sigma_plasticity = " << sigma_plasticity << " nA s" << endl;
+	*f << "sigma_plasticity = " << dtos(sigma_plasticity/h_0,2) << " h_0" << endl;
 	*f << "alpha_p = " << alpha_p << endl;
 	*f << "alpha_c = " << alpha_c << endl;
 	*f << "alpha_d = " << alpha_d << endl;
-	*f << "theta_pro_p = " << theta_pro_p << " nA s" << endl;
-	*f << "theta_pro_c = " << theta_pro_c << " nA s" << endl;
-	*f << "theta_pro_d = " << theta_pro_d << " nA s" << endl;
-	*f << "theta_tag_p = " << theta_tag_p << " nA s" << endl;
-	*f << "theta_tag_d = " << theta_tag_d << " nA s" << endl;
+
+	double nm = 1. / (theta_pro_c/h_0) - 0.001; // compute neuromodulator concentration from threshold theta_pro_c	
+	*f << "theta_pro_p = " << dtos(theta_pro_p/h_0,2) << " h_0" << endl;
+	*f << "theta_pro_c = " << dtos(theta_pro_c/h_0,2) << " h_0 (nm = " << dtos(nm,2) << ")" << endl;
+	*f << "theta_pro_d = " << dtos(theta_pro_d/h_0,2) << " h_0" << endl;
+	*f << "theta_tag_p = " << dtos(theta_tag_p/h_0,2) << " h_0" << endl;
+	*f << "theta_tag_d = " << dtos(theta_tag_d/h_0,2) << " h_0" << endl;
 
 	neurons[0].saveNeuronParams(f); // all neurons have the same parameters, take the first one
 }
@@ -291,7 +293,7 @@ void saveNetworkParams(ofstream *f) const
 /*** saveNetworkState ***
  * Saves the current state of the whole network to a given file using boost function serialize(...) *
  * - file: the file to read the data from *
- * - tb: current time step */
+ * - tb: current timestep */
 void saveNetworkState(string file, int tb)
 {
 	ofstream savefile(file);
@@ -357,7 +359,7 @@ template<class Archive> void serialize(Archive &ar, const unsigned int version)
 
 /*** processTimeStep ***
  * Processes one timestep (of duration dt) for the network [rich mode / compmode == 1] *
- * - int tb: current time step (for evaluating stimulus and for computing spike contributions) *
+ * - int tb: current timestep (for evaluating stimulus and for computing spike contributions) *
  * - ofstream* txt_spike_raster [optional]: file containing spike times for spike raster plot *
  * - return: number of spikes that occurred within the considered timestep in the whole network */
 int processTimeStep(int tb, ofstream* txt_spike_raster = NULL)
@@ -374,7 +376,7 @@ int processTimeStep(int tb, ofstream* txt_spike_raster = NULL)
 	{
 		neurons[m].processTimeStep(tb, -1); // computation of individual neuron dynamics
 
-		// add spikes to raster plot and count spikes in this time step
+		// add spikes to raster plot and count spikes in this timestep
 		if (neurons[m].getActivity())
 		{
 #if SPIKE_PLOTTING == RASTER || SPIKE_PLOTTING == NUMBER_AND_RASTER
@@ -478,7 +480,7 @@ int processTimeStep(int tb, ofstream* txt_spike_raster = NULL)
 #if PLASTICITY == CALCIUM || PLASTICITY == CALCIUM_AND_STC
 		bool delayed_Ca = false; // specifies if a presynaptic spike occurred t_Ca_delay ago
 
-		if (m < pow2(Nl)) // plasticity only for exc. -> exc. connections
+		if (m < pow2(Nl_exc)) // plasticity only for exc. -> exc. connections
 		{
 			// go through presynaptic spikes for calcium contribution; start from last one that was used plus one
 			for (int k=last_Ca_spike_index[m]; k<=neurons[m].getSpikeHistorySize(); k++)
@@ -541,7 +543,7 @@ int processTimeStep(int tb, ofstream* txt_spike_raster = NULL)
 			}
 
 			// Long-term plasticity
-			if (m < pow2(Nl) && n < pow2(Nl)) // plasticity only for exc. -> exc. connections
+			if (m < pow2(Nl_exc) && n < pow2(Nl_exc)) // plasticity only for exc. -> exc. connections
 			{
 #if PLASTICITY == CALCIUM || PLASTICITY == CALCIUM_AND_STC
 				// Calcium dynamics
@@ -550,11 +552,15 @@ int processTimeStep(int tb, ofstream* txt_spike_raster = NULL)
 				if (delayed_Ca) // if presynaptic spike occurred t_Ca_delay ago
 					Ca[m][n] += Ca_pre;
 
-				if (neurons[n].getActivity()) // if postsynaptic spike occurred in previous time step
+				if (neurons[n].getActivity()) // if postsynaptic spike occurred in previous timestep
 					Ca[m][n] += Ca_post;
 
 				// E-LTP/-LTD
-				if (Ca[m][n] >= theta_p)  // if there is E-LTP
+				if ((Ca[m][n] >= theta_p)  // if there is E-LTP and "STDP-like" condition is fulfilled
+	#if LTP_FR_THRESHOLD > 0
+				   && (neurons[m].spikesInInterval(tb-2500,tb+1) > LTP_FR_THRESHOLD/2 && neurons[n].spikesInInterval(tb-2500,tb+1) > LTP_FR_THRESHOLD/2)
+	#endif
+				   )
 				{
 					double noise = sigma_plasticity * sqrt(tau_h) * sqrt(2) * norm_dist(rg) / sqrt(dt); // division by sqrt(dt) was not in Li et al., 2016
 					double C = 0.1 + gamma_p + gamma_d;
@@ -568,7 +574,11 @@ int processTimeStep(int tb, ofstream* txt_spike_raster = NULL)
 						tb_max_dev = tb;
 					}
 				}
-				else if (Ca[m][n] >= theta_d) // if there is E-LTD
+				else if ((Ca[m][n] >= theta_d) // if there is E-LTD
+	#if LTD_FR_THRESHOLD > 0
+				   && (neurons[m].spikesInInterval(tb-2500,tb+1) > LTD_FR_THRESHOLD/2 && neurons[n].spikesInInterval(tb-2500,tb+1) > LTD_FR_THRESHOLD/2)
+	#endif
+				   )
 				{
 					double noise = sigma_plasticity * sqrt(tau_h) * norm_dist(rg) / sqrt(dt); // division by sqrt(dt) was not in Li et al., 2016
 					double C = 0.1 + gamma_d;
@@ -607,11 +617,11 @@ int processTimeStep(int tb, ofstream* txt_spike_raster = NULL)
 				if (h_dev >= theta_tag_p) // LTP
 				{
 	#if PROTEIN_POOLS == POOLS_PCD
-					double pa = neurons[n].getPProteinAmount()*neurons[n].getCProteinAmount(); // LTP protein amount times common protein amount from previous time step
+					double pa = neurons[n].getPProteinAmount()*neurons[n].getCProteinAmount(); // LTP protein amount times common protein amount from previous timestep
 	#elif PROTEIN_POOLS == POOLS_PD
-					double pa = neurons[n].getPProteinAmount(); // LTP protein amountfrom previous time step
+					double pa = neurons[n].getPProteinAmount(); // LTP protein amountfrom previous timestep
 	#elif PROTEIN_POOLS == POOLS_C
-					double pa = neurons[n].getCProteinAmount(); // common protein amount from previous time step
+					double pa = neurons[n].getCProteinAmount(); // common protein amount from previous timestep
 	#endif
 	#ifdef TWO_NEURONS_ONE_SYNAPSE
 					tag_glob = true;
@@ -627,11 +637,11 @@ int processTimeStep(int tb, ofstream* txt_spike_raster = NULL)
 				else if (-h_dev >= theta_tag_d) // LTD
 				{
 	#if PROTEIN_POOLS == POOLS_PCD
-					double pa = neurons[n].getDProteinAmount()*neurons[n].getCProteinAmount(); // LTD protein amount times common protein amount from previous time step
+					double pa = neurons[n].getDProteinAmount()*neurons[n].getCProteinAmount(); // LTD protein amount times common protein amount from previous timestep
 	#elif PROTEIN_POOLS == POOLS_PD
-					double pa = neurons[n].getDProteinAmount(); // LTD protein amountfrom previous time step
+					double pa = neurons[n].getDProteinAmount(); // LTD protein amountfrom previous timestep
 	#elif PROTEIN_POOLS == POOLS_C
-					double pa = neurons[n].getCProteinAmount(); // common protein amount from previous time step
+					double pa = neurons[n].getCProteinAmount(); // common protein amount from previous timestep
 	#endif
 	#ifdef TWO_NEURONS_ONE_SYNAPSE
 					tag_glob = true;
@@ -658,7 +668,7 @@ int processTimeStep(int tb, ofstream* txt_spike_raster = NULL)
 				double tau_mt_stdp = tau_syn_stdp * tau_m_stdp / (tau_syn_stdp + tau_m_stdp);
 				double eta = 12e-2;
 
-				// if presynaptic neuron m spiked in previous time step
+				// if presynaptic neuron m spiked in previous timestep
 				if (delayed_PSP)
 				{
 					int last_post_spike = neurons[n].getSpikeHistorySize();
@@ -676,7 +686,7 @@ int processTimeStep(int tb, ofstream* txt_spike_raster = NULL)
 
 				}
 
-				// if postsynaptic neuron n spiked in previous time step
+				// if postsynaptic neuron n spiked in previous timestep
 				bool delayed_PSP2 = false;
 				for (int k=neurons[n].getSpikeHistorySize(); k>0; k--)
 				{
@@ -724,7 +734,7 @@ int processTimeStep(int tb, ofstream* txt_spike_raster = NULL)
 
 /*** processTimeStep_FF ***
  * Processes one timestep for the network only computing late-phase observables [fast-forward mode / compmode == 2] *
- * - int tb: current time step (for printing purposes only) *
+ * - int tb: current timestep (for printing purposes only) *
  * - double delta_t: duration of the fast-forward timestep *
  * - ofstream* logf: pointer to log file handle (for printing interesting information) *
  * - return: true if late-phase dynamics are persisting, false if not */
@@ -854,7 +864,7 @@ int processTimeStep_FF(int tb, double delta_t, ofstream* logf)
 			double h_dev; // the deviation of the early-phase weight from its resting state
 
 			// Long-term plasticity
-			if (m < pow2(Nl) && n < pow2(Nl)) // plasticity only for exc. -> exc. connections
+			if (m < pow2(Nl_exc) && n < pow2(Nl_exc)) // plasticity only for exc. -> exc. connections
 			{
 #if PLASTICITY == CALCIUM || PLASTICITY == CALCIUM_AND_STC
 
@@ -881,11 +891,11 @@ int processTimeStep_FF(int tb, double delta_t, ofstream* logf)
 				if (h_dev >= theta_tag_p) // LTP
 				{
 	#if PROTEIN_POOLS == POOLS_PCD
-					double pa = neurons[n].getPProteinAmount()*neurons[n].getCProteinAmount(); // LTP protein amount times common protein amount from previous time step
+					double pa = neurons[n].getPProteinAmount()*neurons[n].getCProteinAmount(); // LTP protein amount times common protein amount from previous timestep
 	#elif PROTEIN_POOLS == POOLS_PD
-					double pa = neurons[n].getPProteinAmount(); // LTP protein amountfrom previous time step
+					double pa = neurons[n].getPProteinAmount(); // LTP protein amountfrom previous timestep
 	#elif PROTEIN_POOLS == POOLS_C
-					double pa = neurons[n].getCProteinAmount(); // common protein amount from previous time step
+					double pa = neurons[n].getCProteinAmount(); // common protein amount from previous timestep
 	#endif
 	#ifdef TWO_NEURONS_ONE_SYNAPSE
 					tag_glob = true;
@@ -901,11 +911,11 @@ int processTimeStep_FF(int tb, double delta_t, ofstream* logf)
 				else if (-h_dev >= theta_tag_d) // LTD
 				{
 	#if PROTEIN_POOLS == POOLS_PCD
-					double pa = neurons[n].getDProteinAmount()*neurons[n].getCProteinAmount(); // LTD protein amount times common protein amount from previous time step
+					double pa = neurons[n].getDProteinAmount()*neurons[n].getCProteinAmount(); // LTD protein amount times common protein amount from previous timestep
 	#elif PROTEIN_POOLS == POOLS_PD
-					double pa = neurons[n].getDProteinAmount(); // LTD protein amountfrom previous time step
+					double pa = neurons[n].getDProteinAmount(); // LTD protein amountfrom previous timestep
 	#elif PROTEIN_POOLS == POOLS_C
-					double pa = neurons[n].getCProteinAmount(); // common protein amount from previous time step
+					double pa = neurons[n].getCProteinAmount(); // common protein amount from previous timestep
 	#endif
 	#ifdef TWO_NEURONS_ONE_SYNAPSE
 					tag_glob = true;
@@ -1067,7 +1077,7 @@ void setRhombStimulus(Stimulus& _st, int center, int radius)
 
 		for (int j=-num_cols; j<=num_cols; j++)
 		{
-			neurons[center+i*Nl+j].setCurrentStimulus(_st); // set temporal course of current stimulus for given neuron
+			neurons[center+i*Nl_exc+j].setCurrentStimulus(_st); // set temporal course of current stimulus for given neuron
 		}
 	}
 
@@ -1096,7 +1106,7 @@ void setRhombPartialRandomStimulus(Stimulus& _st, int center, int radius, double
 
 		for (int j=-num_cols; j<=num_cols; j++)
 		{
-			indices[ind++] = center+i*Nl+j;
+			indices[ind++] = center+i*Nl_exc+j;
 		}
 	}
 
@@ -1134,7 +1144,7 @@ void setRhombPartialStimulus(Stimulus& _st, int center, int radius, double fract
 
 		for (int j=-num_cols; j<=num_cols; j++)
 		{
-			neurons[center+i*Nl+j].setCurrentStimulus(_st); // set temporal course of current stimulus for given neuron
+			neurons[center+i*Nl_exc+j].setCurrentStimulus(_st); // set temporal course of current stimulus for given neuron
 			count--;
 			if (count == 0)
 				break;
@@ -1155,7 +1165,7 @@ void setRhombPartialStimulus(Stimulus& _st, int center, int radius, double fract
  * - int range_end [optional]: one plus the highest neuron number that can be drawn (-1: highest possible) */
 void setRandomStimulus(Stimulus& _st, int num, ofstream* f = NULL, int range_start=0, int range_end=-1)
 {
-	int range_len = (range_end == -1) ? (pow2(Nl) - range_start) : (range_end - range_start); // the number of neurons eligible for being drawn
+	int range_len = (range_end == -1) ? (pow2(Nl_exc) - range_start) : (range_end - range_start); // the number of neurons eligible for being drawn
 	bool* stim_neurons = new bool [range_len];
 	uniform_int_distribution<int> u_dist_neurons(0, range_len-1); // uniform distribution to draw neuron numbers
 	int neurons_left = num;
@@ -1239,7 +1249,7 @@ void stipulateRhombAssembly(int center, int radius)
 
 		for (int j=-num_cols; j<=num_cols; j++)
 		{
-			int m = center+i*Nl+j;
+			int m = center+i*Nl_exc+j;
 
 			for (int k=-radius; k<=radius; k++)
 			{
@@ -1247,7 +1257,7 @@ void stipulateRhombAssembly(int center, int radius)
 
 				for (int l=-num_cols; l<=num_cols; l++)
 				{
-					int n = center+k*Nl+l;
+					int n = center+k*Nl_exc+l;
 
 					if (conn[m][n]) // set all connections within the assembly to this value
 						h[m][n] = value;
@@ -1349,7 +1359,7 @@ double getLateSynapticStrength(synapse s) const
 
 /*** getMeanEarlySynapticStrength ***
  * Returns the mean early-phase synaptic strength (averaged over all synapses within the given set of neurons) *
- * - int n: the number of neurons that shall be considered (e.g., n=Nl^2 for all excitatory neurons, or n=N for all neurons) *
+ * - int n: the number of neurons that shall be considered (e.g., n=Nl_exc^2 for all excitatory neurons, or n=N for all neurons) *
  * - int off [optional]: the offset that defines at which neuron number the considered range begins *
  * - return: the mean early-phase synaptic strength */
 double getMeanEarlySynapticStrength(int n, int off=0) const
@@ -1377,7 +1387,7 @@ double getMeanEarlySynapticStrength(int n, int off=0) const
 
 /*** getMeanLateSynapticStrength ***
  * Returns the mean late-phase synaptic strength (averaged over all synapses within the given set of neurons) *
- * - int n: the number of neurons that shall be considered (e.g., n=Nl^2 for all excitatory neurons, or n=N for all neurons) *
+ * - int n: the number of neurons that shall be considered (e.g., n=Nl_exc^2 for all excitatory neurons, or n=N for all neurons) *
  * - int off [optional]: the offset that defines at which neuron number the considered range begins *
  * - return: the mean late-phase synaptic strength */
 double getMeanLateSynapticStrength(int n, int off=0) const
@@ -1406,7 +1416,7 @@ double getMeanLateSynapticStrength(int n, int off=0) const
 /*** getSDEarlySynapticStrength ***
  * Returns the standard deviation of the early-phase synaptic strength (over all synapses within the given set of neurons) *
  * - double mean: the mean of the early-phase syn. strength within the given set
- * - int n: the number of neurons that shall be considered (e.g., n=Nl^2 for all excitatory neurons, or n=N for all neurons) *
+ * - int n: the number of neurons that shall be considered (e.g., n=Nl_exc^2 for all excitatory neurons, or n=N for all neurons) *
  * - int off [optional]: the offset that defines at which neuron number the considered range begins *
  * - return: the std. dev. of the early-phase synaptic strength */
 double getSDEarlySynapticStrength(double mean, int n, int off=0) const
@@ -1435,7 +1445,7 @@ double getSDEarlySynapticStrength(double mean, int n, int off=0) const
 /*** getSDLateSynapticStrength ***
  * Returns the standard deviation of the late-phase synaptic strength (over all synapses within the given set of neurons) *
  * - double mean: the mean of the late-phase syn. strength within the given set
- * - int n: the number of neurons that shall be considered (e.g., n=Nl^2 for all excitatory neurons, or n=N for all neurons) *
+ * - int n: the number of neurons that shall be considered (e.g., n=Nl_exc^2 for all excitatory neurons, or n=N for all neurons) *
  * - int off [optional]: the offset that defines at which neuron number the considered range begins *
  * - return: the std. dev. of the late-phase synaptic strength */
 double getSDLateSynapticStrength(double mean, int n, int off=0) const
@@ -1463,7 +1473,7 @@ double getSDLateSynapticStrength(double mean, int n, int off=0) const
 
 /*** getMeanCProteinAmount ***
  * Returns the mean protein amount (averaged over all neurons within the given set) *
- * - int n: the number of neurons that shall be considered (e.g., n=Nl^2 for all excitatory neurons, or n=N for all neurons) *
+ * - int n: the number of neurons that shall be considered (e.g., n=Nl_exc^2 for all excitatory neurons, or n=N for all neurons) *
  * - int off [optional]: the offset that defines at which neuron number the considered range begins *
  * - return: the mean protein amount */
 double getMeanCProteinAmount(int n, int off=0) const
@@ -1547,25 +1557,25 @@ int readConnections(string file, int format = 0)
 			}
 			else if (buf[i] == '1')
 			{
-				if (m < pow2(Nl) && n < pow2(Nl)) // exc. -> exc.
+				if (m < pow2(Nl_exc) && n < pow2(Nl_exc)) // exc. -> exc.
 				{
 					neurons[m].addOutgoingConnection(n, TYPE_EXC);
 					//cout << m << " -> " << n << " added" << endl;
 					neurons[n].incNumberIncoming(TYPE_EXC);
 				}
-				else if (m < pow2(Nl) && n >= pow2(Nl)) // exc. -> inh.
+				else if (m < pow2(Nl_exc) && n >= pow2(Nl_exc)) // exc. -> inh.
 				{
 					neurons[m].addOutgoingConnection(n, TYPE_INH);
 					//cout << m << " -> " << n << " added" << endl;
 					neurons[n].incNumberIncoming(TYPE_EXC);
 				}
-				else if (m >= pow2(Nl) && n < pow2(Nl)) // inh. -> exc.
+				else if (m >= pow2(Nl_exc) && n < pow2(Nl_exc)) // inh. -> exc.
 				{
 					neurons[m].addOutgoingConnection(n, TYPE_EXC);
 					//cout << m << " -> " << n << " added" << endl;
 					neurons[n].incNumberIncoming(TYPE_INH);
 				}
-				else if (m >= pow2(Nl) && n >= pow2(Nl)) // inh. -> inh.
+				else if (m >= pow2(Nl_exc) && n >= pow2(Nl_exc)) // inh. -> inh.
 				{
 					neurons[m].addOutgoingConnection(n, TYPE_INH);
 					//cout << m << " -> " << n << " added" << endl;
@@ -1699,13 +1709,13 @@ int printAllInitialWeights(string file, int format = 0)
 			// Output of all initial weights
 			if (conn[m][n])
 			{
-				if (m < pow2(Nl) && n < pow2(Nl)) // exc. -> exc.
+				if (m < pow2(Nl_exc) && n < pow2(Nl_exc)) // exc. -> exc.
 					f << h[m][n] << " ";
-				else if (m < pow2(Nl) && n >= pow2(Nl)) // exc. -> inh.
+				else if (m < pow2(Nl_exc) && n >= pow2(Nl_exc)) // exc. -> inh.
 					f << w_ei << " ";
-				else if (m >= pow2(Nl) && n < pow2(Nl)) // inh. -> exc.
+				else if (m >= pow2(Nl_exc) && n < pow2(Nl_exc)) // inh. -> exc.
 					f << w_ie << " ";
-				else if (m >= pow2(Nl) && n >= pow2(Nl)) // inh. -> inh.
+				else if (m >= pow2(Nl_exc) && n >= pow2(Nl_exc)) // inh. -> inh.
 					f << w_ii << " ";
 
 			}
@@ -1763,7 +1773,7 @@ int readCouplingStrengths(string file)
 		{
 			if (phase == 1) // now begins the second phase
 			{
-				if (m != pow2(Nl) || n != pow2(Nl)) // if dimensions do not match
+				if (m != pow2(Nl_exc) || n != pow2(Nl_exc)) // if dimensions do not match
 				{
 					f.close();
 					return 0;
@@ -1780,7 +1790,7 @@ int readCouplingStrengths(string file)
 
 	f.close();
 
-	if (m != pow2(Nl) || n != pow2(Nl)) // if dimensions do not match
+	if (m != pow2(Nl_exc) || n != pow2(Nl_exc)) // if dimensions do not match
 	{
 		return 0;
 	}
@@ -1790,7 +1800,7 @@ int readCouplingStrengths(string file)
 
 /*** setStimulationEnd ***
  * Tells the Network instance the end of stimulation (even if not all stimuli are yet set) *
- * - int stim_end: the time step in which stimulation ends */
+ * - int stim_end: the timestep in which stimulation ends */
 void setStimulationEnd(int stim_end)
 {
 	if (stim_end > stimulation_end)
@@ -1799,7 +1809,7 @@ void setStimulationEnd(int stim_end)
 
 
 /*** setSpikeStorageTime ***
- * Sets the number of timesteps for which spikes have to be kept *
+ * Sets the number of timesteps for which spikes have to be kept in RAM *
  * - int storage_steps: the size of the storage timespan in timesteps */
 void setSpikeStorageTime(int storage_steps)
 {
@@ -1922,18 +1932,18 @@ void setPSThresholds(double _theta_pro_P, double _theta_pro_C, double _theta_pro
  * Sets all parameters, creates neurons and synapses *
  * --> it is required to call setSynTimeConstant and setCouplingStrengths immediately *
  *     after calling this constructor! *
- * - double _dt: the length of one time step in s *
- * - int _Nl: the number of neurons in one line in excitatory population (row/column) *
+ * - double _dt: the length of one timestep in s *
+ * - int _Nl_exc: the number of neurons in one line in excitatory population (row/column) *
  * - int _Nl_inh: the number of neurons in one line in inhibitory population (row/column) - line structure so that stimulation of inhib. *
                   population could be implemented more easily *
  * - double _p_c: connection probability *
  * - double _sigma_plasticity: standard deviation of the plasticity *
  * - double _z_max: the upper z bound */
 
-Network(const double _dt, const int _Nl, const int _Nl_inh, double _p_c, double _sigma_plasticity, double _z_max) :
-        dt(_dt), rg(getClockSeed()), u_dist(0.0,1.0), norm_dist(0.0,1.0), Nl(_Nl), Nl_inh(_Nl_inh), z_max(_z_max)
+Network(const double _dt, const int _Nl_exc, const int _Nl_inh, double _p_c, double _sigma_plasticity, double _z_max) :
+        dt(_dt), rg(getClockSeed()), u_dist(0.0,1.0), norm_dist(0.0,1.0), Nl_exc(_Nl_exc), Nl_inh(_Nl_inh), z_max(_z_max)
 {
-	N = pow2(Nl) + pow2(Nl_inh); // total number of neurons
+	N = pow2(Nl_exc) + pow2(Nl_inh); // total number of neurons
 
 	p_c = _p_c; // set connection probability
 
@@ -1986,7 +1996,7 @@ Network(const double _dt, const int _Nl, const int _Nl_inh, double _p_c, double 
 
 	for (int m=0; m<N; m++)
 	{
-		if (m < pow2(Nl)) // first Nl^2 neurons are excitatory
+		if (m < pow2(Nl_exc)) // first Nl_exc^2 neurons are excitatory
 			neurons[m].setType(TYPE_EXC);
 		else // remaining neurons are inhibitory
 			neurons[m].setType(TYPE_INH);
@@ -2111,18 +2121,18 @@ double getStimulusCurrent(int m) const
 	return neurons[m].getStimulusCurrent();
 }
 
-/*** getFluctCurrent ***
- * Returns fluctuating current evoked by external synapses in neuron (i|j) *
+/*** getBGCurrent ***
+ * Returns background noise current entering neuron (i|j) *
  * - int i: the row where the neuron is located *
  * - int j: the column where the neuron is located *
  * - return: the instantaneous fluctuating current in nA */
-double getFluctCurrent(int i, int j) const
+double getBGCurrent(int i, int j) const
 {
-	return neurons[cNN(i,j)].getFluctCurrent();
+	return neurons[cNN(i,j)].getBGCurrent();
 }
-double getFluctCurrent(int m) const
+double getBGCurrent(int m) const
 {
-	return neurons[m].getFluctCurrent();
+	return neurons[m].getBGCurrent();
 }
 
 /*** getConstCurrent ***
@@ -2154,7 +2164,7 @@ double getSigma(int m) const
 }
 
 /*** getSynapticCurrent ***
- * Returns the synaptic current that arrived in the previous time step *
+ * Returns the synaptic current that arrived in the previous timestep *
  * - int i: the row where the neuron is located *
  * - int j: the column where the neuron is located *
  * - return: the synaptic current in nA */
@@ -2169,7 +2179,7 @@ double getSynapticCurrent(int m) const
 
 #if DENDR_SPIKES == ON
 /*** getDendriticCurrent ***
- * Returns the current that dendritic spiking caused in the previous time step *
+ * Returns the current that dendritic spiking caused in the previous timestep *
  * - int i: the row where the neuron is located *
  * - int j: the column where the neuron is located *
  * - return: the synaptic current in nA */
@@ -2185,7 +2195,7 @@ double getDendriticCurrent(int m) const
 
 #if COND_BASED_SYN == ON
 /*** getExcSynapticCurrent ***
- * Returns the internal excitatory synaptic current that arrived in the previous time step *
+ * Returns the internal excitatory synaptic current that arrived in the previous timestep *
  * - return: the excitatory synaptic current in nA */
 double getExcSynapticCurrent(int i, int j) const
 {
@@ -2197,7 +2207,7 @@ double getExcSynapticCurrent(int m) const
 }
 
 /*** getInhSynapticCurrent ***
- * Returns the internal inhibitory synaptic current that arrived in the previous time step *
+ * Returns the internal inhibitory synaptic current that arrived in the previous timestep *
  * - return: the inhibitory synaptic current in nA */
 double getInhSynapticCurrent(int i, int j) const
 {

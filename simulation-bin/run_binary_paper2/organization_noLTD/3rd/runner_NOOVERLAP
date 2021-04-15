@@ -1,0 +1,10 @@
+#!/bin/sh
+learned_dir="../2nd"
+
+### NO ###
+cd NOOVERLAP
+cp "../$learned_dir/NOOVERLAP/"*/*"_connections.txt" connections.txt
+cp "../$learned_dir/NOOVERLAP/"*"/saved_state.txt" saved_state.txt
+screen -d -m /bin/sh run
+
+cd ..

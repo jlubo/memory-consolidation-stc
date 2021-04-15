@@ -1,0 +1,28 @@
+#!/bin/sh
+learned_dir="../1st/FIRST"
+
+### 10 ###
+cd OVERLAP10
+cp "../$learned_dir/"*/*"_connections.txt" connections.txt
+cp "../$learned_dir/"*"/saved_state.txt" saved_state.txt
+screen -d -m /bin/sh run
+
+### 15 ###
+cd ../OVERLAP15
+cp "../$learned_dir/"*/*"_connections.txt" connections.txt
+cp "../$learned_dir/"*"/saved_state.txt" saved_state.txt
+screen -d -m /bin/sh run
+
+### 20 ###
+cd "../OVERLAP20"
+cp "../$learned_dir/"*/*"_connections.txt" connections.txt
+cp "../$learned_dir/"*"/saved_state.txt" saved_state.txt
+screen -d -m /bin/sh run
+
+### NO ###
+cd ../NOOVERLAP
+cp "../$learned_dir/"*/*"_connections.txt" connections.txt
+cp "../$learned_dir/"*"/saved_state.txt" saved_state.txt
+screen -d -m /bin/sh run
+
+cd ..

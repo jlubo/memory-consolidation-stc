@@ -17,18 +17,18 @@ np.set_printoptions(threshold=1e10, linewidth=200) # extend console print range 
 # nppath: path to the network_plots directory to read the data from
 # timestamp: a string containing date and time (to access correct paths)
 # core: array of the neurons belonging to the stimulated core
-# Nl: the number of excitatory neurons in one line of a quadratic grid
+# Nl_exc: the number of excitatory neurons in one line of a quadratic grid
 # time_for_activity: the time that at whcih the activites shall be read out (some time during recall)
 # recall_fraction: the fraction of core neurons that are activated for recall
-def calculateQ(nppath, timestamp, core, Nl, time_for_activity, recall_fraction):
+def calculateQ(nppath, timestamp, core, Nl_exc, time_for_activity, recall_fraction):
 
 	core_recall = core[0:int(np.floor(float(recall_fraction)*core.shape[0]))]
 	core_norecall = core[np.logical_not(np.in1d(core, core_recall))]
-	control = np.delete(np.arange(Nl*Nl), core)
+	control = np.delete(np.arange(Nl_exc*Nl_exc), core)
 
 	path = ""
 
-	v_array = np.zeros(Nl*Nl) # data array
+	v_array = np.zeros(Nl_exc*Nl_exc) # data array
 
 	# look for data file [timestamp]_net_[time_for_activity].txt
 	path = ""
@@ -56,15 +56,15 @@ def calculateQ(nppath, timestamp, core, Nl, time_for_activity, recall_fraction):
 	nn = len(rawdata)-1
 	f.close()
 
-	if nn != 2*Nl*Nl+Nl+3:
-		raise ValueError(str(nn) + ' instead of ' + str(2*Nl*Nl+Nl+3) + ' lines in data file "' + path + '"')
+	if nn != 2*Nl_exc*Nl_exc+Nl_exc+3:
+		raise ValueError(str(nn) + ' instead of ' + str(2*Nl_exc*Nl_exc+Nl_exc+3) + ' lines in data file "' + path + '"')
 
-	offset = 2*Nl*Nl+2
+	offset = 2*Nl_exc*Nl_exc+2
 
 	for n in range(nn-1): # loop over lines
 
 		if n >= offset:
-			n2 = (n - offset) * Nl
+			n2 = (n - offset) * Nl_exc
 			line_values = rawdata[n].split("\t\t")
 
 			for p in range(len(line_values)):

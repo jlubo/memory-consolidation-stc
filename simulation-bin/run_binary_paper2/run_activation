@@ -1,0 +1,5 @@
+#!/bin/sh
+
+cd activation/
+/bin/sh "runner"
+cd ..

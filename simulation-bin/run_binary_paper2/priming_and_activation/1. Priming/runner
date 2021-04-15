@@ -1,0 +1,79 @@
+#!/bin/sh
+
+# first copies data from learning/consolidation simulation and then runs simulation to prime one of the assemblies;
+# later, other simulations are run to investigate spontaneous activation
+
+# uses 'screen' to run process(es) in the background
+
+organization_dir="../../../organization" # re-uses "FIRST", "SECOND", and "THIRD" binaries from "organization"
+learned_dir="../../../organization/3rd" # starts after the third assembly has been learned and consolidated
+
+# OVERLAP10
+cd OVERLAP10/A
+cp "../$organization_dir/1st/FIRST/net.out" .
+cp "../$learned_dir/OVERLAP10/connections.txt" .
+cp "../$learned_dir/OVERLAP10/"*/*/*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run
+cd ../B
+cp "../$organization_dir/2nd/OVERLAP10/net.out" .
+cp "../$learned_dir/OVERLAP10/connections.txt" .
+cp "../$learned_dir/OVERLAP10/"*/*/*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run
+cd ../C
+cp "../$organization_dir/3rd/OVERLAP10/net.out" .
+cp "../$learned_dir/OVERLAP10/connections.txt" .
+cp "../$learned_dir/OVERLAP10/"*/*/*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run
+
+# OVERLAP10 no AC, no ABC
+cd "../../OVERLAP10 no AC, no ABC/A"
+cp "../$organization_dir/1st/FIRST/net.out" .
+cp "../$learned_dir/OVERLAP10 no AC, no ABC/connections.txt" .
+cp "../$learned_dir/OVERLAP10 no AC, no ABC/"*/*/*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run
+cd "../B"
+cp "../$organization_dir/2nd/OVERLAP10/net.out" .
+cp "../$learned_dir/OVERLAP10 no AC, no ABC/connections.txt" .
+cp "../$learned_dir/OVERLAP10 no AC, no ABC/"*/*/*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run
+cd "../C"
+cp "../$organization_dir/3rd/OVERLAP10 no AC, no ABC/net.out" .
+cp "../$learned_dir/OVERLAP10 no AC, no ABC/connections.txt" .
+cp "../$learned_dir/OVERLAP10 no AC, no ABC/"*/*/*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run
+
+# OVERLAP10 no BC, no ABC
+cd "../../OVERLAP10 no BC, no ABC/A"
+cp "../$organization_dir/1st/FIRST/net.out" .
+cp "../$learned_dir/OVERLAP10 no BC, no ABC/connections.txt" .
+cp "../$learned_dir/OVERLAP10 no BC, no ABC/"*/*/*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run
+cd "../B"
+cp "../$organization_dir/2nd/OVERLAP10/net.out" .
+cp "../$learned_dir/OVERLAP10 no BC, no ABC/connections.txt" .
+cp "../$learned_dir/OVERLAP10 no BC, no ABC/"*/*/*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run
+cd "../C"
+cp "../$organization_dir/3rd/OVERLAP10 no BC, no ABC/net.out" .
+cp "../$learned_dir/OVERLAP10 no BC, no ABC/connections.txt" .
+cp "../$learned_dir/OVERLAP10 no BC, no ABC/"*/*/*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run
+
+# NOOVERLAP
+cd "../../NOOVERLAP/A"
+cp "../$organization_dir/1st/FIRST/net.out" .
+cp "../$learned_dir/NOOVERLAP/connections.txt" .
+cp "../$learned_dir/NOOVERLAP/"*/*/*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run
+cd "../B"
+cp "../$organization_dir/2nd/NOOVERLAP/net.out" .
+cp "../$learned_dir/NOOVERLAP/connections.txt" .
+cp "../$learned_dir/NOOVERLAP/"*/*/*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run
+cd "../C"
+cp "../$organization_dir/3rd/NOOVERLAP/net.out" .
+cp "../$learned_dir/NOOVERLAP/connections.txt" .
+cp "../$learned_dir/NOOVERLAP/"*/*/*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run
+
+cd ../..

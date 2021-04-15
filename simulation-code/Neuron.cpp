@@ -30,7 +30,7 @@ friend class boost::serialization::access;
 private:
 
 /*** Computational parameters ***/
-double dt; // s, one time step for numerical simulation
+double dt; // s, one timestep for numerical simulation
 
 /*** State variables ***/
 double V; // mV, the current membrane potential at the soma
@@ -44,7 +44,7 @@ double dendr_inp_integral; // nC, the integral over the charge deposited in the 
 vector<double> dendr_inp_history; // nC, vector containing the PSC amplitudes of the last 2 ms
 double dendr_int_window; // s, dendritic integration window
 double refractory_dendr; // s, time span until refractory period for dendritic spikes is over
-double t_ref_dendr; // s, absolute refractory period for dendritic spikes - has to be at least one time step!
+double t_ref_dendr; // s, absolute refractory period for dendritic spikes - has to be at least one timestep!
 double dendr_spike_threshold; // nC, threshold that dendr_inp_integral has to cross for a dendritic spike to be evoked
 double I_dendr_A_amp; // nC, amplitude of first current component of dendritic spikes
 double I_dendr_B_amp; // nC, amplitude of second current component of dendritic spikes
@@ -61,8 +61,8 @@ double exp2; // mV, the slow component of the adaptive voltage threshold
 double p_P; // the protein amount for LTP in this neuron
 double p_C; // the common protein amount for LTP and LTP in this neuron
 double p_D; // the protein amount for LTD in this neuron
-double I_cst; // nA, the externally applied stimulus current
-double I_ext; // nA, the current evoked by external synaptic inputs (computed using an OU process with mean 0)
+double I_stim; // nA, the externally applied stimulus current
+double I_bg; // nA, the external background noise current (computed using Gaussian noise or an OU process with mean 0)
 #if COND_BASED_SYN == ON
 double I_int_exc; // nA, the synaptic input from excitatory network neurons affecting this neuron
 double I_int_inh; // nA, the synaptic input from inhibitory network neurons affecting this neuron
@@ -73,7 +73,7 @@ double I_int; // nA, the synaptic input from other network neurons affecting thi
 double refractory; // s, time span until absolute refractory period is over
 bool active; // specifies if neuron is currently spiking
 int spike_count; // the total number of spikes that occurred since the last reset
-vector<int> spike_history; // vector of all spike times (in units of time steps) in the process since the last reset
+vector<int> spike_history; // vector of all spike times (in units of timesteps) in the process since the last reset
 int spike_history_reserve; // the maximum number of spikes
 int inh_incoming; // number of incoming inhibitory connections in a network
 int exc_incoming; // number of incoming excitatory connections in a network
@@ -94,7 +94,7 @@ double tau_mem; // s, the membrane time constant
 double R_mem; // MΩ, resistance of the cell membrane
 double V_rev; // mV, the reversal potential of the neuron
 double V_reset; // mV, the reset potential of the neuron
-double t_ref; // s, absolute refractory period - has to be at least one time step!
+double t_ref; // s, absolute refractory period - has to be at least one timestep!
 #if NEURON_MODEL == LIF
 double V_th; // mV, the threshold potential of the neuron
 double V_spike; // mV, the height of an action potential
@@ -199,8 +199,8 @@ template<class Archive> void serialize(Archive &ar, const unsigned int version)
 	ar & p_P;
 	ar & p_C;
 	ar & p_D;
-	ar & I_cst;
-	ar & I_ext;
+	ar & I_stim;
+	ar & I_bg;
 #if COND_BASED_SYN == ON
 	ar & I_int_exc;
 	ar & I_int_inh;
@@ -308,7 +308,7 @@ double getThreshold() const
  * - return: the instantaneous current in nA */
 double getCurrent() const
 {
-	return I_cst+I_ext+I_int;
+	return I_stim+I_bg+I_int;
 }
 
 /*** getStimulusCurrent ***
@@ -316,15 +316,15 @@ double getCurrent() const
  * - return: the instantaneous current stimulus in nA */
 double getStimulusCurrent() const
 {
-	return I_cst;
+	return I_stim;
 }
 
-/*** getFluctCurrent ***
- * Returns current external current accounting for external inputs *
- * - return: the instantaneous fluctuating external synaptic current in nA */
-double getFluctCurrent() const
+/*** getBGCurrent ***
+ * Returns current external background current accounting for external inputs *
+ * - return: the instantaneous external background current in nA */
+double getBGCurrent() const
 {
-	return I_ext;
+	return I_bg;
 }
 
 /*** getConstCurrent ***
@@ -344,7 +344,7 @@ double getSigma() const
 }
 
 /*** getSynapticCurrent ***
- * Returns the internal synaptic current that arrived in the previous time step *
+ * Returns the internal synaptic current that arrived in the previous timestep *
  * - return: the synaptic current in nA */
 double getSynapticCurrent() const
 {
@@ -361,7 +361,7 @@ void setSynapticCurrent(const double _I_int)
 
 #if COND_BASED_SYN == ON
 /*** getExcSynapticCurrent ***
- * Returns the internal excitatory synaptic conductance of the previous time step *
+ * Returns the internal excitatory synaptic conductance of the previous timestep *
  * - return: the excitatory synaptic conductance in nS */
 double getExcSynapticCurrent() const
 {
@@ -369,7 +369,7 @@ double getExcSynapticCurrent() const
 }
 
 /*** getInhSynapticCurrent ***
- * Returns the internal inhibitory synaptic conductance of the previous time step *
+ * Returns the internal inhibitory synaptic conductance of the previous timestep *
  * - return: the inhibitory synaptic conductance in nS */
 double getInhSynapticCurrent() const
 {
@@ -429,7 +429,7 @@ void updateDendriteInput(const double psc_amplitude)
 }
 
 /*** getDendriticCurrent ***
- * Returns the current that dendritic spiking caused in the previous time step *
+ * Returns the current that dendritic spiking caused in the previous timestep *
  * - return: the synaptic current in nA */
 double getDendriticCurrent() const
 {
@@ -469,7 +469,7 @@ int getSpikeTime(int n) const
 }
 
 /*** spikeAt ***
- * Returns whether or not a spike has occurred at a given time step, begins searching *
+ * Returns whether or not a spike has occurred at a given timestep, begins searching *
  * from latest spike *
  * - int t_step: the time bin at which the spike should have occurred
  * - return: true if a spike occurred, false if not */
@@ -542,12 +542,12 @@ int getSpikeHistorySize() const
 }
 
 /*** processTimeStep ***
- * Processes one time step (of duration delta_t) for the neuron * 
- * - int tb_step: time step at which to evaluate stimulus (< 0 before stimulus onset) *
- * - int tb_init: initial time step for simple decay process (should be positive only in decaying state!) */
+ * Processes one timestep (of duration delta_t) for the neuron * 
+ * - int tb_step: timestep at which to evaluate stimulus (< 0 before stimulus onset) *
+ * - int tb_init: initial timestep for simple decay process (should be positive only in decaying state!) */
 void processTimeStep(int tb_step, int tb_init)
 {
-	double delta_t; // duration of the time step in seconds, either dt or tb_step-tb_init
+	double delta_t; // duration of the timestep in seconds, either dt or tb_step-tb_init
 
 	if (tb_init < 0)
 		delta_t = dt;
@@ -555,9 +555,9 @@ void processTimeStep(int tb_step, int tb_init)
 		delta_t = (tb_step - tb_init) * dt;
 
 #if SYNAPSE_MODEL == DELTA
-	I_ext = normalRandomNumber() * sqrt(1/delta_t) * sigma_WN + I_0;
+	I_bg = normalRandomNumber() * sqrt(1/delta_t) * sigma_WN + I_0;
 #elif SYNAPSE_MODEL == MONOEXP
-	I_ext = (I_ext-I_0) * exp(-delta_t/tau_OU) + normalRandomNumber() * sqrt(1. - exp(-2.*delta_t/tau_OU)) * sigma_OU + I_0; // compute external synaptic input in nA
+	I_bg = (I_bg-I_0) * exp(-delta_t/tau_OU) + normalRandomNumber() * sqrt(1. - exp(-2.*delta_t/tau_OU)) * sigma_OU + I_0; // compute external synaptic input in nA
 #endif
 
 #if COND_BASED_SYN == ON
@@ -572,72 +572,71 @@ void processTimeStep(int tb_step, int tb_init)
 
 #if NEURON_MODEL == MAT2
 
-	// MAT(2) neuron
-	V = V * exp(-delta_t/tau_mem) + R_mem*(I_int + I_ext) * (1. - exp(-delta_t/tau_mem)); // compute mem. pot. in mV (analytical solution)
+		// MAT(2) neuron
+		V = V * exp(-delta_t/tau_mem) + R_mem*(I_int + I_bg) * (1. - exp(-delta_t/tau_mem)); // compute mem. pot. in mV (analytical solution)
 
-	exp1 = exp1 * exp(-delta_t/0.01); // fast threshold relaxation
-        exp2 = exp2 * exp(-delta_t/0.2); // slow threshold relaxation
+		exp1 = exp1 * exp(-delta_t/0.01); // fast threshold relaxation
+		exp2 = exp2 * exp(-delta_t/0.2); // slow threshold relaxation
 
-	if (active)
-	{
+		if (active)
+		{
 
-		exp1 = exp1 + 0.015; // add new spike with full contribution alpha_1
-		exp2 = exp2 + 0.003; // add new spike with full contribution alpha_2
+			exp1 = exp1 + 0.015; // add new spike with full contribution alpha_1
+			exp2 = exp2 + 0.003; // add new spike with full contribution alpha_2
+			
+			active = false;
+		}
 		
-		active = false;
-	}
-	
-	ad_th = ad_th_limit + exp1 + exp2; // update adaptive threshold
+		ad_th = ad_th_limit + exp1 + exp2; // update adaptive threshold
 
 #elif NEURON_MODEL == LIF
 
 #if DENDR_SPIKES == ON
 
-	// exponential decay of dendritic spikes
-	I_dendr_A *= exp(- delta_t / tau_dendr_A);
-	I_dendr_B *= exp(- delta_t / tau_dendr_B);
-	I_dendr_C *= exp(- delta_t / tau_dendr_C);
+		// exponential decay of dendritic spikes
+		I_dendr_A *= exp(- delta_t / tau_dendr_A);
+		I_dendr_B *= exp(- delta_t / tau_dendr_B);
+		I_dendr_C *= exp(- delta_t / tau_dendr_C);
 
-	if (refractory_dendr > EPSILON) // if in refractory period for dendritic spikes
-	{
-		refractory_dendr -= delta_t;
-	}
-	else
-	{
-		if (dendr_inp_integral > dendr_spike_threshold) // threshold has been crossed
+		if (refractory_dendr > EPSILON) // if in refractory period for dendritic spikes
 		{
-			// dendrite spike contributions do not have to be added up because possible remaining contributions should have decayed to zero
-			I_dendr_A = -55.; //I_dendr_A -= 55.;
-			I_dendr_B = 64.; //I_dendr_B += 64.;
-			I_dendr_C = -9.; //I_dendr_C -= 9.;
-
-			refractory_dendr = t_ref_dendr;
+			refractory_dendr -= delta_t;
 		}
-	}
+		else
+		{
+			if (dendr_inp_integral > dendr_spike_threshold) // threshold has been crossed
+			{
+				// dendrite spike contributions do not have to be added up because possible remaining contributions should have decayed to zero
+				I_dendr_A = -55.; //I_dendr_A -= 55.;
+				I_dendr_B = 64.; //I_dendr_B += 64.;
+				I_dendr_C = -9.; //I_dendr_C -= 9.;
 
-	//compDendriticCurrent(tb_step*delta_t - I_dendr_A);
-	I_dendr = I_dendr_A + I_dendr_B + I_dendr_C;
-		
-	dendr_inp_integral -= dendr_inp_history[0]; // remove oldest contributions from integral
-	dendr_inp_history.erase(dendr_inp_history.begin()); // remove oldest contributions from history
-	dendr_inp_history.push_back(0.); // add slot for new contributions
+				refractory_dendr = t_ref_dendr;
+			}
+		}
+
+		//compDendriticCurrent(tb_step*delta_t - I_dendr_A);
+		I_dendr = I_dendr_A + I_dendr_B + I_dendr_C;
+			
+		dendr_inp_integral -= dendr_inp_history[0]; // remove oldest contributions from integral
+		dendr_inp_history.erase(dendr_inp_history.begin()); // remove oldest contributions from history
+		dendr_inp_history.push_back(0.); // add slot for new contributions
 
 #endif
 
-	// LIF
-	//V += delta_t/tau_mem * (- V + V_rev + R_mem*(I_ext + I_int)); // compute mem. pot. in mV (Euler method)
-	V = V * exp(-delta_t/tau_mem) + (V_rev + R_mem*(  I_ext 
-	                                                + I_int
+		// LIF
+		//V += delta_t/tau_mem * (- V + V_rev + R_mem*(I_bg + I_int)); // compute mem. pot. in mV (Euler method)
+		V = V * exp(-delta_t/tau_mem) + (V_rev + R_mem*(  I_bg 
+			                                        + I_int
 #if DENDR_SPIKES == ON
-	                                                + I_dendr
+		                                                + I_dendr
 #endif
-	                                                         )) * (1. - exp(-delta_t/tau_mem)); // compute mem. pot. in mV (analytical solution)
+		                                                         )) * (1. - exp(-delta_t/tau_mem)); // compute mem. pot. in mV (analytical solution)
 
 
 
 #endif
 
-	
 #ifdef TWO_NEURONS_ONE_SYNAPSE
 	} // poisson_neuron == false
 
@@ -647,17 +646,17 @@ void processTimeStep(int tb_step, int tb_init)
 		V = V_reset;
 	} // poisson_neuron == true
 #endif
-	if (cst.isSet() && tb_init < 0 && abs(I_cst = cst.get(tb_step)) > EPSILON) // stimulation; get stimulus current in nA
+	if (cst.isSet() && tb_init < 0 && abs(I_stim = cst.get(tb_step)) > EPSILON) // stimulation; get stimulus current in nA
 	{
 #if STIM_TYPE == POISSON_STIMULATION
-		V += R_mem * I_cst;
+		V += R_mem * I_stim;
 #else
-		V += R_mem * I_cst * (1. - exp(-delta_t/tau_mem));
+		V += R_mem * I_stim * (1. - exp(-delta_t/tau_mem));
 #endif
 
 #ifdef TWO_NEURONS_ONE_SYNAPSE
 	#if NEURON_MODEL == MAT2
-		V = ad_th; // definite spiking (the magnitude of I_cst is not important as long as it is finite)
+		V = ad_th; // definite spiking (the magnitude of I_stim is not important as long as it is finite)
 	#elif NEURON_MODEL == LIF
 		V = V_th;
 	#endif
@@ -796,7 +795,7 @@ void setType(int _type)
 }
 
 /*** setSpikeHistoryMemory ***
- * Sets the size that shall be reserved for the spike history *
+ * Sets the RAM size that shall be reserved for the spike history *
  * - int storage_steps: the size of the storage timespan in timesteps *
  * - return: the reserved size of the spike history vector */
 int setSpikeHistoryMemory(int storage_steps)
@@ -866,8 +865,8 @@ void reset()
 	p_P = 0.0;
 	p_C = 0.0;
 	p_D = 0.0;
-	I_cst = 0.0;
-	I_ext = 0.0;
+	I_stim = 0.0;
+	I_bg = 0.0;
 #if COND_BASED_SYN == ON
 	I_int_exc = 0.0;
 	I_int_inh = 0.0;

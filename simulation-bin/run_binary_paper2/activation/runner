@@ -1,0 +1,121 @@
+#!/bin/sh
+
+# first copies data from learning/consolidation simulation and then runs simulation to investigate spontaneous activation
+
+# uses 'screen' to run process(es) in the background
+
+learned_dir="../organization/3rd"
+
+### 10 ###
+cd OVERLAP10
+cp "../net_activation.out" .
+cp "../../../../analysis/overlapParadigms.py" .
+cp "../../../../analysis/utilityFunctions.py" .
+cp "../../../../analysis/assemblyAvalancheStatistics.py" .
+cp "../$learned_dir/OVERLAP10/connections.txt" .
+cp "../$learned_dir/OVERLAP10/"*/*/*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run 
+cd "../OVERLAP10 no ABC"
+cp "../net_activation.out" .
+cp "../../../../analysis/overlapParadigms.py" .
+cp "../../../../analysis/utilityFunctions.py" .
+cp "../../../../analysis/assemblyAvalancheStatistics.py" .
+cp "../$learned_dir/OVERLAP10 no ABC/connections.txt" .
+cp "../$learned_dir/OVERLAP10 no ABC/"*/*/*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run
+cd "../OVERLAP10 no AC, no ABC"
+cp "../net_activation.out" .
+cp "../../../../analysis/overlapParadigms.py" .
+cp "../../../../analysis/utilityFunctions.py" .
+cp "../../../../analysis/assemblyAvalancheStatistics.py" .
+cp "../$learned_dir/OVERLAP10 no AC, no ABC/connections.txt" .
+cp "../$learned_dir/OVERLAP10 no AC, no ABC/"*/*/*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run
+cd "../OVERLAP10 no BC, no ABC"
+cp "../net_activation.out" .
+cp "../../../../analysis/overlapParadigms.py" .
+cp "../../../../analysis/utilityFunctions.py" .
+cp "../../../../analysis/assemblyAvalancheStatistics.py" .
+cp "../$learned_dir/OVERLAP10 no BC, no ABC/connections.txt" .
+cp "../$learned_dir/OVERLAP10 no BC, no ABC/"*/*/*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run
+
+### 15 ###
+cd ../OVERLAP15
+cp "../net_activation.out" .
+cp "../../../../analysis/overlapParadigms.py" .
+cp "../../../../analysis/utilityFunctions.py" .
+cp "../../../../analysis/assemblyAvalancheStatistics.py" .
+cp "../$learned_dir/OVERLAP15/connections.txt" .
+cp "../$learned_dir/OVERLAP15/"*/*/*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run
+cd "../OVERLAP15 no ABC"
+cp "../net_activation.out" .
+cp "../../../../analysis/overlapParadigms.py" .
+cp "../../../../analysis/utilityFunctions.py" .
+cp "../../../../analysis/assemblyAvalancheStatistics.py" .
+cp "../$learned_dir/OVERLAP15 no ABC/connections.txt" .
+cp "../$learned_dir/OVERLAP15 no ABC/"*/*/*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run
+cd "../OVERLAP15 no AC, no ABC"
+cp "../net_activation.out" .
+cp "../../../../analysis/overlapParadigms.py" .
+cp "../../../../analysis/utilityFunctions.py" .
+cp "../../../../analysis/assemblyAvalancheStatistics.py" .
+cp "../$learned_dir/OVERLAP15 no AC, no ABC/connections.txt" .
+cp "../$learned_dir/OVERLAP15 no AC, no ABC/"*/*/*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run
+cd "../OVERLAP15 no BC, no ABC"
+cp "../net_activation.out" .
+cp "../../../../analysis/overlapParadigms.py" .
+cp "../../../../analysis/utilityFunctions.py" .
+cp "../../../../analysis/assemblyAvalancheStatistics.py" .
+cp "../$learned_dir/OVERLAP15 no BC, no ABC/connections.txt" .
+cp "../$learned_dir/OVERLAP15 no BC, no ABC/"*/*/*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run
+
+### 20 ###
+cd "../OVERLAP20"
+cp "../net_activation.out" .
+cp "../../../../analysis/overlapParadigms.py" .
+cp "../../../../analysis/utilityFunctions.py" .
+cp "../../../../analysis/assemblyAvalancheStatistics.py" .
+cp "../$learned_dir/OVERLAP20/connections.txt" .
+cp "../$learned_dir/OVERLAP20/"*/*/*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run
+cd "../OVERLAP20 no ABC"
+cp "../net_activation.out" .
+cp "../../../../analysis/overlapParadigms.py" .
+cp "../../../../analysis/utilityFunctions.py" .
+cp "../../../../analysis/assemblyAvalancheStatistics.py" .
+cp "../$learned_dir/OVERLAP20 no ABC/connections.txt" .
+cp "../$learned_dir/OVERLAP20 no ABC/"*/*/*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run
+cd "../OVERLAP20 no AC, no ABC"
+cp "../net_activation.out" .
+cp "../../../../analysis/overlapParadigms.py" .
+cp "../../../../analysis/utilityFunctions.py" .
+cp "../../../../analysis/assemblyAvalancheStatistics.py" .
+cp "../$learned_dir/OVERLAP20 no AC, no ABC/connections.txt" .
+cp "../$learned_dir/OVERLAP20 no AC, no ABC/"*/*/*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run
+cd "../OVERLAP20 no BC, no ABC"
+cp "../net_activation.out" .
+cp "../../../../analysis/overlapParadigms.py" .
+cp "../../../../analysis/utilityFunctions.py" .
+cp "../../../../analysis/assemblyAvalancheStatistics.py" .
+cp "../$learned_dir/OVERLAP20 no BC, no ABC/connections.txt" .
+cp "../$learned_dir/OVERLAP20 no BC, no ABC/"*/*/*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run
+
+### NO ###
+cd ../NOOVERLAP
+cp "../net_activation.out" .
+cp "../../../../analysis/overlapParadigms.py" .
+cp "../../../../analysis/utilityFunctions.py" .
+cp "../../../../analysis/assemblyAvalancheStatistics.py" .
+cp "../$learned_dir/NOOVERLAP/connections.txt" .
+cp "../$learned_dir/NOOVERLAP/"*/*/*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run
+
+cd ..

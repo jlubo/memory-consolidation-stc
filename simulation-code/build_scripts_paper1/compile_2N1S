@@ -1,0 +1,17 @@
+#!/bin/sh
+
+current_working_dir=${PWD}
+cd ..
+
+rm -f code.zip
+zip -q -D code.zip * -x *.out *.o *.txt
+g++ -std=c++11 \
+    -O2 NetworkMain.cpp \
+    -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default \
+    -D TWO_NEURONS_ONE_SYNAPSE_ALT \
+    -Wno-unused-result \
+    -lboost_serialization -static \
+    -o "2N1S.out"
+rm code.zip
+
+cd "${current_working_dir}"

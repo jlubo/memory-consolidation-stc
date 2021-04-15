@@ -12,12 +12,13 @@ extern uint8_t data_end[] asm("_binary_code_zip_end"); // end of file attachment
 extern uint8_t data2[] asm("_binary_plotFunctions_py_start"); // start of file attachment "plotFunctions.py"
 extern uint8_t data2_end[] asm("_binary_plotFunctions_py_end"); // end of file attachment "plotFunctions.py"
 
-int Nl = 40; // number of neurons in one row of the excitatory population (total number: Nl^2)
+int Nl_exc = 40; // number of neurons in one row of the excitatory population (total number: Nl_exc^2)
 int Nl_inh = 20; // number of neurons in one row of the inhibitory population (total number: Nl_inh^2)
 
-double dt = 0.0002; // s, duration of one time step 
+double dt = 0.0002; // s, duration of one timestep 
 double t_max = 28810.0; // s, total duration of the simulation
-double t_wfr = 0.5; // s, size of the sliding time window for firing rate computation
+double t_wfr = 0.5; // s, size of the sliding time window for firing rate computation (ATTENTION: should not be chosen too small 
+                       // because it controls the removal of old spikes from RAM, see NetworkSimulation::instFiringRates())
 
 double w_ee = 1.0; // coupling strength for excitatory inputs to excitatory neurons as multiple of h_0 (thus equals h_0) 
 double w_ei = 2.0; // coupling strength for excitatory inputs to inhibitory neurons as multiple of h_0
@@ -43,12 +44,11 @@ double z_max = 1.; // the upper late-phase bound
 double recall_fraction = 0.5; // the fraction of neurons in the cell assembly that is stimulated to trigger recall
 int N_stim = 25; // number of hypothetical synapses used for stimulation
 
-bool ff_enabled = true; // specifies if fast-forward mode (no computation of spiking dynamics) is allowed
-int output_period = 10; // in general, every "output_period-th" time step, data will be recorded for plotting
-int net_output_period = -1; //int(round(50.0/dt)); // every "net_output_period-th" time step, a network plot will be created;
-                            // NOTE: should be chosen to be a multiple of the FF mode timestep delta_t;
-                            // ATTENTION: should not be chosen too small because it causes removal of spikes
+double oscill_inp_mean = 0.; // nA, 
+double oscill_inp_amp = 0.; // nA, 
 
+bool ff_enabled = true; // specifies if fast-forward mode (no computation of spiking dynamics) is allowed
+int output_period = 10; // in general, every "output_period-th" timestep, data will be recorded for plotting
 
 /*** main ***
  * - argc: the number of arguments *
@@ -62,7 +62,6 @@ int main(int argc, char** argv)
 	string prot_learn = ""; // the used stimulus protocol for training
 	string prot_recall = ""; // the used stimulus protocol for recall
 	string purpose = ""; // short description of the purpose of this simulation
-	bool purpose_set = false; // specifies whether the purpose variable has been set by argument (to enable setting no purpose)
 
 	free(cd); // get_current_dir_name() uses malloc() for memory allocation
 
@@ -88,12 +87,11 @@ int main(int argc, char** argv)
 		{
 			pt = strstr(argv[i], "=") + 1;
 			purpose = string(pt);
-			purpose_set = true;
 			continue;
 		}
 		else if (strstr(argv[i], "-nopurpose") == argv[i])
 		{
-			purpose_set = true;
+			purpose = string("");
 			continue;
 		}
 		else if (strstr(argv[i], "-noff") == argv[i])
@@ -122,20 +120,28 @@ int main(int argc, char** argv)
 			w_ii = read;
 		else if (strstr(argv[i], "-z_max=") == argv[i] || strstr(argv[i], "-zmax=") == argv[i])
 			z_max = read;
-		else if (strstr(argv[i], "-theta_pro_P=") == argv[i])
-			theta_pro_P = read;
+		else if (strstr(argv[i], "-nm=") == argv[i])
+			theta_pro_C = 1. / (read + 0.001); // compute threshold theta_pro_C (in units of h_0) from neuromodulator concentration
 		else if (strstr(argv[i], "-theta_pro_C=") == argv[i] || strstr(argv[i], "-theta_pro=") == argv[i])
 			theta_pro_C = read;
+		else if (strstr(argv[i], "-theta_pro_P=") == argv[i])
+			theta_pro_P = read;
 		else if (strstr(argv[i], "-theta_pro_D=") == argv[i])
 			theta_pro_D = read;
 		else if (strstr(argv[i], "-I_0=") == argv[i] || strstr(argv[i], "-I_const=") == argv[i])
 			I_0 = read;
 		else if (strstr(argv[i], "-Nl_exc=") == argv[i] || strstr(argv[i], "-Nl=") == argv[i])
-			Nl = int(read);
+			Nl_exc = int(read);
 		else if (strstr(argv[i], "-Nl_inh=") == argv[i])
 			Nl_inh = int(read);
 		else if (strstr(argv[i], "-N_stim=") == argv[i])
 			N_stim = int(read);
+#if OSCILL_INP != OFF
+		else if (strstr(argv[i], "-oscill_inp_mean=") == argv[i])
+			oscill_inp_mean = read;
+		else if (strstr(argv[i], "-oscill_inp_amp=") == argv[i])
+			oscill_inp_amp = read;
+#endif
 		else if (strstr(argv[i], "-t_max=") == argv[i] || strstr(argv[i], "-tmax=") == argv[i])
 			t_max = read;
 		else if (strstr(argv[i], "-t_wfr=") == argv[i])
@@ -146,8 +152,8 @@ int main(int argc, char** argv)
 			sigma_plasticity = read;
 		else if (strstr(argv[i], "-output_period=") == argv[i])
 			output_period = int(read);
-		else if (strstr(argv[i], "-net_output_period=") == argv[i])
-			net_output_period = int(read);
+		else if (strstr(argv[i], "-net_output_period=") == argv[i]) // DEPRECATED
+			cout << "WARNING: command line option \'net_output_period\' is deprecated." << endl;
 		else if (strstr(argv[i], "-theta_p=") == argv[i])
 			theta_p = read;
 		else if (strstr(argv[i], "-theta_d=") == argv[i])
@@ -169,7 +175,7 @@ int main(int argc, char** argv)
 		//}
 		else
 		{
-			cout << "Unrecognized command line option: " << argv[i] << endl;
+			throw runtime_error(string("Unrecognized command line argument: \'") + string(argv[i]) + string("\'."));
 			return -1;
 		}
 	}
@@ -182,7 +188,7 @@ int main(int argc, char** argv)
 	#else
 	cout << "PLASTICITY_OVER_FREQ" << endl;
 	#endif
-	Nl = 2;
+	Nl_exc = 2;
 	Nl_inh = 0;
 	I_0 = 0.;
 	sigma_WN = 0.;
@@ -191,16 +197,7 @@ int main(int argc, char** argv)
 	purpose = "seek";
 	purpose_set = true;
 	output_period = 1000;
-	net_output_period = int(t_max/dt) - 1;
 #endif
-
-	// Demand the purpose, if empty
-	if (!purpose_set)
-	{
-		cout << "Purpose: ";
-		getline(cin, purpose);
-	}
-	
 	// Create working directory and files
 	if (!prot_learn.empty())
 		path += string("_") + prot_learn;
@@ -216,7 +213,7 @@ int main(int argc, char** argv)
 	writeRunFile(string("run"), argc, argv); // writes the command line that was used to run this program in a file
 
 	// Create NetworkSimulation object and set computational parameters
-	NetworkSimulation sn = NetworkSimulation(Nl, Nl_inh, dt, t_max, p_c, sigma_plasticity, z_max, t_wfr, ff_enabled);
+	NetworkSimulation sn = NetworkSimulation(Nl_exc, Nl_inh, dt, t_max, p_c, sigma_plasticity, z_max, t_wfr, ff_enabled);
 
 	// Seeking I_0
 #ifdef SEEK_I_0 //----------------------------------------------------------------------
@@ -233,8 +230,8 @@ int main(int argc, char** argv)
 
 #endif //-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
 	
-	sn.setParams(I_0, sigma_WN, tau_syn, w_ee, w_ei, w_ie, w_ii,
-	             prot_learn, prot_recall, output_period, net_output_period, N_stim, theta_p, theta_d, Ca_pre, Ca_post, theta_pro_P, theta_pro_C, theta_pro_D, recall_fraction);
+	sn.setParams(I_0, sigma_WN, tau_syn, w_ee, w_ei, w_ie, w_ii, oscill_inp_mean, oscill_inp_amp,
+	             prot_learn, prot_recall, output_period, N_stim, theta_p, theta_d, Ca_pre, Ca_post, theta_pro_P, theta_pro_C, theta_pro_D, recall_fraction);
 
 #ifndef SEEK_I_0
 
@@ -244,8 +241,8 @@ int main(int argc, char** argv)
 
 	while(true) // is cancelled by "break" once target firing rate has been found
 	{
-		sn.setParams(I_0, sigma_WN, tau_syn, w_ee, w_ei, w_ie, w_ii,
-	             prot_learn, prot_recall, output_period, net_output_period, N_stim, theta_p, theta_d, Ca_pre, Ca_post, theta_pro_P, theta_pro_C, theta_pro_D, recall_fraction); // TODO: syntactic redundance
+		sn.setParams(I_0, sigma_WN, tau_syn, w_ee, w_ei, w_ie, w_ii, oscill_inp_mean, oscill_inp_amp,
+	             prot_learn, prot_recall, output_period, N_stim, theta_p, theta_d, Ca_pre, Ca_post, theta_pro_P, theta_pro_C, theta_pro_D, recall_fraction); // TODO: remove syntactic redundance
 
 		sn.simulate(path, (I_0 == I_0_start) ? true : false, purpose); // run the actual simulation
 

@@ -1,0 +1,24 @@
+#!/bin/sh
+
+current_working_dir=${PWD}
+cd ..
+
+# see 'Definitions.hpp' for values of CORE_SHAPE_CMD
+
+rm -f code.zip
+zip -q -D code.zip * -x *.out *.o *.txt
+
+mkdir "recall"
+
+g++ -std=c++11 -O2 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D RECALL_P2 \
+    -D CORE_SHAPE_CMD=1 -Wno-unused-result -lboost_serialization -static -o "recall/netA.out"
+
+g++ -std=c++11 -O2 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D RECALL_P2 \
+    -D CORE_SHAPE_CMD=2 -Wno-unused-result -lboost_serialization -static -o "recall/netB.out"
+
+g++ -std=c++11 -O2 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D RECALL_P2 \
+    -D CORE_SHAPE_CMD=6 -Wno-unused-result -lboost_serialization -static -o "recall/netC.out"
+
+rm -f code.zip
+
+cd "${current_working_dir}"

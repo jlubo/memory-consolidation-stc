@@ -1,0 +1,6 @@
+#!/bin/sh
+
+cd "priming_and_activation/1. Priming/"
+/bin/sh "runner"
+
+cd ../..

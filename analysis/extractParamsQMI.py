@@ -6,105 +6,19 @@
 ### Copyright 2018-2021 Jannik Luboeinski
 ### licensed under Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 
-
 import numpy as np
 import os
 import traceback
+from utilityFunctions import *
 from calculateQ import *
 from calculateMIa import *
 from pathlib import Path
 from shutil import copyfile
 
 np.set_printoptions(threshold=1e10, linewidth=200) # extend console print range for numpy arrays
-Nl = 40 # the number of excitatory neurons in one line of a quadratic grid
+
+Nl_exc = 40 # the number of excitatory neurons in one line of a quadratic grid
 ref_time = "11.0" # readout time for the reference firing rate or weight distribution (typically during learning)
-
-# hasTimestamp
-# Checks if the given filename starts with a timestamp
-# filename: a string
-# return: true if presumably there is a timestamp, false if not
-def hasTimestamp(filename):
-	try:
-		if filename[2] == "-" and filename[5] == "-" and filename[8] == "_" and \
-		   filename[11] == "-" and filename[14] == "-":
-			return True
-	except:
-		pass
-			
-	return False
-
-# readParams
-# Reads some parameters from a "[timestamp]_PARAMS.txt" file
-# path: path to the parameter file to read the data from
-def readParams(path):
-
-	try:
-		f = open(path)
-
-	except IOError:
-		print('Error opening "' + path + '"')
-		exit()
-
-	r_CA = -1 # radius of the stimulated core
-	s_CA = -1
-
-	# read activities from file and determine mean activities for different regions
-	rawdata = f.read()
-	rawdata = rawdata.split('\n')
-	nn = len(rawdata)
-	f.close()
-
-	for i in range(nn):
-		segs = rawdata[i].split(' ')
-
-		if segs[0] == "Ca_pre":
-			Ca_pre = float(segs[2])
-		elif segs[0] == "Ca_post":
-			Ca_post = float(segs[2])
-		elif segs[0] == "theta_p":
-			theta_p = float(segs[2])
-		elif segs[0] == "theta_d":
-			theta_d = float(segs[2])
-		elif segs[0] == "R_mem":
-			R_mem = float(segs[2])
-		elif segs[0] == "learning":
-			if segs[3] == "":
-				lprot = "none"
-			else:
-				lprot = segs[3]
-		elif segs[0] == "stimulus": # old version of previous condition
-			lprot = segs[2]
-		elif segs[0] == "recall" and segs[1] == "stimulus":
-			rprot = segs[3]
-		elif segs[0] == "recall" and segs[1] != "fraction": # old version of previous condition
-			rprot = segs[2]
-		elif segs[0] == "recall" and segs[1] == "fraction":
-			recall_fraction = segs[3]
-		elif segs[0] == "pc" or segs[0] == "p_c":
-			p_c = float(segs[2])
-		elif segs[0] == "w_ei":
-			w_ei = float(segs[2])
-		elif segs[0] == "w_ie":
-			w_ie = float(segs[2])
-		elif segs[0] == "w_ii":
-			w_ii = float(segs[2])
-		elif segs[0] == "theta_pro_c":
-			theta_pro_c = float(segs[2])
-		elif segs[0] == "N_stim":
-			N_stim = int(segs[2])
-		elif segs[0] == "I_const" or segs[0] == "I_0":
-			I_0 = float(segs[2])
-		elif segs[0] == "dt":
-			dt = float(segs[2])
-		elif segs[0] == "core" and segs[len(segs)-2] == "radius":
-			r_CA = int(segs[len(segs)-1])
-		elif segs[0] == "core" and (segs[2] == "first" or segs[2] == "random"):
-			s_CA = int(segs[3])
-
-	if r_CA == -1 and s_CA == -1: # is not specified in the parameter file of older data
-		r_CA = int(input('Enter the radius of the stimulated core: '))
-
-	return [w_ei, w_ie, w_ii, p_c, Ca_pre, Ca_post, theta_p, theta_d, lprot, rprot, dt, theta_pro_c, s_CA, N_stim, I_0, R_mem, recall_fraction]
 
 # extractRecursion
 # Recursively looks for data directories and extracts parameters and the Q and MI measures from them
@@ -173,7 +87,7 @@ def extractRecursion(directory, fout):
 
 				# compute the Q value
 				try:
-					Q, Q_err, v_as, v_as_err, v_ans, v_ans_err, v_ctrl, v_ctrl_err = calculateQ(full_path + os.sep + "network_plots" + os.sep, timestamp, core, Nl, readout_time, params[16])
+					Q, Q_err, v_as, v_as_err, v_ans, v_ans_err, v_ctrl, v_ctrl_err = calculateQ(full_path + os.sep + "network_plots" + os.sep, timestamp, core, Nl_exc, readout_time, params[16])
 				except OSError as e:
 					print(traceback.format_exc())
 				except ValueError as e:
@@ -187,9 +101,9 @@ def extractRecursion(directory, fout):
 				# compute the MI and selfMI value
 				try:
 					if "STIP" in params[8]: # stipulated CA
-						MI, selfMI = calculateMIa(full_path + os.sep + "network_plots" + os.sep, timestamp, Nl, readout_time, "", core)
+						MI, selfMI = calculateMIa(full_path + os.sep + "network_plots" + os.sep, timestamp, Nl_exc, readout_time, "", core)
 					else: # learned CA
-						MI, selfMI = calculateMIa(full_path + os.sep + "network_plots" + os.sep, timestamp, Nl, readout_time, ref_time)
+						MI, selfMI = calculateMIa(full_path + os.sep + "network_plots" + os.sep, timestamp, Nl_exc, readout_time, ref_time)
 				except OSError as e:
 					print(traceback.format_exc())
 				except ValueError as e:

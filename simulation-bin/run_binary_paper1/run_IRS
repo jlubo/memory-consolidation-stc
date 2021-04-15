@@ -1,0 +1,5 @@
+#!/bin/sh
+rm -f saved_state.txt
+./net150_IRS.out -Nl_exc=40 -Nl_inh=20 -t_max=30 -N_stim=25 -pc=0.1 -learn=TRIPLETf100 -recall=F100D1at20.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Learning, 10s-recall"
+mv -f saved_state0.txt saved_state.txt
+./net150_IRS.out -Nl_exc=40 -Nl_inh=20 -t_max=28820 -N_stim=25 -pc=0.1 -learn=F100D1at3610.0 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Consolidation, interm. recall, 8h-recall"

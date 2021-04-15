@@ -21,29 +21,29 @@ class Stimulus
 	{
 		private:
 
-		int n; // number of time steps for the shape
-		double* shape; // deterministic stimulus magnitude values for all time steps
+		int n; // number of timesteps for the shape
+		double* shape; // deterministic stimulus magnitude values for all timesteps
 #if STIM_TYPE != DET_STIMULATION
 		minstd_rand0 rg; // default uniform generator for random numbers
 #if STIM_TYPE == POISSON_STIMULATION
 		double expc_spikes; // expected Poisson spikes per timestep (Poisson spike occurrence frequency times the duration of one timestep)
 		double poisson_contrib; // magnitude of contribution of one Poisson spike
 		int N_P; // number of Poisson neurons
-		//double* prob_dist; // probability distribution for firing of 1,2,3...N_P Poisson neurons in one time step
+		//double* prob_dist; // probability distribution for firing of 1,2,3...N_P Poisson neurons in one timestep
 		uniform_real_distribution<double> u_dist; // uniform distribution
 #elif STIM_TYPE == GAUSS_STIMULATION || STIM_TYPE == OU_STIMULATION
 		normal_distribution<double> n_dist; // normal distribution to obtain Gaussian white noise, constructed in Neuron class constructor
 		double mean_stim; // mean of the Gaussian white noise or OU process used for stimulation
 		double sigma_stim; // standard deviation of the Gaussian white noise or OU process used for stimulation ("discrete" standard deviation, contains 1/sqrt(dt) already)
-		double expOU; // exponential decay factor for one time step of OU process
-		double noisePrefactorOU; // pre-factor for one time step for white noise in OU formula
-		double stim_prev; // value of the OU process in previous time step
+		double expOU; // exponential decay factor for one timestep of OU process
+		double noisePrefactorOU; // pre-factor for one timestep for white noise in OU formula
+		double stim_prev; // value of the OU process in previous timestep
 #endif
 #endif
 		public:
 
-		const int start; // time step at which the stimulus begins
-		const int end; // time step at which the stimulus begins
+		const int start; // timestep at which the stimulus begins
+		const int end; // timestep at which the stimulus begins
 
 		/*** getShapeLength ***
 		 * Returns the length of one period of a deterministic Stimulus shape as number of time bins *
@@ -121,7 +121,7 @@ class Stimulus
 				expc_spikes = nd_freq * dt;
 				N_P = N;			
 
-				// compute probability distribution for firing of 1,2,3...N_P Poisson neurons in one time step
+				// compute probability distribution for firing of 1,2,3...N_P Poisson neurons in one timestep
 				/*freeProbDist();
 				prob_dist = new double[N_P];
 
@@ -440,7 +440,7 @@ class Stimulus
 #endif
 	int stimulation_start; // timestep at which all stimulation begins
 	int stimulation_end; // timestep at which all stimulation ends
-	double dt; // duration of one time step in s
+	double dt; // duration of one timestep in s
 	char* ppdata; // pre-processed stimulus data (indices for each timestep that indicate if there is stimulation and what kind of stimulation it is)
 
 	public:
@@ -471,7 +471,7 @@ class Stimulus
 	 * If there is a stimulus defined for the given time, returns the stimulus magnitude at this time *
 	 * (stimulation does only take place in defined stimulus intervals, the start of an interval marks *
 	 * the start of a stimulus shape period) *
-	 * - t_step: time step at which to evaluate stimulus
+	 * - t_step: timestep at which to evaluate stimulus
 	 * - return: stimulus at given time */
 	double get(int t_step)
 	{	
@@ -484,19 +484,19 @@ class Stimulus
 				for (int i=0; i<intervals.size(); i++) // loop over stimulus intervals
 				{
 					if (t_step >= intervals[i].start && t_step < intervals[i].end)
-						return intervals[i].get(t_step); // get stimulus for this interval and time step
+						return intervals[i].get(t_step); // get stimulus for this interval and timestep
 				}
 #if STIM_PREPROC == ON
 			}
 #endif
 		}
-		return 0.; // time step does not lie within any interval / does not contain stimulation
+		return 0.; // timestep does not lie within any interval / does not contain stimulation
 	}
 
 
 	/*** stimExists ***
 	 * If there is a stimulus defined for the given time, returns true *
-	 * - t_step: time step at which to evaluate stimulus
+	 * - t_step: timestep at which to evaluate stimulus
 	 * - return: does stimulus exist at given time */
 	bool stimExists(int t_step)
 	{	
@@ -513,7 +513,7 @@ class Stimulus
 			}
 #endif
 		}
-		return false; // time step does not lie within any interval / does not contain stimulation
+		return false; // timestep does not lie within any interval / does not contain stimulation
 	}
 
 
@@ -860,7 +860,7 @@ class Stimulus
 
 	/*** Principal constructor ***
 	 * Sets main characteristics of stimulus *
-	 * - int _n: total time step count of one period */
+	 * - int _n: total timestep count of one period */
   	Stimulus(double _dt) : dt(_dt)
 	{
 		clear();

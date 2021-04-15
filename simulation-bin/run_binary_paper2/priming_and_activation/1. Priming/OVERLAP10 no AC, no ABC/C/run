@@ -1,0 +1,13 @@
+#!/bin/sh
+
+./net.out -Nl=50 -Nl_inh=25 -t_max=25300 -N_stim=25 -pc=0.1 -learn= -recall=F100D1at10 -zmax=1 -r=0.5 -w_ei=2 -w_ie=3.5 -w_ii=3.5 -output_period=10 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Priming by recall"
+
+cd "../../../2. Switching after 10 min"
+/bin/sh "runner_OVERLAP10 no AC, no ABC_C"
+cd "../3. Switching after 1 h"
+/bin/sh "runner_OVERLAP10 no AC, no ABC_C"
+cd "../4. Switching after 4 h"
+/bin/sh "runner_OVERLAP10 no AC, no ABC_C"
+cd "../5. Switching after 7 h"
+/bin/sh "runner_OVERLAP10 no AC, no ABC_C"
+

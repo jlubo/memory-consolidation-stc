@@ -1,0 +1,4 @@
+#!/bin/sh
+rm -f saved_state.txt
+./net150.out -Nl_exc=40 -Nl_inh=20 -t_max=28820 -N_stim=25 -pc=0.1 -learn=TRIPLETf100 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -noff -purpose="Recall after 8h"
+

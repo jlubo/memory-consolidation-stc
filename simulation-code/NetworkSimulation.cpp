@@ -15,26 +15,30 @@ using namespace std;
 
 // Simulation options (cf. Definitions.hpp)
 #define STIM_TYPE        OU_STIMULATION // the type of stimulation that enters the neurons (not to be confused with the stimulus protocol)
-#define STIM_PREPROC     OFF // defines if stimuli are pre-processed (at cost of memory, can speed up, but can also slow down runtime!)
 #define NEURON_MODEL     LIF // definition of the neuron model
 #define SYNAPSE_MODEL    MONOEXP // the synapse model that is used
 #define PLASTICITY       CALCIUM_AND_STC // defines what type of plasticity shall be used (or OFF)
 #define PROTEIN_POOLS    POOLS_C // the protein pool setting for synaptic consolidation/plasticity-related proteins
 #define STIPULATE_CA     OFF // if ON: stipulate a cell assembly with strong interconnections at the beginning of the learning stimulus, no actual learning is required
+#define CORE_SHAPE       FIRST // shape and position of the cell assembly
 #define CORE_SIZE        150 // size of the cell assembly
 #define COND_BASED_SYN   OFF // if ON: use conductance-based synapses that may be different for inhibitory and excitatory neurons
 #define SYN_SCALING      OFF // if ON: use synaptic scaling following Tetzlaff et al., 2013
 #define DENDR_SPIKES     OFF // if ON: use dendritic spikes as described by Jahnke et al., 2015
+#define LTP_FR_THRESHOLD 40 // threshold (in Hz) that pre- and postsynaptic firing rate have to cross for LTP to be enabled (or OFF)
+#define LTD_FR_THRESHOLD OFF // threshold (in Hz) that pre- and postsynaptic firing rate have to cross for LTD to be enabled (or OFF)
 #define FF_AFTER_LEARN   ON // if ON: employ fast-forward computing after learning stimulus
 #define FF_AFTER_STIM    OFF // if ON: employ fast-forward computing as soon as all stimulation has ended
-#define FF_AFTER_NETLOAD ON // if ON: employ fast-forward computing after loading a previous network state
+#define FF_AFTER_NETLOAD OFF // if ON: employ fast-forward computing after loading a previous network state
+#define OSCILL_INP       OFF // period of sinusoidal oscillations of input to excitatory neurons, in time steps (or OFF)
 
 // Output options (cf. Definitions.hpp)
 #define SPIKE_PLOTTING           NUMBER_AND_RASTER // defines what information about spiking dynamics is saved and plotted
 #define PRINT_CONNECTIONS        ON // if ON: output of connectivity matrix of excitatory subnetwork using Network::printConnections()
+#define STIM_PREPROC             OFF // defines if stimuli are pre-processed (at cost of memory, can speed up, but can also slow down runtime!)
 #define NET_OUTPUT_PRECISION     7 // precision of numbers (also of h_0) used for network plots
 #define OUTPUT_PRECISION         9 // precision of numbers used for plots over time
-#define SAVE_NET_STATE           ON // if ON: output of whole simulation data before recall
+#define SAVE_NET_STATE           ON // if ON: output of whole simulation data before recall (files can be several hundreds of megabytes large)
 
 #include "SpecialCases.hpp"
 #include "Tools.hpp"
@@ -49,9 +53,9 @@ class NetworkSimulation {
 private:
 
 /*** Simulation parameters ***/
-const int Nl; // number of neurons in one line (row or column) of the excitatory population
+const int Nl_exc; // number of neurons in one line (row or column) of the excitatory population
 const int Nl_inh; // number of neurons in one line (row or column) of the inhibitory population
-const double dt; // s, one time step for numerical integration
+const double dt; // s, one timestep for numerical integration
 const double t_max;  // s, total duration of simulation
 const double pc; // connection probability for unidirectional neuron connections
 double tau_syn; // s, synaptic time constant
@@ -59,7 +63,7 @@ double w_ei; // E->I coupling strength in units of h_0
 double w_ie; // I->E coupling strength in units of h_0
 double w_ii; // I->I coupling strength in units of h_0
 const double t_wfr; // s, size of the time window for computing instantaneous firing rates
-const int wfr; // size of the time window for computing instantaneous firing rates in time steps
+const int wfr; // timesteps, size of the time window for computing instantaneous firing rates
 string prot_learn; // the stimulation protocol for training
 string prot_recall; // the stimulation protocol for recall
 double recall_fraction; // recall stimulus is applied to this fraction of the original assembly
@@ -68,14 +72,17 @@ int N_stim; // the number of hypothetical synapses per neuron that are used for 
 bool ff_enabled; // specifies if fast-forward mode can be used
 Network net;  // the network
 double z_max;  // maximum late-phase coupling strength
+#if OSCILL_INP != OFF
+double oscill_inp_mean; // nA, mean of sinusoidal oscillatory input to excitatory neurons 
+double oscill_inp_amp; // nA, amplitude of sinusoidal oscillatory input to excitatory neurons
+#endif
 
 /*** Output parameters ***/
 vector<int> exc_neuron_output {};
 vector<int> inh_neuron_output {};
 vector<synapse> synapse_output {};
 int output_period; // number of timesteps to pass for the next data output (if set to 1, most detailed output is obtained)
-int net_output_period; // number of timesteps to pass for the next network plot
-vector<int> net_output {}; // vector of times for selected network plots
+vector<int> net_output {}; // vector of times selected for the output of network plots (mind the larger timesteps in FF mode!)
 
 #ifdef SEEK_I_0
 double *seekic; // pointer to a variable to communicate with the main(...) function while seeking I_0
@@ -112,10 +119,52 @@ void saveParams(string str)
 	f << "learning stimulus = STIP" << endl;
 #endif
 	f << "recall stimulus = " << prot_recall << endl;
+#if CORE_SHAPE == FIRST
 	f << "core = first " << CORE_SIZE << " neurons" << endl;
+#elif CORE_SHAPE == SECOND
+	f << "core = second " << CORE_SIZE << " neurons" << endl;
+#elif CORE_SHAPE == OVERLAP10_2ND
+	f << "core = " << CORE_SIZE << " neurons, OVERLAP10_2ND" << endl;
+#elif CORE_SHAPE == OVERLAP15_2ND
+	f << "core = " << CORE_SIZE << " neurons, OVERLAP15_2ND" << endl;
+#elif CORE_SHAPE == OVERLAP20_2ND
+	f << "core = " << CORE_SIZE << " neurons, OVERLAP20_2ND" << endl;
+#elif CORE_SHAPE == THIRD
+	f << "core = third " << CORE_SIZE << " neurons" << endl;
+#elif CORE_SHAPE == OVERLAP10_3RD
+	f << "core = " << CORE_SIZE << " neurons, OVERLAP10_3RD" << endl;
+#elif CORE_SHAPE == OVERLAP10_3RD_NO_ABC
+	f << "core = " << CORE_SIZE << " neurons, OVERLAP10_3RD_NO_ABC" << endl;
+#elif CORE_SHAPE == OVERLAP10_3RD_NO_AC_NO_ABC
+	f << "core = " << CORE_SIZE << " neurons, OVERLAP10_3RD_NO_AC_NO_ABC" << endl;
+#elif CORE_SHAPE == OVERLAP10_3RD_NO_BC_NO_ABC
+	f << "core = " << CORE_SIZE << " neurons, OVERLAP10_3RD_NO_BC_NO_ABC" << endl;
+#elif CORE_SHAPE == OVERLAP15_3RD
+	f << "core = " << CORE_SIZE << " neurons, OVERLAP15_3RD" << endl;
+#elif CORE_SHAPE == OVERLAP15_3RD_NO_ABC
+	f << "core = " << CORE_SIZE << " neurons, OVERLAP15_3RD_NO_ABC" << endl;
+#elif CORE_SHAPE == OVERLAP15_3RD_NO_AC_NO_ABC
+	f << "core = " << CORE_SIZE << " neurons, OVERLAP15_3RD_NO_AC_NO_ABC" << endl;
+#elif CORE_SHAPE == OVERLAP15_3RD_NO_BC_NO_ABC
+	f << "core = " << CORE_SIZE << " neurons, OVERLAP15_3RD_NO_BC_NO_ABC" << endl;
+#elif CORE_SHAPE == OVERLAP20_3RD
+	f << "core = " << CORE_SIZE << " neurons, OVERLAP20_3RD" << endl;
+#elif CORE_SHAPE == OVERLAP20_3RD_NO_ABC
+	f << "core = " << CORE_SIZE << " neurons, OVERLAP20_3RD_NO_ABC" << endl;
+#elif CORE_SHAPE == OVERLAP20_3RD_NO_AC_NO_ABC
+	f << "core = " << CORE_SIZE << " neurons, OVERLAP20_3RD_NO_AC_NO_ABC" << endl;
+#elif CORE_SHAPE == OVERLAP20_3RD_NO_BC_NO_ABC
+	f << "core = " << CORE_SIZE << " neurons, OVERLAP20_3RD_NO_BC_NO_ABC" << endl;
+#elif CORE_SHAPE == RAND
+	f << "core = random " << CORE_SIZE << " neurons" << endl;
+#endif
 	f << "recall fraction = " << recall_fraction << endl;
 	f << "N_stim = " << N_stim << endl;
-
+	f << "osc. input = ";
+#if OSCILL_INP != OFF
+	f << "(" << oscill_inp_mean << " +- " << oscill_inp_amp << ") nA at " << double(1./(OSCILL_INP*dt)) << " Hz";
+#endif
+	f << endl;
 	net.saveNetworkParams(&f);
 	f << endl;
 
@@ -135,7 +184,7 @@ void addToParamsFile(string str)
 }
 
 /*** instFiringRates ***
- * Computes the instantaneous firing rates of all the network neurons and prints them to a given data file *
+ * Computes the instantaneous firing rates of all the neurons in the network and prints them to a given data file *
  * - txt_net_tprime: pointer to the data file *
  * - jprime: timestep for which the firing rates shall be calculated */
 void instFiringRates(ofstream* txt_net_tprime, int jprime)
@@ -148,10 +197,10 @@ void instFiringRates(ofstream* txt_net_tprime, int jprime)
 	else
 		t_wfr_eff = t_wfr;
 
-	for (int m=0; m < pow2(Nl); m++)
+	for (int m=0; m < pow2(Nl_exc); m++)
 	{
 		int num_spikes = 0; // number of spikes in time window t_wfr_eff
-		bool removed = false; // specified if old, now irrelevant spikes have been removed
+		bool removed = false; // specified if old, now irrelevant spikes have been removed from RAM
 		int sp = 1;
 		int hist_size = net.getSpikeHistorySize(m);
 
@@ -159,11 +208,12 @@ void instFiringRates(ofstream* txt_net_tprime, int jprime)
 		{
 			int spt = net.getSpikeTime(sp, m);
 
-			if (spt >= jprime-wfr/2.)
+			if (spt >= jprime-wfr/2.) // spikes after jprime-wfr/2.
 			{
-				if (!removed) // is entered for first spike after jprime-wfr/2.
-				              // for removal, (net_output_period + wfr/2) has to be larger than t_syn_delay_steps and t_Ca_delay_steps (which is usually the case)
+				if (!removed)
 				{
+					// for removal not to alter the network dynamics, (jprime(t2) - jprime(t1) + wfr/2.) has to be larger 
+					// than t_syn_delay_steps and t_Ca_delay_steps, which is the case for the default values)
 					net.removeSpikes(1, sp-1, m);
 					sp = 0;
 					hist_size = net.getSpikeHistorySize(m);
@@ -182,7 +232,7 @@ void instFiringRates(ofstream* txt_net_tprime, int jprime)
 		double rate = num_spikes / t_wfr_eff;
 		*txt_net_tprime << fixed << rate;
 
-		if ((m+1) % Nl != 0) // still in the same neuron row
+		if ((m+1) % Nl_exc != 0) // still in the same neuron row
 			*txt_net_tprime << "\t\t";
 		else
 			*txt_net_tprime << endl; // next neuron row begins
@@ -249,6 +299,7 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 	const double h_0 = net.getInitialWeight(); w_stim = h_0; // initial synaptic weight; set coupling strength for stimulation
 
 	const string separator = getSeparator(); cout << separator << endl; // string of characters for a separator in command line
+	net.setSpikeStorageTime(n + int(round(wfr/2.))); // reserve enough RAM for fast spike storage
 
 	// Neuronal and synaptic output
 #ifdef TWO_NEURONS_ONE_SYNAPSE
@@ -259,13 +310,13 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 	exc_neuron_output = vector<int> {};
 	inh_neuron_output = vector<int> {};
 #else
-	if (Nl == 20)
+	if (Nl_exc == 20)
 	{
 		exc_neuron_output = vector<int> {0,1,2};
 		inh_neuron_output = vector<int> {400};
 		synapse_output = vector<synapse> {synapse(0,1),synapse(0,50),synapse(0,100),synapse(400,0)};
 	}
-	else if (Nl == 35)
+	else if (Nl_exc == 35)
 	{
 		//exc_neuron_output = vector<int> {608,609,610};
 		exc_neuron_output = vector<int> {0,1,2};
@@ -273,7 +324,7 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 		//synapse_output = vector<synapse> {synapse(608,609),synapse(609,608),synapse(609,610)};
 		synapse_output = vector<synapse> {synapse(0,1),synapse(0,50),synapse(0,100)};
 	}
-	else if (Nl == 40)
+	else if (Nl_exc == 40)
 	{
 		//exc_neuron_output = vector<int> {816,817,818};
 		//exc_neuron_output = vector<int> {cNN(20,21),cNN(23,21),cNN(30,21)}; // three neurons: one "as", one "ans" and one "e"
@@ -285,7 +336,7 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 		//                                  synapse(660,940), synapse(660,941), synapse(782,1),  synapse(782,53)};
 		synapse_output = vector<synapse> {synapse(6,68)};
 	}
-	else if (Nl == 50)
+	else if (Nl_exc == 50)
 	{
 		exc_neuron_output = vector<int> {1,640,1300};
 		inh_neuron_output = vector<int> {2500};
@@ -352,7 +403,7 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 #endif
 	// Output with general information
 	// if this is the first simulation run by the main(...) function (first_sim = true), use time stamp from NetworkMain.cpp, else, set a new time stamp
-	cout << "\x1b[33mNetwork simulation with N_exc = " << pow2(Nl) << ", N_inh = " << pow2(Nl_inh)
+	cout << "\x1b[33mNetwork simulation with N_exc = " << pow2(Nl_exc) << ", N_inh = " << pow2(Nl_inh)
 		  << ", t_max = " << t_max << " s (" << dateStr("", !first_sim) << ")\x1b[0m" << endl;
 	cout << "Learning protocol: " << prot_learn << endl;
 	cout << "Recall protocol: " << prot_recall << endl;
@@ -399,9 +450,9 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 	writePalViridis(); // create palette file for gnuplot color plots
 
 	// learning stimulation
-	Stimulus st_learn = createStimulusFromProtocols(prot_learn, "", dt, w_stim, N_stim, tau_syn); // create Stimulus object containing learning stimulation only
+	Stimulus st_learn = createStimulusFromProtocols(prot_learn, "", dt, w_stim, N_stim, tau_syn, &logf); // create Stimulus object containing learning stimulation only
 	// recall stimulation
-	Stimulus st_recall = createStimulusFromProtocols("", prot_recall, dt, w_stim, N_stim, tau_syn); // create Stimulus object containing recall stimulation only
+	Stimulus st_recall = createStimulusFromProtocols("", prot_recall, dt, w_stim, N_stim, tau_syn, &logf); // create Stimulus object containing recall stimulation only
 
 #if STIPULATE_CA == ON
 	Stimulus st_full = st_recall; // only stipulated cell assembly: recall stimulation is all (effective) stimulation there is
@@ -409,7 +460,12 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 	Stimulus st_full = st_learn; // no network, no recall: just a dummy for st_full has to be defined
 #else
 	// learning + recall stimulation
-	Stimulus st_full = createStimulusFromProtocols(prot_learn, prot_recall, dt, w_stim, N_stim, tau_syn); // create Stimulus object containing learning and recall stimulation
+	Stimulus st_full = createStimulusFromProtocols(prot_learn, prot_recall, dt, w_stim, N_stim, tau_syn, &logf); // create Stimulus object containing learning and recall stimulation
+#endif
+#if OSCILL_INP != OFF
+	Stimulus st_oscill = createOscillStimulus(dt, n, OSCILL_INP, oscill_inp_mean, oscill_inp_amp); // oscillatory input for excitatory population
+	net.setBlockStimulus(st_oscill, pow2(Nl_exc)); // to excitatory population
+	//net.setBlockStimulus(st_oscill, pow2(Nl_inh), pow2(Nl_exc)); // to inhibitory population
 #endif
 	int tb_stim_start = st_learn.getStimulationStart(); // time bin in which all stimulation begins
 	int tb_stim_end = st_full.getStimulationEnd(); // time bin in which all stimulation ends
@@ -439,21 +495,18 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 #endif
 
 #ifdef PLASTICITY_OVER_FREQ
-	Stimulus st_learn2 = createStimulusFromProtocols(prot_recall, "", dt, w_stim, N_stim, tau_syn); // create Stimulus object for stimulating second neuron
+	Stimulus st_learn2 = createStimulusFromProtocols(prot_recall, "", dt, w_stim, N_stim, tau_syn, &logf); // create Stimulus object for stimulating second neuron
 #endif
 
 	double p = 0.0; // percentage of process completeness
 
-	int jprime = 0; // time step in which the last network plot data were collected
+	int jprime = 0; // timestep in which the last network plot data were collected
 
 #if PRINT_CONNECTIONS == ON
 	net.printConnections(dateStr("_connections.txt"));
 #endif
 
 	// Network output
-	if (net_output_period < 0)	
-		net_output_period = n+1; // disable periodic network output
-	int stim_net_output_period = n+1; //tenth_sec; // number of timesteps per which network output is generated during stimulation
 	int ten_secs_before_recall = int(round(28800./dt));
 	int ten_secs_after_recall = int(round(28820./dt));
 	int ten_mins_after_recall = int(round(29410./dt));
@@ -471,11 +524,7 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 			net_output[ci] = net_out_new;
 		}
 	}
-	int rich_comp_buffer; // buffer for rich computation
-	if (stim_net_output_period > n)
-		rich_comp_buffer = int(10./dt) + wfr/2.;
-	else
-		rich_comp_buffer = stim_net_output_period + wfr/2.;
+	int rich_comp_buffer = int(10./dt) + wfr/2.; // buffer for rich computation
 
 	// ==============================================================================================================================
 		// Check if files have been opened properly and if yes, set precision
@@ -508,12 +557,12 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 	int total_c_count_exc_inh = 0; // total number of exc.->inh. connections
 	int total_c_count_inh_inh = 0; // total number of inh.->inh. connections
 
-	for (int m=0; m<pow2(Nl)+pow2(Nl_inh); m++) // consecutive neuron numbering
+	for (int m=0; m<pow2(Nl_exc)+pow2(Nl_inh); m++) // consecutive neuron numbering
 	{
 		const int c_count_exc = net.getNumberIncoming(TYPE_EXC, m); // number of incoming excitatory connections to neuron m
 		const int c_count_inh = net.getNumberIncoming(TYPE_INH, m); // number of incoming inhibitory connections to neuron m
 
-		if (m < pow2(Nl)) // m is an excitatory neuron
+		if (m < pow2(Nl_exc)) // m is an excitatory neuron
 		{
 			const int k = row(m); // get row number of neuron m
 			const int l = col(m); // get column number of neuron m
@@ -523,7 +572,7 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 
 			txt_cn << fixed << k << "\t\t" << l << "\t\t" << c_count_exc+c_count_inh << endl;
 
-			if (l == Nl)
+			if (l == Nl_exc)
 				txt_cn << endl; // empty line for color plot
 		}
 		else // m is an inhibitory neuron
@@ -534,13 +583,13 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 	}
 
 	txt_cn.close();
-	createNetworkColorPlot(gpl_cn, Nl, -1.0, 3, "inc_connection", "", true, "# of incoming connections");
+	createNetworkColorPlot(gpl_cn, Nl_exc, -1.0, 3, "inc_connection", "", true, "# of incoming connections");
 	gplscript << "gnuplot inc_connection_map.gpl" << endl;
 
 	cout.precision(4);
-	cout << fixed << "E->E connectivity: " << total_c_count_exc_exc / double(pow2(Nl*Nl)-pow2(Nl)) * 100 << " % (expected: " << pc*100 << " %)" << endl;
-	cout << fixed << "I->E connectivity: " << total_c_count_inh_exc / double(pow2(Nl*Nl_inh)) * 100 << " % (expected: " << pc*100 << " %)" << endl;
-	cout << fixed << "E->I connectivity: " << total_c_count_exc_inh / double(pow2(Nl*Nl_inh)) * 100 << " % (expected: " << pc*100 << " %)" << endl;
+	cout << fixed << "E->E connectivity: " << total_c_count_exc_exc / double(pow2(Nl_exc*Nl_exc)-pow2(Nl_exc)) * 100 << " % (expected: " << pc*100 << " %)" << endl;
+	cout << fixed << "I->E connectivity: " << total_c_count_inh_exc / double(pow2(Nl_exc*Nl_inh)) * 100 << " % (expected: " << pc*100 << " %)" << endl;
+	cout << fixed << "E->I connectivity: " << total_c_count_exc_inh / double(pow2(Nl_exc*Nl_inh)) * 100 << " % (expected: " << pc*100 << " %)" << endl;
 	cout << fixed << "I->I connectivity: " << total_c_count_inh_inh / double(pow2(Nl_inh*Nl_inh)-pow2(Nl_inh)) * 100 << " % (expected: " << pc*100 << " %)" << endl;
 
 // ==============================================================================================================================
@@ -632,14 +681,119 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 				net.setSingleNeuronStimulus(0, st_learn2);
 	#endif
 
-#elif defined INTERMEDIATE_RECALL
-				if (tb_start == 0) // real learning stimulus
-					net.setBlockStimulus(st_learn, CORE_SIZE); // learning stimulus for the first CORE_SIZE neurons
-				else // "fake learning stimulus" used for intermediate recall
-					net.setRandomStimulus(st_learn, int(round(recall_fraction*CORE_SIZE)), &logf, 0, CORE_SIZE); // intermediate recall stimulus for randomly selected recall_fraction*CORE_SIZE neurons
-				// "real recall stimulus" is assigned right before it starts, to prevent interference
 #else
-				net.setBlockStimulus(st_learn, CORE_SIZE); // learning stimulus for the first CORE_SIZE neurons
+		
+	#if defined MEMORY_CONSOLIDATION_P1
+				// stimulation of the first block of CORE_SIZE neurons
+		#ifdef INTERMEDIATE_RECALL_P1
+				if (tb_start == 0) // real learning stimulus
+					net.setBlockStimulus(st_learn, CORE_SIZE); // learning stimulus
+				else // "fake learning stimulus" used for intermediate recall
+					net.setRandomStimulus(st_learn, int(round(recall_fraction*CORE_SIZE)), &logf, 0, CORE_SIZE); // intermediate recall stimulus
+				// real recall stimulus is assigned right before it starts, to avoid interference
+		#else
+				net.setBlockStimulus(st_learn, CORE_SIZE); // these neurons receive the learning stimulus
+				net.setBlockStimulus(st_full, int(round(recall_fraction*CORE_SIZE))); // these (non-random) neurons receive learning and recall stimulus
+		#endif
+	#elif CORE_SHAPE == FIRST
+				// stimulation of the first block of CORE_SIZE neurons
+				net.setBlockStimulus(st_learn, CORE_SIZE); // these neurons receive the learning stimulus
+				net.setRandomStimulus(st_full, int(round(recall_fraction*CORE_SIZE)), &logf, 0, CORE_SIZE); // these (random) neurons receive learning and recall stimulus
+	#elif CORE_SHAPE == SECOND
+				net.setBlockStimulus(st_learn, CORE_SIZE, CORE_SIZE); // stimulation of the second block of CORE_SIZE neurons
+				net.setRandomStimulus(st_full, int(round(recall_fraction*CORE_SIZE)), &logf, CORE_SIZE, 2*CORE_SIZE);
+	#elif CORE_SHAPE == OVERLAP10_2ND // stimulation of a block of CORE_SIZE neurons, overlapping with the first block by 10%
+				net.setBlockStimulus(st_learn, CORE_SIZE, int(round(0.9*CORE_SIZE)));
+				//net.setBlockStimulus(st_full, int(round(recall_fraction*CORE_SIZE)), int(round(0.9*CORE_SIZE)));
+				net.setRandomStimulus(st_full, int(round(recall_fraction*CORE_SIZE)), &logf, int(round(0.9*CORE_SIZE)), int(round(0.9*CORE_SIZE + CORE_SIZE)));
+	#elif CORE_SHAPE == OVERLAP15_2ND
+				net.setBlockStimulus(st_learn, CORE_SIZE, int(round(0.85*CORE_SIZE))); // stimulation of a block of CORE_SIZE neurons, overlapping with the first block by 15%
+				//net.setBlockStimulus(st_full, int(round(recall_fraction*CORE_SIZE)), int(round(0.9*CORE_SIZE)));
+				net.setRandomStimulus(st_full, int(round(recall_fraction*CORE_SIZE)), &logf, int(round(0.85*CORE_SIZE)), int(round(0.85*CORE_SIZE + CORE_SIZE)));
+	#elif CORE_SHAPE == OVERLAP20_2ND
+				net.setBlockStimulus(st_learn, CORE_SIZE, int(round(0.8*CORE_SIZE))); // stimulation of a block of CORE_SIZE neurons, overlapping with the first block by 20%
+				//net.setBlockStimulus(st_full, int(round(recall_fraction*CORE_SIZE)), int(round(0.8*CORE_SIZE)));
+				net.setRandomStimulus(st_full, int(round(recall_fraction*CORE_SIZE)), &logf, int(round(0.8*CORE_SIZE)), int(round(0.8*CORE_SIZE + CORE_SIZE)));
+	#elif CORE_SHAPE == THIRD
+				net.setBlockStimulus(st_learn, CORE_SIZE, 2*CORE_SIZE); // stimulation of the third block of CORE_SIZE neurons
+				net.setRandomStimulus(st_full, int(round(recall_fraction*CORE_SIZE)), &logf, 2*CORE_SIZE, 3*CORE_SIZE);
+	#elif CORE_SHAPE == OVERLAP10_3RD
+				net.setBlockStimulus(st_learn, int(round(0.9*CORE_SIZE)), int(round(1.85*CORE_SIZE))); // 90% of the assembly for disjoint set and intersection with second CA only
+				net.setBlockStimulus(st_learn, int(round(0.05*CORE_SIZE))); // 5% of the assembly for intersection with first CA only
+				net.setBlockStimulus(st_learn, int(round(0.05*CORE_SIZE)), int(round(0.9*CORE_SIZE))); // 5% of the assembly for intersection with both first and second CA
+				
+				net.setRandomStimulus(st_full, int(round(recall_fraction*0.9*CORE_SIZE)), &logf, int(round(1.85*CORE_SIZE)), int(round(1.85*CORE_SIZE+0.9*CORE_SIZE)));
+				net.setRandomStimulus(st_full, int(round(recall_fraction*0.05*CORE_SIZE)), &logf, 0, int(round(0.05*CORE_SIZE)));
+				net.setRandomStimulus(st_full, int(round(recall_fraction*0.05*CORE_SIZE)), &logf, int(round(0.9*CORE_SIZE)), int(round(0.9*CORE_SIZE+0.05*CORE_SIZE)));
+	#elif CORE_SHAPE == OVERLAP10_3RD_NO_ABC
+				net.setBlockStimulus(st_learn, int(round(0.9*CORE_SIZE)), int(round(1.8*CORE_SIZE))); // 90% of the assembly for disjoint set and intersection with second CA only
+				net.setBlockStimulus(st_learn, int(round(0.1*CORE_SIZE))); // 10% of the assembly for intersection with first CA only
+						
+				net.setRandomStimulus(st_full, int(round(recall_fraction*0.9*CORE_SIZE)), &logf, int(round(1.8*CORE_SIZE)), int(round(1.8*CORE_SIZE+0.9*CORE_SIZE)));
+				net.setRandomStimulus(st_full, int(round(recall_fraction*0.1*CORE_SIZE)), &logf, 0, int(round(0.1*CORE_SIZE)));
+	#elif CORE_SHAPE == OVERLAP10_3RD_NO_AC_NO_ABC
+				net.setBlockStimulus(st_learn, CORE_SIZE, int(round(1.8*CORE_SIZE))); // whole assembly for disjoint set and intersection with second CA only
+				
+				net.setRandomStimulus(st_full, int(round(recall_fraction*CORE_SIZE)), &logf, int(round(1.8*CORE_SIZE)), int(round(1.8*CORE_SIZE+CORE_SIZE)));
+	#elif CORE_SHAPE == OVERLAP10_3RD_NO_BC_NO_ABC
+				net.setBlockStimulus(st_learn, int(round(0.9*CORE_SIZE)), int(round(1.9*CORE_SIZE))); // 90% of the assembly for disjoint set and intersection with second CA only
+				net.setBlockStimulus(st_learn, int(round(0.1*CORE_SIZE))); // 10% of the assembly for intersection with first CA only
+						
+				net.setRandomStimulus(st_full, int(round(recall_fraction*0.9*CORE_SIZE)), &logf, int(round(1.9*CORE_SIZE)), int(round(1.9*CORE_SIZE+0.9*CORE_SIZE)));
+				net.setRandomStimulus(st_full, int(round(recall_fraction*0.1*CORE_SIZE)), &logf, 0, int(round(0.1*CORE_SIZE)));
+	#elif CORE_SHAPE == OVERLAP15_3RD
+				net.setBlockStimulus(st_learn, int(round(0.85*CORE_SIZE)), int(round(1.775*CORE_SIZE))); // 85% of the assembly for disjoint set and intersection with second CA only
+				net.setBlockStimulus(st_learn, int(round(0.075*CORE_SIZE))); // 7.5% of the assembly for intersection with first CA only
+				net.setBlockStimulus(st_learn, int(round(0.075*CORE_SIZE)), int(round(0.85*CORE_SIZE))); // 7.5% of the assembly for intersection with both first and second CA
+						
+				net.setRandomStimulus(st_full, int(round(recall_fraction*0.85*CORE_SIZE)), &logf, int(round(1.775*CORE_SIZE)), int(round(1.775*CORE_SIZE+0.85*CORE_SIZE)));
+				net.setRandomStimulus(st_full, int(round(recall_fraction*0.075*CORE_SIZE)), &logf, 0, int(round(0.075*CORE_SIZE)));
+				net.setRandomStimulus(st_full, int(round(recall_fraction*0.075*CORE_SIZE)), &logf, int(round(0.85*CORE_SIZE)), int(round(0.85*CORE_SIZE+0.075*CORE_SIZE)));
+	#elif CORE_SHAPE == OVERLAP15_3RD_NO_ABC
+				net.setBlockStimulus(st_learn, int(round(0.85*CORE_SIZE)), int(round(1.7*CORE_SIZE))); // 85% of the assembly for disjoint set and intersection with second CA only
+				net.setBlockStimulus(st_learn, int(round(0.15*CORE_SIZE))); // 15% of the assembly for intersection with first CA only
+					
+				net.setRandomStimulus(st_full, int(round(recall_fraction*0.85*CORE_SIZE)), &logf, int(round(1.7*CORE_SIZE)), int(round(1.7*CORE_SIZE+0.85*CORE_SIZE)));
+				net.setRandomStimulus(st_full, int(round(recall_fraction*0.15*CORE_SIZE)), &logf, 0, int(round(0.15*CORE_SIZE)));
+	#elif CORE_SHAPE == OVERLAP15_3RD_NO_AC_NO_ABC
+				net.setBlockStimulus(st_learn, CORE_SIZE, int(round(1.7*CORE_SIZE))); // whole the assembly for disjoint set and intersection with second CA only
+		
+				net.setRandomStimulus(st_full, int(round(recall_fraction*CORE_SIZE)), &logf, int(round(1.7*CORE_SIZE)), int(round(1.7*CORE_SIZE+CORE_SIZE)));
+	#elif CORE_SHAPE == OVERLAP15_3RD_NO_BC_NO_ABC
+				net.setBlockStimulus(st_learn, int(round(0.85*CORE_SIZE)), int(round(1.85*CORE_SIZE))); // 85% of the assembly for disjoint set and intersection with second CA only
+				net.setBlockStimulus(st_learn, int(round(0.15*CORE_SIZE))); // 15% of the assembly for intersection with first CA only
+					
+				net.setRandomStimulus(st_full, int(round(recall_fraction*0.85*CORE_SIZE)), &logf, int(round(1.85*CORE_SIZE)), int(round(1.7*CORE_SIZE+0.85*CORE_SIZE)));
+				net.setRandomStimulus(st_full, int(round(recall_fraction*0.15*CORE_SIZE)), &logf, 0, int(round(0.15*CORE_SIZE)));
+	#elif CORE_SHAPE == OVERLAP20_3RD
+				net.setBlockStimulus(st_learn, int(round(0.8*CORE_SIZE)), int(round(1.7*CORE_SIZE))); // 80% of the assembly for disjoint set and intersection with second CA only
+				net.setBlockStimulus(st_learn, int(round(0.1*CORE_SIZE))); // 10% of the assembly for intersection with first CA only
+				net.setBlockStimulus(st_learn, int(round(0.1*CORE_SIZE)), int(round(0.8*CORE_SIZE))); // 10% of the assembly for intersection with both first and second CA
+					
+				net.setRandomStimulus(st_full, int(round(recall_fraction*0.8*CORE_SIZE)), &logf, int(round(1.7*CORE_SIZE)), int(round(1.7*CORE_SIZE+0.8*CORE_SIZE)));
+				net.setRandomStimulus(st_full, int(round(recall_fraction*0.1*CORE_SIZE)), &logf, 0, int(round(0.1*CORE_SIZE)));
+				net.setRandomStimulus(st_full, int(round(recall_fraction*0.1*CORE_SIZE)), &logf, int(round(0.8*CORE_SIZE)), int(round(0.8*CORE_SIZE+0.1*CORE_SIZE)));
+	#elif CORE_SHAPE == OVERLAP20_3RD_NO_ABC
+				net.setBlockStimulus(st_learn, int(round(0.8*CORE_SIZE)), int(round(1.6*CORE_SIZE))); // 80% of the assembly for disjoint set and intersection with second CA only
+				net.setBlockStimulus(st_learn, int(round(0.2*CORE_SIZE))); // 20% of the assembly for intersection with first CA only
+						
+				net.setRandomStimulus(st_full, int(round(recall_fraction*0.8*CORE_SIZE)), &logf, int(round(1.6*CORE_SIZE)), int(round(1.6*CORE_SIZE+0.8*CORE_SIZE)));
+				net.setRandomStimulus(st_full, int(round(recall_fraction*0.2*CORE_SIZE)), &logf, 0, int(round(0.2*CORE_SIZE)));
+	#elif CORE_SHAPE == OVERLAP20_3RD_NO_AC_NO_ABC
+				net.setBlockStimulus(st_learn, CORE_SIZE, int(round(1.6*CORE_SIZE))); // whole assembly for disjoint set and intersection with second CA only
+
+				net.setRandomStimulus(st_full, int(round(recall_fraction*CORE_SIZE)), &logf, int(round(1.6*CORE_SIZE)), int(round(1.6*CORE_SIZE+CORE_SIZE)));
+	#elif CORE_SHAPE == OVERLAP20_3RD_NO_BC_NO_ABC
+				net.setBlockStimulus(st_learn, int(round(0.8*CORE_SIZE)), int(round(1.8*CORE_SIZE))); // 80% of the assembly for disjoint set
+				net.setBlockStimulus(st_learn, int(round(0.2*CORE_SIZE))); // 20% of the assembly for intersection with first CA only
+						
+				net.setRandomStimulus(st_full, int(round(recall_fraction*0.8*CORE_SIZE)), &logf, int(round(1.8*CORE_SIZE)), int(round(1.8*CORE_SIZE+0.8*CORE_SIZE)));
+				net.setRandomStimulus(st_full, int(round(recall_fraction*0.2*CORE_SIZE)), &logf, 0, int(round(0.2*CORE_SIZE)));
+	#elif CORE_SHAPE == RAND
+				net.setRandomStimulus(st_learn, CORE_SIZE, &logf); // stimulation of random CORE_SIZE neurons
+				net.setRandomStimulus(st_full, int(round(recall_fraction*CORE_SIZE)), &logf);
+	#endif
+
 #endif
 				// Plot stimulation
 				//st_learn.plotAll("learning_stimulation");
@@ -649,27 +803,40 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 
 			if (j == tb_stim_start-1) // one step before learning stimulus
 			{
-#ifndef INTERMEDIATE_RECALL
+#if defined MEMORY_CONSOLIDATION_P1 && !defined INTERMEDIATE_RECALL_P1 
 				net.resetPlasticity(true, true, true, true); // set all plastic changes to zero (reset changes from control stimulus for instance)
 				//net.reset(); // reset network (only for the case that a control recall was used before)
 #endif
 #if STIPULATE_CA == ON
+	#if CORE_SHAPE == FIRST
 				net.stipulateFirstNeuronsAssembly(CORE_SIZE); // stipulate assembly weights
+	#endif
 #endif
 			}
 
 			if (j == tb_recall_start-1) // one step before recall stimulus
 			{
-#if SAVE_NET_STATE == ON
+#if defined MEMORY_CONSOLIDATION_P1 && SAVE_NET_STATE == ON
 				net.saveNetworkState("saved_state.txt", j);
 				if (!copyFile("saved_state.txt", "../saved_state0.txt"))
 					throw runtime_error(string("Network state file could not be copied to upper directory."));
 				else
 					remove("saved_state.txt");
 #endif
-				net.setBlockStimulus(st_recall, int(round(recall_fraction*CORE_SIZE))); // recall stimulation for the first recall_fraction*CORE_SIZE neurons
+
+#ifdef INTERMEDIATE_RECALL_P1
+				net.setBlockStimulus(st_recall, int(round(recall_fraction*CORE_SIZE))); // real recall, stimulate first recall_fraction*CORE_SIZE neurons (again)
+#endif
 			}
 
+			if (j == n) // very last timestep
+			{
+#if !defined MEMORY_CONSOLIDATION_P1 && SAVE_NET_STATE == ON
+				net.saveNetworkState("saved_state.txt", j);
+#endif
+			}
+
+			// entering fast-forward mode
 #if FF_AFTER_LEARN == ON || FF_AFTER_STIM == ON || FF_AFTER_NETLOAD == ON
 			if ( 
 #if FF_AFTER_LEARN == ON
@@ -711,7 +878,8 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 		// in fast-forward mode (only computation of late-phase dynamics)
 		else if (compmode == 2)
 		{
-			double delta_t = 50.; // if completely numerical [OBSOLETE]: use timesteps of not more than 1 min - that is small enough to not visibly cut off the peak of the protein curve
+			double delta_t = 50.; // s, duration of one fast-forward timestep (for default parameters, use timesteps of not more than 1 min
+			                         // - that is small enough to not cut off the peak of the protein curve)
 			int new_j = int(round(floor(j*dt + delta_t)/dt)); // use floor function to ensure that FF steps end with full seconds
 
 			if (new_j > tb_stim_start-1 && j < tb_stim_start-1) // step in which learning stimulus begins
@@ -763,7 +931,7 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 ///////////////////////////////////// OUTPUT FOR PLOTS ///////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-		if (j % output_period == 0 || compmode == 2) // use steps in intervals of output_period
+		if (j % output_period == 0 || compmode == 2) // use steps in intervals of output_period (and in intervals of delta_t in fast-forward mode)
    		{
 
 #if SPIKE_PLOTTING == NUMBER || SPIKE_PLOTTING == NUMBER_AND_RASTER
@@ -825,7 +993,7 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 			double early_mean = net.getMeanEarlySynapticStrength(CORE_SIZE);
 			double late_mean = net.getMeanLateSynapticStrength(CORE_SIZE);
 			double prot_mean = net.getMeanCProteinAmount(CORE_SIZE);
-			int size_control = pow2(Nl) - CORE_SIZE;
+			int size_control = pow2(Nl_exc) - CORE_SIZE;
 
 			txt_mean << early_mean << "\t\t" << net.getSDEarlySynapticStrength(early_mean, CORE_SIZE) << "\t\t"
 			         << late_mean << "\t\t" << net.getSDLateSynapticStrength(late_mean, CORE_SIZE) << "\t\t"
@@ -843,12 +1011,8 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 			txt_mean << "\r\n";
 
 
-			// Output of network plots (usually every net_output_period; under stimulation every stim_net_output_period) and clearing of spike time list
-			if ( (j % net_output_period == 0)
-			   || ((j % stim_net_output_period == 0) && st_full.stimExists(j-stim_net_output_period)) // creates network plots every stim_net_output_period-th timestep
-			                                                                                          // until stim_net_output_period after the end of stimulation
-			   || (netOutput(j)) // creates network plots at specified times
-			   /*|| (compmode == 2) */) // if in fast-forward computation mode [OBSOLETE: net_output_period should now be chosen to be a multiple of the FF mode timestep]
+			// Output of network plots (and, conditionally, clearing of spike time vectors)
+			if (netOutput(j)) // network plots at specified times (defined by net_output, mind the larger timesteps in FF mode!)
 
 			{
 				if (j < (n - wfr/2.)) // if there are still enough timesteps left to compute the firing rate
@@ -862,13 +1026,13 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 
 
 					// Output of early-phase matrix at time 't'
-					for (int m=0; m < pow2(Nl); m++)
+					for (int m=0; m < pow2(Nl_exc); m++)
 					{
-						for (int n=0; n < pow2(Nl); n++)
+						for (int n=0; n < pow2(Nl_exc); n++)
 						{
 							*txt_net_t << fixed << net.getEarlySynapticStrength(synapse(m,n));
 
-							if (n < pow2(Nl) - 1)
+							if (n < pow2(Nl_exc) - 1)
 								*txt_net_t << "\t\t";
 						}
 						*txt_net_t << endl; // next neuron row begins
@@ -876,13 +1040,13 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 					*txt_net_t << endl;
 
 					// Output of late-phase matrix at time 't'
-					for (int m=0; m < pow2(Nl); m++)
+					for (int m=0; m < pow2(Nl_exc); m++)
 					{
-						for (int n=0; n < pow2(Nl); n++)
+						for (int n=0; n < pow2(Nl_exc); n++)
 						{
 							*txt_net_t << fixed << net.getLateSynapticStrength(synapse(m,n));
 
-							if (n < pow2(Nl) - 1)
+							if (n < pow2(Nl_exc) - 1)
 								*txt_net_t << "\t\t";
 						}
 						*txt_net_t << endl; // next neuron row begins
@@ -892,14 +1056,14 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 					// Output of firing rate matrix at (past) time 'tprime' and creating plot
 					if (data_to_plot)
 					{
-						instFiringRates(txt_net_tprime, jprime);
-						createNetworkPlotAveragedWeights(jprime*dt, h_0, Nl, z_max);
+						instFiringRates(txt_net_tprime, jprime); // computes firing rates and does clearing of the spike time vectors
+						createNetworkPlotAveragedWeights(jprime*dt, h_0, Nl_exc, z_max);
 						if (jprime == 0)
-							createNetworkPlotWeights(jprime*dt, h_0, Nl, z_max);
+							createNetworkPlotWeights(jprime*dt, h_0, Nl_exc, z_max);
 					}
 
 					txt_net_tprime = txt_net_t; // save file handle for next plot step
-					jprime = j; // save time step for next plot step
+					jprime = j; // save timestep for next plot step
 					data_to_plot = true;
 				}
 			}
@@ -915,7 +1079,7 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 	if (data_to_plot)
 	{
 		instFiringRates(txt_net_tprime, jprime);
-		createNetworkPlotAveragedWeights(jprime*dt, h_0, Nl, z_max);
+		createNetworkPlotAveragedWeights(jprime*dt, h_0, Nl_exc, z_max);
 	}
 #endif
 
@@ -931,11 +1095,11 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 	int sdfr_part1_inh = 0; // part 1 of the standard deviation (due to Steiner's translation theorem) - integer because it contains only spike counts
 	int sdfr_part2_inh = 0; // part 2 of the standard deviation (due to Steiner's translation theorem) - integer because it contains only spike counts
 
-	for (int m=0; m<pow2(Nl)+pow2(Nl_inh); m++)
+	for (int m=0; m<pow2(Nl_exc)+pow2(Nl_inh); m++)
 	{
 		int nu = net.getSpikeCount(m); // get number of spikes of neuron m
 
-		if (m < pow2(Nl)) // neuron m is in excitatory population
+		if (m < pow2(Nl_exc)) // neuron m is in excitatory population
 		{
 			mfr += double(nu);
 			sdfr_part1 += pow2(nu);
@@ -949,11 +1113,11 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 		}
 	}
 
-	mfr /= (pow2(Nl) * t_max); // compute the mean firing rate of the exc. population from the number of spikes
+	mfr /= (pow2(Nl_exc) * t_max); // compute the mean firing rate of the exc. population from the number of spikes
 	if (Nl_inh > 0)
 		mfr_inh /= (pow2(Nl_inh) * t_max); // compute the mean firing rate of the inh. population from the number of spikes
-	sdfr = sqrt( ( double(sdfr_part1) - double(pow2(sdfr_part2)) / pow2(Nl) ) /
-	             double(pow2(Nl)-1) ) / t_max; // compute standard deviation of the firing rate according to Steiner's translation 																													// deviation of the firing rates according to Steiner's translation theorem
+	sdfr = sqrt( ( double(sdfr_part1) - double(pow2(sdfr_part2)) / pow2(Nl_exc) ) /
+	             double(pow2(Nl_exc)-1) ) / t_max; // compute standard deviation of the firing rate according to Steiner's translation 																													// deviation of the firing rates according to Steiner's translation theorem
 	if (Nl_inh > 0)
 		sdfr_inh = sqrt( ( double(sdfr_part1_inh) - double(pow2(sdfr_part2_inh)) / pow2(Nl_inh) ) /
 		                 double(pow2(Nl_inh)-1) ) / t_max; // compute standard deviation of the firing rate according to Steiner's translation 																										 // theorem
@@ -973,11 +1137,11 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 	// Create mean firing rate map plots
 
 	// Write data files and determine minimum and maximum firing rates
-	for (int m=0; m < pow2(Nl)+pow2(Nl_inh); m++)
+	for (int m=0; m < pow2(Nl_exc)+pow2(Nl_inh); m++)
 	{
 		double fr = double(net.getSpikeCount(m)) / t_max;
 
-		if (m < pow2(Nl)) // neuron m is in excitatory population
+		if (m < pow2(Nl_exc)) // neuron m is in excitatory population
 		{
 			if (fr > max_firing_rate)
 				max_firing_rate = fr;
@@ -986,7 +1150,7 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 
 			txt_fr << fixed << col(m) << "\t\t" << row(m) << "\t\t" << fr << endl;
 
-			if ((m+1) % Nl == 0)
+			if ((m+1) % Nl_exc == 0)
 				txt_fr << endl; // another free line
 		}
 		else // neuron m is in inhibitory population
@@ -996,7 +1160,7 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 			if (fr < min_firing_rate_inh)
 				min_firing_rate_inh = fr;
 
-			int m_eff = m - pow2(Nl);
+			int m_eff = m - pow2(Nl_exc);
 			txt_fr_inh << fixed << colG(m_eff, Nl_inh) << "\t\t" << rowG(m_eff, Nl_inh) << "\t\t" << fr << endl;
 
 			if ((m_eff+1) % Nl_inh == 0)
@@ -1009,7 +1173,7 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 	txt_fr_inh.close();
 
 	// Create firing rate plot of excitatory population
-	createNetworkColorPlot(gpl_fr, Nl, -1, 3, "fr_exc", "", true, "{/Symbol n} / Hz", min_firing_rate, max_firing_rate);
+	createNetworkColorPlot(gpl_fr, Nl_exc, -1, 3, "fr_exc", "", true, "{/Symbol n} / Hz", min_firing_rate, max_firing_rate);
 	gplscript << "gnuplot fr_exc_map.gpl" << endl;
 
 	// Create firing rate plot of inhibitory population
@@ -1028,11 +1192,11 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 	txt_spike_raster.close();
 
 	//if (tb_stim_end > tb_stim_start)
-	//	createSpikeRasterPlot(gplscript, 0.9*tb_stim_start*dt, 1.1*tb_stim_end*dt, pow2(Nl), pow2(Nl_inh));
+	//	createSpikeRasterPlot(gplscript, 0.9*tb_stim_start*dt, 1.1*tb_stim_end*dt, pow2(Nl_exc), pow2(Nl_inh));
 	//else
-	//	createSpikeRasterPlot(gplscript, 0., t_max, pow2(Nl), pow2(Nl_inh), recall_fraction*CORE_SIZE, CORE_SIZE);
+	//	createSpikeRasterPlot(gplscript, 0., t_max, pow2(Nl_exc), pow2(Nl_inh), recall_fraction*CORE_SIZE, CORE_SIZE);
 
-	createSpikeRasterPlot(gplscript, (t_max > 28809.99 ? 28809.99 : 0.), (t_max > 28810.20 ? 28810.20 : t_max), pow2(Nl), pow2(Nl_inh), recall_fraction*CORE_SIZE, CORE_SIZE);
+	createSpikeRasterPlot(gplscript, (100. < t_max ? 100. : 0.), (120. < t_max ? 120. : t_max), pow2(Nl_exc), pow2(Nl_inh), recall_fraction*CORE_SIZE, CORE_SIZE);
 #endif
 
 // ==============================================================================================================================
@@ -1113,15 +1277,19 @@ void setSeekICVar(double *_seekic)
 /*** setParams ***
  * Sets the simulation parameters on given values and resets network(s) */
 void setParams(double _I_0, double _sigma_WN, double _tau_syn, double _w_ee, double _w_ei, double _w_ie, double _w_ii, 
-               string _prot_learn, string _prot_recall, int _output_period, int _net_output_period, int _N_stim, double _theta_p, double _theta_d,
+               double _oscill_inp_mean, double _oscill_inp_amp,
+               string _prot_learn, string _prot_recall, int _output_period, int _N_stim, double _theta_p, double _theta_d,
                double _Ca_pre, double _Ca_post, double _theta_pro_P, double _theta_pro_C, double _theta_pro_D, double _recall_fraction)
 {
+#if OSCILL_INP != OFF
+	oscill_inp_mean = _oscill_inp_mean;
+	oscill_inp_amp = _oscill_inp_amp;
+#endif
 	tau_syn = _tau_syn;
 	prot_learn = _prot_learn;
 	prot_recall = _prot_recall;
 	recall_fraction = _recall_fraction;
 	output_period = _output_period;
-	net_output_period = _net_output_period;
 	N_stim = _N_stim;
 	net.setConstCurrent(_I_0);
 	net.setSigma(_sigma_WN);
@@ -1132,17 +1300,16 @@ void setParams(double _I_0, double _sigma_WN, double _tau_syn, double _w_ee, dou
 	net.setCouplingStrengths(_w_ee, _w_ei, _w_ie, _w_ii);
 	net.setCaConstants(_theta_p, _theta_d, _Ca_pre, _Ca_post);
 	net.setPSThresholds(_theta_pro_P, _theta_pro_C, _theta_pro_D);
-	net.setSpikeStorageTime(net_output_period + int(round(wfr/2.)));
 	net.reset();
 }
 
 /*** Constructor ***
  * Sets all parameters on given values and calls constructors for Neuron instances */
-NetworkSimulation(int _Nl, int _Nl_inh, double _dt, double _t_max,
+NetworkSimulation(int _Nl_exc, int _Nl_inh, double _dt, double _t_max,
                   double _pc, double _sigma_plasticity, double _z_max, double _t_wfr, bool _ff_enabled)
-	: Nl(_Nl), Nl_inh(_Nl_inh), dt(_dt), t_max(_t_max), pc(_pc),
+	: Nl_exc(_Nl_exc), Nl_inh(_Nl_inh), dt(_dt), t_max(_t_max), pc(_pc),
 	  t_wfr(_t_wfr), wfr(_t_wfr/dt), ff_enabled(_ff_enabled), z_max(_z_max),
-	  net(_dt, _Nl, _Nl_inh, _pc, _sigma_plasticity, _z_max)
+	  net(_dt, _Nl_exc, _Nl_inh, _pc, _sigma_plasticity, _z_max)
 {
 
 }

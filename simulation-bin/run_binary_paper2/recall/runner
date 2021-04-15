@@ -1,0 +1,28 @@
+#!/bin/sh
+organization_dir="../organization/"
+
+### NOOVERLAP ###
+cd NOOVERLAP
+cp "../netA.out" .
+cp "../netB.out" .
+cp "../netC.out" .
+cp "../../../../analysis/overlapParadigms.py" .
+cp "../../../../analysis/utilityFunctions.py" .
+cp "../../../../analysis/assemblyAvalancheStatistics.py" .
+cp "../$organization_dir/3rd/NOOVERLAP/connections.txt" .
+cp "../$organization_dir/3rd/NOOVERLAP/"*/*/*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run
+
+### Control ###
+cd ../Control
+cp "../netA.out" .
+cp "../netB.out" .
+cp "../netC.out" .
+cp "../../../../analysis/overlapParadigms.py" .
+cp "../../../../analysis/utilityFunctions.py" .
+cp "../../../../analysis/assemblyAvalancheStatistics.py" .
+cp "../$organization_dir/1st/FIRST/connections.txt" .
+cp "../$organization_dir/1st/FIRST/"*/*/*"_net_0.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run
+
+cd ..

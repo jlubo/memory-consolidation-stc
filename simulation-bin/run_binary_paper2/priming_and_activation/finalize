@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# the following script collects all data from the simulation folders and creates one final data file:
+python3 averageFileColumnsAdvancedMod.py
