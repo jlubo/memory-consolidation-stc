@@ -1,0 +1,10 @@
+#!/bin/sh 
+
+# NOTE: the run scripts for 'organization_interleaved' and in 'priming_and_activation' require the binaries from 'organization' and 'activation'
+
+/bin/sh compile_activation
+/bin/sh compile_organization
+/bin/sh compile_organization_IC
+/bin/sh compile_organization_noLTD
+/bin/sh compile_organization_randweight
+/bin/sh compile_recall

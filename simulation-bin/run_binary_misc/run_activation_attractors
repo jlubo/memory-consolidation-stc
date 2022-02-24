@@ -1,0 +1,65 @@
+#!/bin/sh
+
+# first copies data from learning/consolidation simulations in 'organization/' and then simulates spontaneous activation
+
+# uses 'screen' to run process(es) in the background
+
+learned_dir="../organization_attractors/3rd"
+
+cd "activation_attractors/"
+
+### 10 ###
+cd OVERLAP10
+cp -r "../net_activation_"* .
+cp "../../../../analysis/overlapParadigms.py" .
+cp "../../../../analysis/utilityFunctions.py" .
+cp "../../../../analysis/assemblyAttractorStatistics.py" .
+cp "../$learned_dir/OVERLAP10/connections.txt" .
+cp "../$learned_dir/OVERLAP10/"*/*/*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run_bg
+screen -d -m /bin/sh run_osc_1Hz
+screen -d -m /bin/sh run_osc_5Hz
+cd "../OVERLAP10 no ABC"
+cp -r "../net_activation_"* .
+cp "../../../../analysis/overlapParadigms.py" .
+cp "../../../../analysis/utilityFunctions.py" .
+cp "../../../../analysis/assemblyAttractorStatistics.py" .
+cp "../$learned_dir/OVERLAP10 no ABC/connections.txt" .
+cp "../$learned_dir/OVERLAP10 no ABC/"*/*/*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run_bg
+screen -d -m /bin/sh run_osc_1Hz
+screen -d -m /bin/sh run_osc_5Hz
+cd "../OVERLAP10 no AC, no ABC"
+cp -r "../net_activation_"* .
+cp "../../../../analysis/overlapParadigms.py" .
+cp "../../../../analysis/utilityFunctions.py" .
+cp "../../../../analysis/assemblyAttractorStatistics.py" .
+cp "../$learned_dir/OVERLAP10 no AC, no ABC/connections.txt" .
+cp "../$learned_dir/OVERLAP10 no AC, no ABC/"*/*/*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run_bg
+screen -d -m /bin/sh run_osc_1Hz
+screen -d -m /bin/sh run_osc_5Hz
+cd "../OVERLAP10 no BC, no ABC"
+cp -r "../net_activation_"* .
+cp "../../../../analysis/overlapParadigms.py" .
+cp "../../../../analysis/utilityFunctions.py" .
+cp "../../../../analysis/assemblyAttractorStatistics.py" .
+cp "../$learned_dir/OVERLAP10 no BC, no ABC/connections.txt" .
+cp "../$learned_dir/OVERLAP10 no BC, no ABC/"*/*/*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run_bg
+screen -d -m /bin/sh run_osc_1Hz
+screen -d -m /bin/sh run_osc_5Hz
+
+### NO ###
+cd ../NOOVERLAP
+cp -r "../net_activation_"* .
+cp "../../../../analysis/overlapParadigms.py" .
+cp "../../../../analysis/utilityFunctions.py" .
+cp "../../../../analysis/assemblyAttractorStatistics.py" .
+cp "../$learned_dir/NOOVERLAP/connections.txt" .
+cp "../$learned_dir/NOOVERLAP/"*/*/*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run_bg
+screen -d -m /bin/sh run_osc_1Hz
+screen -d -m /bin/sh run_osc_5Hz
+
+cd ../..

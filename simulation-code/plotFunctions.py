@@ -2,7 +2,7 @@
 ### Code to create plots of the neurons and synaptic weights in the network via Matplotlib ###
 ##############################################################################################
 
-### Copyright 2017-2021 Jannik Luboeinski
+### Copyright 2017-2022 Jannik Luboeinski
 ### licensed under Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0), except the function "shiftedColorMap"
 
 ### Uses the function shiftedColorMap -
@@ -13,6 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gs
 from matplotlib import cm
+import os.path
 
 plot_folder = 'network_plots/' # folder for plot output
 log_shift = 1.03 # shift before taking logarithm
@@ -985,3 +986,69 @@ def plotTotalSubPopWeights(filename, h_0, z_min, z_max, Nl_exc, s_CA, title = "T
 	#f.write("z_core_out =\r\n" + str(z_core_out) + "\r\n\r\n\r\n")
 	f.write("z_control_inc =\r\n" + str(z_control_inc) + "\r\n\r\n\r\n")
 	f.close()
+	
+# plotMinOverview
+# Plots the results of a simulation of synaptic weights changing based on calcium dynamics
+# data_file: data file containing the values of the membrane potential, weights, calcium amount, etc. over time
+# h_0: initial weight
+# theta_tag: tagging threshold
+# theta_pro: protein synthesis threshold
+# theta_p: potentiation threshold for Ca dynamics
+# theta_d: depression threshold for Ca dynamics
+# store_path [optional]: path to store resulting graphics file
+def plotMinOverview(data_file, h_0, theta_tag, theta_pro, theta_p, theta_d, store_path = '.'):
+
+	data_stacked = np.loadtxt(data_file)
+	
+	fig, axes = plt.subplots(nrows=3, ncols=1, sharex=False, figsize=(10, 10))
+
+	# set axis labels for axes[0]
+	axes[0].set_xlabel("Time (ms)")
+	axes[0].set_ylabel("Synaptic weight (%)")
+
+	# convert x-axis values to ms
+	data_stacked[:,0] *= 1000
+	
+	# plot data for axes[0]
+	axes[0].plot(data_stacked[:,0], data_stacked[:,7]/h_0*100, color="#800000", label='h', marker='None', zorder=10)
+	axes[0].plot(data_stacked[:,0], (data_stacked[:,8]+1)*100, color="#1f77b4", label='z', marker='None', zorder=9)
+	axes[0].axhline(y=(theta_pro/h_0+1)*100, label='Protein thresh.', linestyle='-.', color="#dddddd", zorder=5)
+	axes[0].axhline(y=(theta_tag/h_0+1)*100, label='Tag thresh.', linestyle='dashed', color="#dddddd", zorder=4)
+	# total weight: color="#ff7f0e"
+	
+	# create legend for axes[0]
+	axes[0].legend() #loc=(0.75,0.65)) #"center right")
+
+	# set axis labels for axes[1] (and twin axis ax1twin)
+	axes[1].set_xlabel("Time (ms)")
+	axes[1].set_ylabel("Membrane potential (mV)")
+	ax1twin = axes[1].twinx()
+	ax1twin.set_ylabel("Current (nA)")
+	
+	# plot data for axes[1] (and twin axis ax1twin)
+	ax1g1 = axes[1].plot(data_stacked[:,0], data_stacked[:,1], color="#ff0000", label='Membrane pot.', marker='None', zorder=10)
+	ax1g2 = ax1twin.plot(data_stacked[:,0], data_stacked[:,2], color="#ffee00", label='Membrane curr.', marker='None', zorder=10)
+	
+	# create common legend for axes[1] and ax1twin
+	#fig.legend(loc=(0.72,0.45)) #"center right")
+	#axes[1].legend(loc=(0.75,0.35)) #"center right")
+	handles, labels = axes[1].get_legend_handles_labels()
+	handles_twin, labels_twin = ax1twin.get_legend_handles_labels()
+	axes[1].legend(handles + handles_twin, labels + labels_twin)
+	#plt.xlim(90, 200)
+	
+	# set axis labels for axes[2]
+	axes[2].set_xlabel("Time (ms)")
+	axes[2].set_ylabel("Calcium or protein amount")
+	
+	# plot data for axes[2]
+	axes[2].plot(data_stacked[:,0], data_stacked[:,9], color="#c8c896", label='Ca', marker='None', zorder=8)
+	axes[2].plot(data_stacked[:,0], data_stacked[:,3], color="#008000", label='p', marker='None', zorder=7)
+	axes[2].axhline(y=theta_p, label='LTP thresh.', linestyle='dashed', color="#969664", zorder=7)
+	axes[2].axhline(y=theta_d, label='LTD thresh.', linestyle='dashed', color="#969696", zorder=6)
+	
+	# create legend for axes[2]
+	axes[2].legend() #loc=(0.75,0.65)) #"center right")
+	
+	# save figure as vector graphics
+	fig.savefig(os.path.join(store_path, 'standalone_lif_traces.svg'))

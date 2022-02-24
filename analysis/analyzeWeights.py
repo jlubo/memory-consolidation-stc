@@ -3,8 +3,9 @@
 ###              and mean weight within and between subpopulations)           ###
 #################################################################################
 
-### Copyright 2020-2021 Jannik Luboeinski
+### Copyright 2020-2022 Jannik Luboeinski
 ### licensed under Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+### Contact: jannik.lubo[at]gmx.de
 
 ### example call from shell: python3 analyzeWeights.py "Weight Distributions and Mean Weight Matrix" "OVERLAP10 no AC, no ABC"
 
@@ -17,6 +18,7 @@ import sys
 ##############################################################################################
 ### initialize
 N_pop = 2500 # number of neurons in the considered population
+h_0 = 4.20075 # initial/median synaptic weight
 core_size = 600 # number of excitatory neurons in one cell assembly
 MWM = False # specifies whether to create abstract mean weight matrix
 MCW = False # specifies whether to create file with mean core weights
@@ -51,6 +53,7 @@ except:
 ##############################################################################################
 ### look for network output files in this directory
 rawpaths = Path(".")
+timestamp = None
 
 for x in sorted(rawpaths.iterdir()):
 
@@ -67,12 +70,15 @@ for x in sorted(rawpaths.iterdir()):
 			if WD:
 				print("Plotting weight distributions from dataset", timestamp, "with time", time_for_readout)
 				N_pop_row = int(round(np.sqrt(N_pop)))
-				vd.plotWeightDistributions3CAs(".", timestamp, "", N_pop_row, time_for_readout, coreA, coreB, coreC)
+				vd.plotWeightDistributions3CAs(".", timestamp, "", N_pop_row, h_0, time_for_readout, coreA, coreB, coreC)
 
 			if MWM:
 				print("Creating abstract mean weight matrix from dataset", timestamp, "with time", time_for_readout)
-				adj.meanWeightMatrix(timestamp, time_for_readout, coreA, coreB, coreC, N_pop, pr = True)
+				adj.meanWeightMatrix(timestamp, time_for_readout, coreA, coreB, coreC, N_pop, h_0, pr = True)
 
 			if MCW:
 				print("Computing mean core weights from dataset", timestamp, "with time", time_for_readout)
-				adj.meanCoreWeights(timestamp, time_for_readout, coreA, coreB, coreC, N_pop, pr = True)
+				adj.meanCoreWeights(timestamp, time_for_readout, coreA, coreB, coreC, N_pop, h_0, pr = True)
+if timestamp is None:
+	print("No data found!")
+				

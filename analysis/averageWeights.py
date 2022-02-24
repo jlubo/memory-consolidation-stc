@@ -2,8 +2,9 @@
 ### Averages early- and late-phase weight matrices ###
 ######################################################
 
-### Copyright 2019-2021 Jannik Luboeinski
+### Copyright 2019-2022 Jannik Luboeinski
 ### licensed under Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+### Contact: jannik.lubo[at]gmx.de
 
 import numpy as np
 from pathlib import Path

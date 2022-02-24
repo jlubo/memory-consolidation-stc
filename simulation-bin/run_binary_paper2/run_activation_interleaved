@@ -1,0 +1,48 @@
+#!/bin/sh
+
+# first copies data from learning/consolidation simulations in 'organization_interleaved/' and then simulates spontaneous activation
+
+# uses 'screen' to run process(es) in the background
+
+learned_dir="../organization_interleaved"
+last_iteration="TRIPLETat52.0 A"
+
+cd "activation_interleaved/"
+
+### 10 ###
+cd OVERLAP10
+cp "../net_activation.out" .
+cp "../../../../analysis/overlapParadigms.py" .
+cp "../../../../analysis/utilityFunctions.py" .
+cp "../../../../analysis/assemblyAvalancheStatistics.py" .
+cp "../$learned_dir/OVERLAP10/connections.txt" .
+cp "../$learned_dir/OVERLAP10/"*"$last_iteration/network_plots/"*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run 
+cd "../OVERLAP10 no AC, no ABC"
+cp "../net_activation.out" .
+cp "../../../../analysis/overlapParadigms.py" .
+cp "../../../../analysis/utilityFunctions.py" .
+cp "../../../../analysis/assemblyAvalancheStatistics.py" .
+cp "../$learned_dir/OVERLAP10 no AC, no ABC/connections.txt" .
+cp "../$learned_dir/OVERLAP10 no AC, no ABC/"*"$last_iteration/network_plots/"*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run 
+cd "../OVERLAP10 no BC, no ABC"
+cp "../net_activation.out" .
+cp "../../../../analysis/overlapParadigms.py" .
+cp "../../../../analysis/utilityFunctions.py" .
+cp "../../../../analysis/assemblyAvalancheStatistics.py" .
+cp "../$learned_dir/OVERLAP10 no BC, no ABC/connections.txt" .
+cp "../$learned_dir/OVERLAP10 no BC, no ABC/"*"$last_iteration/network_plots/"*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run 
+
+### NO ###
+cd ../NOOVERLAP
+cp "../net_activation.out" .
+cp "../../../../analysis/overlapParadigms.py" .
+cp "../../../../analysis/utilityFunctions.py" .
+cp "../../../../analysis/assemblyAvalancheStatistics.py" .
+cp "../$learned_dir/NOOVERLAP/connections.txt" .
+cp "../$learned_dir/NOOVERLAP/"*"$last_iteration/network_plots/"*"_net_28810.0.txt" coupling_strengths.txt
+screen -d -m /bin/sh run 
+
+cd ../..

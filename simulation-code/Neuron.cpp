@@ -2,7 +2,7 @@
  *** Model of a single LIF/MAT2 neuron ***
  *****************************************/
 
-/*** Copyright 2017-2021 Jannik Luboeinski ***
+/*** Copyright 2017-2022 Jannik Luboeinski ***
  *** licensed under Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0) ***
 
  *** Uses the library boost/archive - ***
@@ -291,10 +291,18 @@ double getVoltage() const
 	return V;
 }
 
-/*** getThreshold ***
+/*** getMembraneResistance ***
+ * Returns the membrane resistance of the neuron *
+ * - return: the membrane resistance in MΩ */
+double getMembraneResistance() const
+{
+	return R_mem;
+}
+
+/*** getVoltageThreshold ***
  * Returns the value of the (possibly) dynamic membrane threshold of the neuron *
  * - return: the membrane threshold in mV */
-double getThreshold() const
+double getVoltageThreshold() const
 {
 #if NEURON_MODEL == LIF
 	return V_th;
@@ -304,11 +312,19 @@ double getThreshold() const
 }
 
 /*** getCurrent ***
- * Returns total current affecting the neuron *
+ * Returns total external current affecting the neuron *
  * - return: the instantaneous current in nA */
 double getCurrent() const
 {
 	return I_stim+I_bg+I_int;
+}
+
+/*** getNetCurrent ***
+ * Returns total current affecting the neuron, including external and leak currents *
+ * - return: the instantaneous current in nA */
+double getNetCurrent() const
+{
+	return I_stim+I_bg+I_int+(V_rev-V)/R_mem;
 }
 
 /*** getStimulusCurrent ***
@@ -359,6 +375,15 @@ void setSynapticCurrent(const double _I_int)
 	I_int = _I_int;
 }
 
+/*** setSynapticPotential ***
+ * Given the postsynaptic potential, sets the synaptic input current from other neurons *
+ * within the network to this neuron *
+ * - _V_PSP: the amplitude of the postsynaptic potential in mV */
+void setSynapticPotential(const double _V_PSP)
+{
+	I_int = _V_PSP / R_mem;
+}
+
 #if COND_BASED_SYN == ON
 /*** getExcSynapticCurrent ***
  * Returns the internal excitatory synaptic conductance of the previous timestep *
@@ -376,7 +401,6 @@ double getInhSynapticCurrent() const
 	return I_int_inh;
 }
 
-
 /*** setExcSynapticCurrent ***
  * Sets the synaptic input current from excitatory neurons within the network to this neuron *
  * - _I_int_exc: the synaptic current/conductance in nA/nS */
@@ -385,12 +409,30 @@ void setExcSynapticCurrent(const double _I_int_exc)
 	I_int_exc = _I_int_exc;
 }
 
+/*** setExcSynapticPotential ***
+ * Given the postsynaptic potential, sets the synaptic input current from excitatory neurons *
+ * within the network to this neuron *
+ * - _V_PSP: the amplitude of the exc. postsynaptic potential in mV */
+void setExcSynapticPotential(const double _V_PSP)
+{
+	I_int_exc = _V_PSP / R_mem;
+}
+
 /*** setInhSynapticCurrent ***
  * Sets the synaptic input current from inhibitory neurons within the network to this neuron *
  * - _I_int_inh: the synaptic current/conductance in nA/nS */
 void setInhSynapticCurrent(const double _I_int_inh)
 {
 	I_int_inh = _I_int_inh;
+}
+
+/*** setInhSynapticPotential ***
+ * Given the postsynaptic potential, sets the synaptic input current from inhibitory neurons *
+ * within the network to this neuron *
+ * - _V_PSP: the amplitude of the inh. postsynaptic potential in mV */
+void setInhSynapticPotential(const double _I_int_inh)
+{
+	I_int_inh = _V_PSP / R_mem;
 }
 #endif
 
@@ -406,11 +448,37 @@ void increaseExcSynapticCurrent(const double contr)
 #endif
 }
 
+/*** increaseExcSynapticPotential ***
+ * Given the postsynaptic potential, adds a contribution to the excitatory synaptic input current/conductance *
+ * - _V_PSP: the amplitude of the exc. postsynaptic potential in mV */
+void increaseExcSynapticPotential(const double _V_PSP)
+{
+	double contr = _V_PSP / R_mem;
+#if COND_BASED_SYN == ON
+	I_int_exc += contr;
+#else
+	I_int += contr;
+#endif
+}
+
 /*** increaseInhSynapticCurrent ***
  * Adds a specified contribution to the inhibitory synaptic input current/conductance *
  * - contr: the contribution to be added to the synaptic current/conductance in nA/nS */
 void increaseInhSynapticCurrent(const double contr)
 {
+#if COND_BASED_SYN == ON
+	I_int_inh += contr;
+#else
+	I_int -= contr;
+#endif
+}
+
+/*** increaseInhSynapticPotential ***
+ * Given the postsynaptic potential, adds a contribution to the inhibitory synaptic input current/conductance *
+ * - _V_PSP: the amplitude of the inh. postsynaptic potential in mV */
+void increaseInhSynapticPotential(const double _V_PSP)
+{
+	double contr = _V_PSP / R_mem;
 #if COND_BASED_SYN == ON
 	I_int_inh += contr;
 #else
@@ -796,11 +864,13 @@ void setType(int _type)
 
 /*** setSpikeHistoryMemory ***
  * Sets the RAM size that shall be reserved for the spike history *
+ * (WARNING: choosing this too large can cause the simulation to be killed by the OS!) *
  * - int storage_steps: the size of the storage timespan in timesteps *
  * - return: the reserved size of the spike history vector */
 int setSpikeHistoryMemory(int storage_steps)
 {
 	spike_history_reserve = int(round(storage_steps*(dt/t_ref)));
+	return spike_history_reserve;
 }
 
 /*** getType ***
@@ -893,9 +963,7 @@ Neuron(const double _dt) :
 
 	t_ref = 0.002; // from Kobayashi et al., 2009
 
-#ifdef TWO_NEURONS_ONE_SYNAPSE_ALT
-	R_mem = 0.01;
-#elif defined TWO_NEURONS_ONE_SYNAPSE
+#if defined TWO_NEURONS_ONE_SYNAPSE_LI2016
 	R_mem = 0.0001; // from Li et al., 2016 (mind that the quantity R here is a different one than there!)
 #else
 	R_mem = 0.01;
@@ -943,6 +1011,7 @@ Neuron(const double _dt) :
 	tau_dendr_C = 0.0007;
 #endif
 
+	spike_history_reserve = 100;
 	reset();
 	resetConnections();
 }

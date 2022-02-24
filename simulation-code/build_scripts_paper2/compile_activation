@@ -3,10 +3,28 @@
 current_working_dir=${PWD}
 cd ..
 
+head_out_dir="../simulation-bin/run_binary_paper2"
+out_dir="${head_out_dir}/activation"
+out_dir2="${head_out_dir}/activation_IC"
+out_dir3="${head_out_dir}/activation_noLTD"
+out_dir4="${head_out_dir}/activation_randweight"
+out_dir5="${head_out_dir}/activation_interleaved"
+mkdir -p ${out_dir}
+mkdir -p ${out_dir2}
+mkdir -p ${out_dir3}
+mkdir -p ${out_dir4}
+mkdir -p ${out_dir5}
+
 rm -f code.zip
 zip -q -D code.zip * -x *.out *.o *.txt
-g++ -std=c++11 -O2 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D ACTIVATION_P2 \
-    -Wno-unused-result -lboost_serialization -static -o "net_activation.out"
+
+g++ -std=c++11 -O1 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D ACTIVATION_P2 \
+    -Wno-unused-result -lboost_serialization -static -o "${out_dir}/net_activation.out"
 rm -f code.zip
+
+cp -r "${out_dir}"/* "${out_dir2}" # same binaries for activation_IC 
+cp -r "${out_dir}"/* "${out_dir3}" # same binaries for activation_noLTD
+cp -r "${out_dir}"/* "${out_dir4}" # same binaries for activation_randweight
+cp -r "${out_dir}"/* "${out_dir5}" # same binaries for activation_interleaved
 
 cd "${current_working_dir}"

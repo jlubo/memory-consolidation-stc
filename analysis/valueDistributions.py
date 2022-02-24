@@ -2,8 +2,9 @@
 ### Functions to analyze and plot weight and activity distributions from simulation data ###
 ############################################################################################
 
-### Copyright 2019-2021 Jannik Luboeinski
+### Copyright 2019-2022 Jannik Luboeinski
 ### licensed under Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+### Contact: jannik.lubo[at]gmx.de
 
 from utilityFunctions import *
 import sys
@@ -88,14 +89,14 @@ def findOverallMinMax(nppath, Nl_exc, time_for_readout, h_0):
 # timestamp: a string containing date and time (to access correct paths) OR equal to "any"
 # add: additional descriptor
 # Nl_exc: the number of excitatory neurons in one line of a quadratic grid
+# h_0: the initial weight, and normalization factor for z
 # time_for_readout: the time that at which the weights shall be read out (as a string)
 # core: array of indices of the cell assembly (core) neurons
-# h_0 [optional]: the initial weight, and normalization factor for z
 # norm_all [optional]: specifies whether to normalize across all subpopulations (True) or across each subpop. individually (False)
 #                      - the first is recommendable if samples of different subpopulations are compared against each other,
 #                        the latter is recommendable if different samples of the same subpopulation are compared
 # bins [optional]: list of four arrays, each containing the bins for one of the four quantities
-def plotDistributions(nppath, timestamp, add, Nl_exc, time_for_readout, core, h_0=0.420075, norm_all=False, bins=None):
+def plotDistributions(nppath, timestamp, add, Nl_exc, h_0, time_for_readout, core, norm_all=False, bins=None):
 
 	orgdir = os.getcwd() # store the current working directory
 
@@ -108,7 +109,7 @@ def plotDistributions(nppath, timestamp, add, Nl_exc, time_for_readout, core, h_
 			tmppath = os.path.split(str(x))[1] # remove head from path
 			if ("_net_" + time_for_readout + ".txt") in tmppath:
 				timestamp = tmppath.split("_net_")[0]
-				plotDistributions(nppath, timestamp, add, Nl_exc, time_for_readout, core, h_0, norm_all, bins) # call this function again, now with specific timestamp
+				plotDistributions(nppath, timestamp, add, Nl_exc, h_0, time_for_readout, core, norm_all, bins) # call this function again, now with specific timestamp
 		return
 
 	# read data from file [timestamp]_net_[time_for_readout].txt
@@ -300,13 +301,13 @@ def plotDistributions(nppath, timestamp, add, Nl_exc, time_for_readout, core, h_
 # timestamp: a string containing date and time (to access correct paths)
 # add: additional descriptor
 # Nl_exc: the number of excitatory neurons in one line of a quadratic grid
+# h_0: the initial weight, and normalization factor for z
 # time_for_readout: the time that at which the weights shall be read out
 # coreA: array of indices of the first cell assembly (core) neurons
 # coreB [optional]: array of indices of the second cell assembly (core) neurons
 # coreC [optional]: array of indices of the third cell assembly (core) neurons
-# h_0 [optional]: the initial weight, and normalization factor for z
 # bins [optional]: list of three arrays, each containing the bins for one of the four quantities
-def plotWeightDistributions3CAs(nppath, timestamp, add, Nl_exc, time_for_readout, coreA, coreB = None, coreC = None, h_0 = 0.420075, bins = None):
+def plotWeightDistributions3CAs(nppath, timestamp, add, Nl_exc, h_0, time_for_readout, coreA, coreB = None, coreC = None, bins = None):
 
 	orgdir = os.getcwd() # store the current working directory
 
@@ -318,7 +319,7 @@ def plotWeightDistributions3CAs(nppath, timestamp, add, Nl_exc, time_for_readout
 			tmppath = os.path.split(str(x))[1] # remove head from path
 			if ("_net_" + time_for_readout + ".txt") in tmppath:
 				timestamp = tmppath.split("_net_")[0]
-				plotWeightDistributions3CAs(nppath, timestamp, add, Nl_exc, time_for_readout, coreA, coreB, coreC, h_0, bins) # call this function again, now with specific timestamp; bins should be provided by calling function
+				plotWeightDistributions3CAs(nppath, timestamp, add, Nl_exc, h_0, time_for_readout, coreA, coreB, coreC, bins) # call this function again, now with specific timestamp; bins should be provided by calling function
 		return
 
 	# read data from file [timestamp]_net_[time_for_readout].txt
@@ -757,7 +758,7 @@ if __name__ == "__main__":
 	## as used in Luboeinski and Tetzlaff, Commun. Biol., 2021
 
 	Nl_exc = 40 # number of excitatory neurons in one line of a square
-	h_0 = 0.420075
+	h_0 = 4.20075 # initial/median synaptic weight
 	core = np.arange(150) # size of the assembly
 
 	if len(sys.argv) == 3:
@@ -773,18 +774,90 @@ if __name__ == "__main__":
 		bins = [binh, binz, binw, binv]
 
 		# compute and plot distributions
-		plotDistributions("10s", ts1, "_150default", Nl_exc, "20.0", core, bins=bins, norm_all=True) # before 10s-recall
-		plotDistributions("10s", ts1, "_150default", Nl_exc, "20.1", core, bins=bins, norm_all=True) # after 10s-recall
-		plotDistributions("8h", ts2, "_150default", Nl_exc, "28810.0", core, bins=bins, norm_all=True) # before 8h-recall
-		plotDistributions("8h", ts2, "_150default", Nl_exc, "28810.1", core, bins=bins, norm_all=True) # after 8h-recall
+		plotDistributions("10s", ts1, "_150default", Nl_exc, "20.0", core, h_0, bins=bins, norm_all=True) # before 10s-recall
+		plotDistributions("10s", ts1, "_150default", Nl_exc, "20.1", core, h_0, bins=bins, norm_all=True) # after 10s-recall
+		plotDistributions("8h", ts2, "_150default", Nl_exc, "28810.0", core, h_0, bins=bins, norm_all=True) # before 8h-recall
+		plotDistributions("8h", ts2, "_150default", Nl_exc, "28810.1", core, h_0, bins=bins, norm_all=True) # after 8h-recall
+
+	######################################################################################################
+	## weight and activity distributions with automatic determination of bins and without overall 
+	## normalization
+	
+	Nl_exc = 40 # number of excitatory neurons in one line of a square
+	h_0 = 4.20075 # initial/median synaptic weight
+	core = np.arange(150) # size of the assembly
+
+	### 28810.0 ###
+	minmax = findOverallMinMax(".", Nl_exc, "28810.0", h_0)
+	binh = np.linspace(minmax[0][0], minmax[0][1], 101, endpoint=True) # bins for early-phase weights
+	binz = np.linspace(minmax[1][0], minmax[1][1], 101, endpoint=True) # bins for late-phase weights
+	binw = np.linspace(minmax[2][0], minmax[2][1], 101, endpoint=True) # bins for total synaptic weights
+	binv = np.linspace(minmax[3][0], minmax[3][1], 51, endpoint=True) # bins for activities
+	bins = [binh, binz, binw, binv]
+	np.save("bins_28810.0.npy", bins)
+	np.savetxt("minmax_28810.0.txt", minmax)
+	#bins = np.load("bins_28810.0.npy", allow_pickle=True)
+
+	plotDistributions("nm=0.02", "any", "", Nl_exc, h_0, "28810.0", core, bins=bins, norm_all=False) # before 8h-recall
+	plotDistributions("nm=0.06", "any", "", Nl_exc, h_0, "28810.0", core, bins=bins, norm_all=False) # before 8h-recall
+	plotDistributions("nm=0.10", "any", "", Nl_exc, h_0, "28810.0", core, bins=bins, norm_all=False) # before 8h-recall
+	plotDistributions("nm=0.20", "any", "", Nl_exc, h_0, "28810.0", core, bins=bins, norm_all=False) # before 8h-recall
+
+	### 28810.1 ###
+	minmax = findOverallMinMax(".", Nl_exc, "28810.1", h_0)
+	binh = np.linspace(minmax[0][0], minmax[0][1], 101, endpoint=True) # bins for early-phase weights
+	binz = np.linspace(minmax[1][0], minmax[1][1], 101, endpoint=True) # bins for late-phase weights
+	binw = np.linspace(minmax[2][0], minmax[2][1], 101, endpoint=True) # bins for total synaptic weights
+	binv = np.linspace(minmax[3][0], minmax[3][1], 51, endpoint=True) # bins for activities
+	bins = [binh, binz, binw, binv]
+	np.save("bins_28810.1.npy", bins)
+	np.savetxt("minmax_28810.1.txt", minmax)
+	#bins = np.load("bins_28810.1.npy", allow_pickle=True)
+
+	plotDistributions("nm=0.02", "any", "", Nl_exc, h_0, "28810.1", core, bins=bins, norm_all=False) # after 8h-recall
+	plotDistributions("nm=0.06", "any", "", Nl_exc, h_0, "28810.1", core, bins=bins, norm_all=False) # after 8h-recall
+	plotDistributions("nm=0.10", "any", "", Nl_exc, h_0, "28810.1", core, bins=bins, norm_all=False) # after 8h-recall
+	plotDistributions("nm=0.20", "any", "", Nl_exc, h_0, "28810.1", core, bins=bins, norm_all=False) # after 8h-recall
+
+	### 20.0 ###
+	minmax = findOverallMinMax(".", Nl_exc, "20.0", h_0)
+	binh = np.linspace(minmax[0][0], minmax[0][1], 101, endpoint=True) # bins for early-phase weights
+	binz = np.linspace(minmax[1][0], minmax[1][1], 101, endpoint=True) # bins for late-phase weights
+	binw = np.linspace(minmax[2][0], minmax[2][1], 101, endpoint=True) # bins for total synaptic weights
+	binv = np.linspace(minmax[3][0], minmax[3][1], 51, endpoint=True) # bins for activities
+	bins = [binh, binz, binw, binv]
+	np.save("bins_20.0.npy", bins)
+	np.savetxt("minmax_20.0.txt", minmax)
+	#bins = np.load("bins_20.0.npy", allow_pickle=True)
+
+	plotDistributions("nm=0.02", "any", "", Nl_exc, h_0, "20.0", core, bins=bins, norm_all=False) # before 10s-recall
+	plotDistributions("nm=0.06", "any", "", Nl_exc, h_0, "20.0", core, bins=bins, norm_all=False) # before 10s-recall
+	plotDistributions("nm=0.10", "any", "", Nl_exc, h_0, "20.0", core, bins=bins, norm_all=False) # before 10s-recall
+	plotDistributions("nm=0.20", "any", "", Nl_exc, h_0, "20.0", core, bins=bins, norm_all=False) # before 10s-recall
+
+	### 20.1 ###
+	minmax = findOverallMinMax(".", Nl_exc, "20.1", h_0)
+	binh = np.linspace(minmax[0][0], minmax[0][1], 101, endpoint=True) # bins for early-phase weights
+	binz = np.linspace(minmax[1][0], minmax[1][1], 101, endpoint=True) # bins for late-phase weights
+	binw = np.linspace(minmax[2][0], minmax[2][1], 101, endpoint=True) # bins for total synaptic weights
+	binv = np.linspace(minmax[3][0], minmax[3][1], 51, endpoint=True) # bins for activities
+	bins = [binh, binz, binw, binv]
+	np.save("bins_20.1.npy", bins)
+	np.savetxt("minmax_20.1.txt", minmax)
+	#bins = np.load("bins_20.1.npy", allow_pickle=True)
+
+	plotDistributions("nm=0.02", "any", "", Nl_exc, h_0, "20.1", core, bins=bins, norm_all=False) # before 10s-recall
+	plotDistributions("nm=0.06", "any", "", Nl_exc, h_0, "20.1", core, bins=bins, norm_all=False) # before 10s-recall
+	plotDistributions("nm=0.10", "any", "", Nl_exc, h_0, "20.1", core, bins=bins, norm_all=False) # before 10s-recall
+	plotDistributions("nm=0.20", "any", "", Nl_exc, h_0, "20.1", core, bins=bins, norm_all=False) # before 10s-recall
 
 	######################################################################################################
 	## Network with 3 cell assemblies - weight distributions with automatic determination of bins 
 	## and without overall normalization
 
 	Nl_exc = 50 # number of excitatory neurons in one line of a square
-	h_0 = 0.420075
-	core_size = 600
+	h_0 = 4.20075 # initial/median synaptic weight
+	core_size = 600 # size of the assembly
 	core1 = np.arange(core_size)
 	core2 = np.arange(core_size, 2*core_size)
 	core3 = np.arange(2*core_size, 3*core_size)
@@ -798,14 +871,14 @@ if __name__ == "__main__":
 	np.savetxt("minmax_28810.0.txt", minmax)
 	#bins = np.load("bins_28810.0.npy", allow_pickle=True)
 
-	plotWeightDistributions3CAs("stdconn", "any", "", Nl_exc, "28810.0", core1, core2, core3, bins=bins)
-	plotWeightDistributions3CAs("altconn1", "any", "", Nl_exc, "28810.0", core1, core2, core3, bins=bins)
-	plotWeightDistributions3CAs("altconn2", "any", "", Nl_exc, "28810.0", core1, core2, core3, bins=bins)
-	plotWeightDistributions3CAs("altconn3", "any", "", Nl_exc, "28810.0", core1, core2, core3, bins=bins)
-	plotWeightDistributions3CAs("altconn4", "any", "", Nl_exc, "28810.0", core1, core2, core3, bins=bins)
-	plotWeightDistributions3CAs("altconn5", "any", "", Nl_exc, "28810.0", core1, core2, core3, bins=bins)
-	plotWeightDistributions3CAs("altconn6", "any", "", Nl_exc, "28810.0", core1, core2, core3, bins=bins)
-	plotWeightDistributions3CAs("altconn7", "any", "", Nl_exc, "28810.0", core1, core2, core3, bins=bins)
-	plotWeightDistributions3CAs("altconn8", "any", "", Nl_exc, "28810.0", core1, core2, core3, bins=bins)
-	plotWeightDistributions3CAs("altconn9", "any", "", Nl_exc, "28810.0", core1, core2, core3, bins=bins)
+	plotWeightDistributions3CAs("stdconn", "any", "", Nl_exc, h_0, "28810.0", core1, core2, core3, bins=bins)
+	plotWeightDistributions3CAs("altconn1", "any", "", Nl_exc, h_0, "28810.0", core1, core2, core3, bins=bins)
+	plotWeightDistributions3CAs("altconn2", "any", "", Nl_exc, h_0, "28810.0", core1, core2, core3, bins=bins)
+	plotWeightDistributions3CAs("altconn3", "any", "", Nl_exc, h_0, "28810.0", core1, core2, core3, bins=bins)
+	plotWeightDistributions3CAs("altconn4", "any", "", Nl_exc, h_0, "28810.0", core1, core2, core3, bins=bins)
+	plotWeightDistributions3CAs("altconn5", "any", "", Nl_exc, h_0, "28810.0", core1, core2, core3, bins=bins)
+	plotWeightDistributions3CAs("altconn6", "any", "", Nl_exc, h_0, "28810.0", core1, core2, core3, bins=bins)
+	plotWeightDistributions3CAs("altconn7", "any", "", Nl_exc, h_0, "28810.0", core1, core2, core3, bins=bins)
+	plotWeightDistributions3CAs("altconn8", "any", "", Nl_exc, h_0, "28810.0", core1, core2, core3, bins=bins)
+	plotWeightDistributions3CAs("altconn9", "any", "", Nl_exc, h_0, "28810.0", core1, core2, core3, bins=bins)
 '''

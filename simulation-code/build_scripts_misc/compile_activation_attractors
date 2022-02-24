@@ -1,0 +1,31 @@
+#!/bin/sh
+
+# NOTE: ACTIVATION_P2 is the same preprocessor setting (i.e., yields the same binary) as for 'activation' in '../build_scripts_paper2'
+current_working_dir=${PWD}
+cd ..
+
+out_dir="../simulation-bin/run_binary_misc/activation_attractors"
+mkdir -p "${out_dir}"
+
+rm -f code.zip
+zip -q -D code.zip * -x *.out *.o *.txt
+
+g++ -std=c++11 -O1 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D ACTIVATION_P2 \
+    -Wno-unused-result -lboost_serialization -static -o "${out_dir}/net_activation_bg.out"
+rm -f code.zip
+
+rm -f code.zip
+zip -q -D code.zip * -x *.out *.o *.txt
+
+g++ -std=c++11 -O1 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D ACTIVATION_OSC_1HZ \
+    -Wno-unused-result -lboost_serialization -static -o "${out_dir}/net_activation_osc_1Hz.out"
+rm -f code.zip
+
+rm -f code.zip
+zip -q -D code.zip * -x *.out *.o *.txt
+
+g++ -std=c++11 -O1 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D ACTIVATION_OSC_5HZ \
+    -Wno-unused-result -lboost_serialization -static -o "${out_dir}/net_activation_osc_5Hz.out"
+rm -f code.zip
+
+cd "${current_working_dir}"

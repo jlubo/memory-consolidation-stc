@@ -1,0 +1,18 @@
+#!/bin/sh
+
+cd PFreq/
+
+cd 0/
+cp ../../PFreq.out .
+screen -d -m /bin/sh run
+cd ../1
+cp ../../PFreq.out .
+screen -d -m /bin/sh run
+cd ../2
+cp ../../PFreq.out .
+screen -d -m /bin/sh run
+cd ../3
+cp ../../PFreq.out .
+screen -d -m /bin/sh run
+
+cd ../..

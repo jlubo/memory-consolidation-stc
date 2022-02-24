@@ -1,0 +1,5 @@
+#!/bin/sh
+
+/bin/sh compile_2N1S
+/bin/sh compile_IRS
+/bin/sh compile_sizes

@@ -1,6 +1,8 @@
 #!/bin/sh
 
-# learn A, B, C, and consolidate them
+# applies stimuli to learn assemblies A, B, C; subsequently consolidates
+
+# uses 'screen' to run process(es) in the background
 
 cd organization/1st/FIRST
 screen -d -m /bin/sh run # run process(es) in the background using 'screen'

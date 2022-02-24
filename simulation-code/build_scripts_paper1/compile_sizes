@@ -3,46 +3,49 @@
 current_working_dir=${PWD}
 cd ..
 
+out_dir="../simulation-bin/run_binary_paper1"
+mkdir -p "${out_dir}"
+
 rm -f code.zip
 zip -q -D code.zip * -x *.out *.o *.txt
-g++ -std=c++11 -O2 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D MEMORY_CONSOLIDATION_P1 \
-    -D CORE_SIZE_CMD=50 -Wno-unused-result -lboost_serialization -static -o "net50.out"
+g++ -std=c++11 -O1 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D MEMORY_CONSOLIDATION_P1 \
+    -D CORE_SIZE_CMD=50 -Wno-unused-result -lboost_serialization -static -o "${out_dir}/net50.out"
 rm -f code.zip
 zip -q -D code.zip * -x *.out *.o *.txt
-g++ -std=c++11 -O2 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D MEMORY_CONSOLIDATION_P1 \
-    -D CORE_SIZE_CMD=100 -Wno-unused-result -lboost_serialization -static -o "net100.out"
+g++ -std=c++11 -O1 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D MEMORY_CONSOLIDATION_P1 \
+    -D CORE_SIZE_CMD=100 -Wno-unused-result -lboost_serialization -static -o "${out_dir}/net100.out"
 rm -f code.zip
 zip -q -D code.zip * -x *.out *.o *.txt
-g++ -std=c++11 -O2 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D MEMORY_CONSOLIDATION_P1 \
-    -D CORE_SIZE_CMD=150 -Wno-unused-result -lboost_serialization -static -o "net150.out"
+g++ -std=c++11 -O1 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D MEMORY_CONSOLIDATION_P1 \
+    -D CORE_SIZE_CMD=150 -Wno-unused-result -lboost_serialization -static -o "${out_dir}/net150.out"
 rm -f code.zip
 zip -q -D code.zip * -x *.out *.o *.txt
-g++ -std=c++11 -O2 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D MEMORY_CONSOLIDATION_P1 \
-    -D CORE_SIZE_CMD=200 -Wno-unused-result -lboost_serialization -static -o "net200.out"
+g++ -std=c++11 -O1 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D MEMORY_CONSOLIDATION_P1 \
+    -D CORE_SIZE_CMD=200 -Wno-unused-result -lboost_serialization -static -o "${out_dir}/net200.out"
 rm -f code.zip
 zip -q -D code.zip * -x *.out *.o *.txt
-g++ -std=c++11 -O2 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D MEMORY_CONSOLIDATION_P1 \
-    -D CORE_SIZE_CMD=250 -Wno-unused-result -lboost_serialization -static -o "net250.out"
+g++ -std=c++11 -O1 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D MEMORY_CONSOLIDATION_P1 \
+    -D CORE_SIZE_CMD=250 -Wno-unused-result -lboost_serialization -static -o "${out_dir}/net250.out"
 rm -f code.zip
 zip -q -D code.zip * -x *.out *.o *.txt
-g++ -std=c++11 -O2 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D MEMORY_CONSOLIDATION_P1 \
-    -D CORE_SIZE_CMD=300 -Wno-unused-result -lboost_serialization -static -o "net300.out"
+g++ -std=c++11 -O1 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D MEMORY_CONSOLIDATION_P1 \
+    -D CORE_SIZE_CMD=300 -Wno-unused-result -lboost_serialization -static -o "${out_dir}/net300.out"
 rm -f code.zip
 zip -q -D code.zip * -x *.out *.o *.txt
-g++ -std=c++11 -O2 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D MEMORY_CONSOLIDATION_P1 \
-    -D CORE_SIZE_CMD=350 -Wno-unused-result -lboost_serialization -static -o "net350.out"
+g++ -std=c++11 -O1 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D MEMORY_CONSOLIDATION_P1 \
+    -D CORE_SIZE_CMD=350 -Wno-unused-result -lboost_serialization -static -o "${out_dir}/net350.out"
 rm code.zip
 zip -q -D code.zip * -x *.out *.o *.txt
-g++ -std=c++11 -O2 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D MEMORY_CONSOLIDATION_P1 \
-    -D CORE_SIZE_CMD=400 -Wno-unused-result -lboost_serialization -static -o "net400.out"
+g++ -std=c++11 -O1 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D MEMORY_CONSOLIDATION_P1 \
+    -D CORE_SIZE_CMD=400 -Wno-unused-result -lboost_serialization -static -o "${out_dir}/net400.out"
 rm code.zip
 zip -q -D code.zip * -x *.out *.o *.txt
-g++ -std=c++11 -O2 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D MEMORY_CONSOLIDATION_P1 \
-    -D CORE_SIZE_CMD=450 -Wno-unused-result -lboost_serialization -static -o "net450.out"
+g++ -std=c++11 -O1 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D MEMORY_CONSOLIDATION_P1 \
+    -D CORE_SIZE_CMD=450 -Wno-unused-result -lboost_serialization -static -o "${out_dir}/net450.out"
 rm code.zip
 zip -q -D code.zip * -x *.out *.o *.txt
-g++ -std=c++11 -O2 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D MEMORY_CONSOLIDATION_P1 \
-    -D CORE_SIZE_CMD=500 -Wno-unused-result -lboost_serialization -static -o "net500.out"
-rm code.zip
+g++ -std=c++11 -O1 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D MEMORY_CONSOLIDATION_P1 \
+    -D CORE_SIZE_CMD=500 -Wno-unused-result -lboost_serialization -static -o "${out_dir}/net500.out"
+rm -f code.zip
 
 cd "${current_working_dir}"

@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# copies data from learning/consolidation simulations in 'organization/' and applies recall stimulation to a fraction of the neurons of each assembly
+
 cd recall/
 /bin/sh "runner"
 cd ..

@@ -4,7 +4,7 @@
 ###                             as well as the mean firing rates in the assemblies                                      ###
 ###########################################################################################################################
 
-### Copyright (c) Jannik Luboeinski 2020-2021
+### Copyright 2020-2022 Jannik Luboeinski
 ### License: Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 ### Contact: jannik.lubo[at]gmx.de
 
@@ -52,7 +52,7 @@ def timeSeries(timestamp, spike_raster_file, output_dir):
 		while f.read(1) != b'\n': # seek last line
 			f.seek(-2, os.SEEK_CUR)
 		last_line = f.readline().decode()
-	num_periods_tot = np.int(np.double(last_line.split('\t\t')[0]) / period_duration) + 1
+	num_periods_tot = int(float(last_line.split('\t\t')[0]) / period_duration) + 1
 
 	# count lines
 	with open(spike_raster_file) as f:
@@ -60,21 +60,21 @@ def timeSeries(timestamp, spike_raster_file, output_dir):
 	print("num_rows =", num_rows)
 
 	# counters per period for the different cell assemblies
-	counterA = np.zeros(num_periods_tot, dtype=np.int)
-	counterB = np.zeros(num_periods_tot, dtype=np.int)
-	counterC = np.zeros(num_periods_tot, dtype=np.int)
-	counterOverall = np.zeros(num_periods_tot, dtype=np.int)
-	counterCtrl = np.zeros(num_periods_tot, dtype=np.int)
+	counterA = np.zeros(num_periods_tot, dtype=int)
+	counterB = np.zeros(num_periods_tot, dtype=int)
+	counterC = np.zeros(num_periods_tot, dtype=int)
+	counterOverall = np.zeros(num_periods_tot, dtype=int)
+	counterCtrl = np.zeros(num_periods_tot, dtype=int)
 	series = ["-" for i in range(num_periods_tot)]
 
 	# read all data
 	f = open(spike_raster_file)
 	for line in f:
 		row = line.split('\t\t')
-		t = np.double(row[0])
-		n = np.int(row[1])
+		t = float(row[0])
+		n = int(row[1])
 
-		current_period = np.int(np.floor(t / period_duration))
+		current_period = int(np.floor(t / period_duration))
 
 		if n < exc_pop_size:
 			counterOverall[current_period] += 1

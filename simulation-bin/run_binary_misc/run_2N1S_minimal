@@ -1,0 +1,9 @@
+#!/bin/sh
+
+mkdir 2N1S_minimal
+cd 2N1S_minimal
+cp ../2N1S_minimal.out .
+
+./2N1S_minimal.out -learn=MIN2N1S -Ca_pre=1.0 -Ca_post=0.2758 -purpose= -t_max=0.2
+
+cd ..

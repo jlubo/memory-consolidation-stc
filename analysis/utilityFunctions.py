@@ -2,8 +2,9 @@
 ### Utility function for different purposes regarding the reading of simulation data ###
 ########################################################################################
 
-### Copyright 2017-2021 Jannik Luboeinski
+### Copyright 2017-2022 Jannik Luboeinski
 ### licensed under Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+### Contact: jannik.lubo[at]gmx.de
 
 import numpy as np
 import os

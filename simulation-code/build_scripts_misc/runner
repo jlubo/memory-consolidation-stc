@@ -1,0 +1,7 @@
+#!/bin/sh 
+
+/bin/sh compile_2N1S_Li2016
+/bin/sh compile_2N1S_minimal
+/bin/sh compile_activation_attractors
+/bin/sh compile_organization_attractors
+/bin/sh compile_PFreq
