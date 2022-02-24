@@ -16,7 +16,7 @@ The package that is provided here has been developed and used for the following 
 2. Luboeinski, J., Tetzlaff, C. Organization and priming of long-term memory representations with two-phase plasticity. bioRxiv (2021). https://doi.org/10.1101/2021.04.15.439982 ---
    _extension of the model, investigation of functional consequences of interactions between multiple memory representations in different paradigms_
 
-3. Luboeinski, J. The Role of Synaptic Tagging and Capture for Memory Dynamics in Spiking Neural Networks \[Dissertation\]. University of Göttingen (2021). http://hdl.handle.net/21.11130/00-1735-0000-0008-58F8-E ---
+3. Luboeinski, J. The Role of Synaptic Tagging and Capture for Memory Dynamics in Spiking Neural Networks \[Dissertation\]. University of Göttingen (2021). https://doi.org/10.53846/goediss-463 ---
    _extension of the model, further investigation of multiple memory representations with attractor dynamics as well as characterization of plasticity regimes depending on pre- and post-synaptic firing rate_
 
 If you use parts of the package for your research, please cite accordingly (BibTeX code can be found [here](BIBTEX.md)). Also note that the code provided here contains some features that have not been used in any publication yet. Please feel free to contact us for any questions.
@@ -113,7 +113,7 @@ Also note that not all script files and functions have to be used to reproduce t
 ### Files
 
 * __adjacencyFunctions.py__ - functions to analyze the connectivity and weights in a network (used to compute mean and standard deviation of early- and late-phase weights)
-* __analyzeWeights.py__ - routine that runs functions to investigate the synaptic weight structure of networks (reads from __[timestamp]_net_[time].txt__ files produced by the simulation program)
+* __analyzeWeights.py__ - routine that runs functions to investigate the synaptic weight structure of networks (reads from `[timestamp]_net_[time].txt` files produced by the simulation program)
 * __assemblyAttractorStatistics.py__ - determines the statistics of the activation of attractor cell assemblies (considering exclusive activation and transitions between attractors)
 * __assemblyAvalancheStatistics.py__ - determines the statistics of avalanche occurrence within cell assemblies
 * __averageFileColumnsAdvanced.py__ - averages data columns across files (for example, average over multiple weight traces or probability distributions)
@@ -129,5 +129,5 @@ Also note that not all script files and functions have to be used to reproduce t
 * __meanCorrelations.py__ - computes firing rate correlations for neuron pairs from spike raster data and averages over subpopulations of the network
 * __numberOfSpikesInBins.py__ - computes the distribution of spikes per time bin from cell assembly time series data
 * __overlapParadigms.py__ - defines paradigms of overlapping cell assemblies
-* __utilityFunctions.py__ - diverse utility functions, e.g., to read firing rate, early- and late-phase weight data from __[timestamp]_net_[time].txt__ files produced by the simulation program
+* __utilityFunctions.py__ - diverse utility functions, e.g., to read firing rate, early- and late-phase weight data from `[timestamp]_net_[time].txt` files produced by the simulation program
 * __valueDistributions.py__ - functions to analyze and plot weight and firing rate distributions
