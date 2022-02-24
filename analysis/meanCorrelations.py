@@ -3,8 +3,9 @@
 ###                             from spike raster data                                  ###
 ###########################################################################################
 
-### Copyright 2020-2021 Jannik Luboeinski
+### Copyright 2020-2022 Jannik Luboeinski
 ### licensed under Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+### Contact: jannik.lubo[at]gmx.de
 
 import numpy as np
 from pathlib import Path
@@ -42,15 +43,15 @@ def firingRateMatrix(timestamp, spike_raster_file, t_prime, t_wfr):
 
 	rawdata = rawdata.split('\n')
 	num_rows = len(rawdata)-1
-	t_max = np.int(np.double(rawdata[num_rows-1].split('\t\t')[0]))
+	t_max = int(float(rawdata[num_rows-1].split('\t\t')[0]))
 
-	count_e = np.zeros(Ne, dtype=np.int) # neuronal spike counts of the whole excitatory population
+	count_e = np.zeros(Ne, dtype=int) # neuronal spike counts of the whole excitatory population
 
 	# go through the spike raster data and find for every neuron the spikes occurring in the effective window
 	for i in range(num_rows):
 		row = rawdata[i].split('\t\t')
-		t = np.double(row[0])
-		n = np.int(row[1])
+		t = float(row[0])
+		n = int(row[1])
 
 		if t >= t_wfr_start and t < t_wfr_end and n < Ne: # check if effective time window is being hit and only consider exc. neurons
 

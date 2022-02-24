@@ -2,7 +2,7 @@
  *** Main function, instantiates the NetworkSimulation class ***
  ***************************************************************/
 
-/*** Copyright 2017-2021 Jannik Luboeinski ***
+/*** Copyright 2017-2022 Jannik Luboeinski ***
  *** licensed under Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0) ***/
 
 #include "NetworkSimulation.cpp"
@@ -18,9 +18,9 @@ int Nl_inh = 20; // number of neurons in one row of the inhibitory population (t
 double dt = 0.0002; // s, duration of one timestep 
 double t_max = 28810.0; // s, total duration of the simulation
 double t_wfr = 0.5; // s, size of the sliding time window for firing rate computation (ATTENTION: should not be chosen too small 
-                       // because it controls the removal of old spikes from RAM, see NetworkSimulation::instFiringRates())
+                    // because it controls the removal of old spikes from RAM, see NetworkSimulation::instFiringRates())
 
-double w_ee = 1.0; // coupling strength for excitatory inputs to excitatory neurons as multiple of h_0 (thus equals h_0) 
+double w_ee = 1.0; // coupling strength for excitatory inputs to excitatory neurons as multiple of h_0 (equaling h_0) 
 double w_ei = 2.0; // coupling strength for excitatory inputs to inhibitory neurons as multiple of h_0
 double w_ie = 4.0; // coupling strength for inhibitory inputs to excitatory neurons as multiple of h_0
 double w_ii = 4.0; // coupling strength for inhibitory inputs to inhibitory neurons as multiple of h_0
@@ -34,7 +34,7 @@ double theta_p = 3.0; // the calcium threshold for early-phase potentiation
 double theta_d = 1.2; // the calcium threshold for early-phase depression
 double Ca_pre = 0.6; // the postsynaptic calcium contribution evoked by a presynaptic spike (Li et al., 2016, not adjusted: 1.0)
 double Ca_post = 0.16548; // the postsynaptic calcium contribution evoked by a postsynaptic spike (Li et al., 2016, not adjusted: 0.2758)
-double sigma_plasticity = 9.1844 / sqrt(1000); // nA s, standard deviation of the Gaussian white noise contributing to early-phase plasticity
+double sigma_plasticity = 9.1844 / sqrt(1000) * 10.; // mV, standard deviation of the Gaussian white noise contributing to early-phase plasticity
 
 double theta_pro_P = 0.5; // protein synthesis threshold for pool P in units of h_0
 double theta_pro_C = 0.5; // protein synthesis threshold for pool C in units of h_0
@@ -175,19 +175,25 @@ int main(int argc, char** argv)
 		//}
 		else
 		{
-			throw runtime_error(string("Unrecognized command line argument: \'") + string(argv[i]) + string("\'."));
+			throw runtime_error(string("ERROR: unrecognized command line argument: \'") + string(argv[i]) + string("\'."));
 			return -1;
 		}
 	}
 
 #ifdef TWO_NEURONS_ONE_SYNAPSE
-	#ifndef PLASTICITY_OVER_FREQ
-	cout << "TWO_NEURONS_ONE_SYNAPSE" << endl;
-	t_max = 28800.0;
-	output_period = 100;
-	#else
+	#if defined PLASTICITY_OVER_FREQ
 	cout << "PLASTICITY_OVER_FREQ" << endl;
+	#else
+	cout << "TWO_NEURONS_ONE_SYNAPSE*" << endl;
 	#endif
+	
+	#if defined TWO_NEURONS_ONE_SYNAPSE_MIN
+	output_period = 1;
+	#else
+	output_period = 100;
+	t_max = 28800.0;
+	#endif
+	
 	Nl_exc = 2;
 	Nl_inh = 0;
 	I_0 = 0.;
@@ -203,7 +209,8 @@ int main(int argc, char** argv)
 		path += string("_") + prot_learn;
 	if (!purpose.empty())
 		path += string(" ") + purpose;
-	system(concat("mkdir -p \"", path + "\"").c_str()); // create working directory
+	//system(concat("mkdir -p \"", path + "\"").c_str());
+	mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH); // create working directory
 	if (chdir(path.c_str()) == -1) { // try to change directory
 		showChDirErrMessage();
 		return -1;

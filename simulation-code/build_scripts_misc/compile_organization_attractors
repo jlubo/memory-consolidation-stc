@@ -1,0 +1,40 @@
+#!/bin/sh
+
+current_working_dir=${PWD}
+cd ..
+
+out_dir="../simulation-bin/run_binary_misc/organization_attractors"
+mkdir -p "${out_dir}"
+
+# requires/uses the partially same binaries as 'organization' in ../build_scripts_paper2
+# see 'Definitions.hpp' for values of CORE_SHAPE_CMD
+
+rm -f code.zip
+zip -q -D code.zip * -x *.out *.o *.txt
+mkdir -p "${out_dir}/1st/FIRST"
+g++ -std=c++11 -O1 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D ORGANIZATION_ATTR \
+    -D CORE_SHAPE_CMD=1 -Wno-unused-result -lboost_serialization -static -o "${out_dir}/1st/FIRST/net.out"
+mkdir -p "${out_dir}/2nd/NOOVERLAP"
+g++ -std=c++11 -O1 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D ORGANIZATION_ATTR \
+    -D CORE_SHAPE_CMD=2 -Wno-unused-result -lboost_serialization -static -o "${out_dir}/2nd/NOOVERLAP/net.out"
+mkdir -p "${out_dir}/2nd/OVERLAP10"
+g++ -std=c++11 -O1 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D ORGANIZATION_ATTR \
+    -D CORE_SHAPE_CMD=3 -Wno-unused-result -lboost_serialization -static -o "${out_dir}/2nd/OVERLAP10/net.out"
+mkdir -p "${out_dir}/3rd/NOOVERLAP"
+g++ -std=c++11 -O1 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D ORGANIZATION_ATTR \
+    -D CORE_SHAPE_CMD=6 -Wno-unused-result -lboost_serialization -static -o "${out_dir}/3rd/NOOVERLAP/net.out"
+mkdir -p "${out_dir}/3rd/OVERLAP10"
+g++ -std=c++11 -O1 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D ORGANIZATION_ATTR \
+    -D CORE_SHAPE_CMD=7 -Wno-unused-result -lboost_serialization -static -o "${out_dir}/3rd/OVERLAP10/net.out"
+mkdir -p "${out_dir}/3rd/OVERLAP10 no ABC"
+g++ -std=c++11 -O1 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D ORGANIZATION_ATTR \
+    -D CORE_SHAPE_CMD=8 -Wno-unused-result -lboost_serialization -static -o "${out_dir}/3rd/OVERLAP10 no ABC/net.out"
+mkdir -p "${out_dir}/3rd/OVERLAP10 no AC, no ABC"
+g++ -std=c++11 -O1 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D ORGANIZATION_ATTR \
+    -D CORE_SHAPE_CMD=9 -Wno-unused-result -lboost_serialization -static -o "${out_dir}/3rd/OVERLAP10 no AC, no ABC/net.out"
+mkdir -p "${out_dir}/3rd/OVERLAP10 no BC, no ABC"
+g++ -std=c++11 -O1 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default -D ORGANIZATION_ATTR \
+    -D CORE_SHAPE_CMD=10 -Wno-unused-result -lboost_serialization -static -o "${out_dir}/3rd/OVERLAP10 no BC, no ABC/net.out"
+rm -f code.zip
+
+cd "${current_working_dir}"

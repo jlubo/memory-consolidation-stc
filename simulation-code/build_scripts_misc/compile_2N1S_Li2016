@@ -1,0 +1,21 @@
+#!/bin/sh
+
+current_working_dir=${PWD}
+cd ..
+
+out_dir="../simulation-bin/run_binary_misc"
+mkdir -p "${out_dir}"
+
+rm -f code.zip
+zip -q -D code.zip * -x *.out *.o *.txt
+
+g++ -std=c++11 \
+    -O1 NetworkMain.cpp \
+    -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default \
+    -D TWO_NEURONS_ONE_SYNAPSE_LI2016 \
+    -Wno-unused-result \
+    -lboost_serialization -static \
+    -o "${out_dir}/2N1S_Li2016.out"
+rm -f code.zip
+
+cd "${current_working_dir}"

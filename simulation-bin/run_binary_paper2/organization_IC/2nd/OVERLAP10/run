@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# learning and consolidating B
+./net.out -Nl=50 -Nl_inh=25 -t_max=28812 -N_stim=25 -pc=0.1 -zmax=1 -learn=TRIPLETat10.0 -recall=F100D1at28810 -w_ei=2 -w_ie=3.5 -w_ii=3.5 -output_period=10 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="2nd CA"
+
+cd ../../3rd
+/bin/sh runner_OVERLAP10
+

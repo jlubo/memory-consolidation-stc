@@ -3,8 +3,9 @@
 ###                    in a network at two different times                          ###
 #######################################################################################
 
-### Copyright 2018-2021 Jannik Luboeinski
+### Copyright 2018-2022 Jannik Luboeinski
 ### licensed under Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+### Contact: jannik.lubo[at]gmx.de
 
 from utilityFunctions import *
 from valueDistributions import *

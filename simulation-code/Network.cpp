@@ -2,7 +2,7 @@
  ***     Model of a network of neurons with long-term plasticity between excitatory neurons     ***
  **************************************************************************************************/
 
-/*** Copyright 2017-2021 Jannik Luboeinski ***
+/*** Copyright 2017-2022 Jannik Luboeinski ***
  *** licensed under Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0) ***/
 
 #include <random>
@@ -64,15 +64,15 @@ int Nl_inh; // number of neurons in one line (row or column) of the inh. populat
 double tau_syn; // s, the synaptic time constant
 double t_syn_delay; // s, the synaptic transmission delay for PSPs - has to be at least one timestep!
 double p_c; // connection probability (prob. that a directed connection exists)
-double w_ee; // nC, magnitude of excitatory PSP effecting an excitatory postsynaptic neuron
-double w_ei; // nC, magnitude of excitatory PSP effecting an inhibitory postsynaptic neuron
-double w_ie; // nC, magnitude of inhibitory PSP effecting an excitatory postsynaptic neuron
-double w_ii; // nC, magnitude of inhibitory PSP effecting an inhibitory postsynaptic neuron
+double w_ee; // mV, amplitude of excitatory PSP effecting an excitatory postsynaptic neuron
+double w_ei; // mV, amplitude of excitatory PSP effecting an inhibitory postsynaptic neuron
+double w_ie; // mV, amplitude of inhibitory PSP effecting an excitatory postsynaptic neuron
+double w_ii; // mV, amplitude of inhibitory PSP effecting an inhibitory postsynaptic neuron
 
 /*** Plasticity parameters ***/
 double t_Ca_delay; // s, delay for spikes to affect calcium dynamics - has to be at least one timestep!
-double Ca_pre; // s^-1, increase in calcium current evoked by presynaptic spike
-double Ca_post; // s^-1, increase in calcium current evoked by postsynaptic spike
+double Ca_pre; // increase in calcium current evoked by presynaptic spike
+double Ca_post; // increase in calcium current evoked by postsynaptic spike
 double tau_Ca; // s, time constant for calcium dynamics
 double tau_Ca_steps; // time constant for calcium dynamics in timesteps
 double tau_h; // s, time constant for early-phase plasticity
@@ -84,16 +84,16 @@ double gamma_p; // constant for potentiation process
 double gamma_d; // constant for depression process
 double theta_p; // threshold for calcium concentration to induce potentiation
 double theta_d; // threshold for calcium concentration to induce depotentiation
-double sigma_plasticity; // nA s, standard deviation of plasticity noise
+double sigma_plasticity; // mV, standard deviation of plasticity noise
 double alpha_p; // LTP-related protein synthesis rate
 double alpha_c; // common protein synthesis rate
 double alpha_d; // LTD-related protein synthesis rate
-double h_0; // nA, initial value for early-phase plasticity
-double theta_pro_p; // nA s, threshold for LTP-related protein synthesis
-double theta_pro_c; // nA s, threshold for common protein synthesis
-double theta_pro_d; // nA s, threshold for LTD-related protein synthesis
-double theta_tag_p; // nA s, threshold for LTP-related tag
-double theta_tag_d; // nA s, threshold for LTD-related tag
+double h_0; // mV, initial value for early-phase plasticity
+double theta_pro_p; // mV, threshold for LTP-related protein synthesis
+double theta_pro_c; // mV, threshold for common protein synthesis
+double theta_pro_d; // mV, threshold for LTD-related protein synthesis
+double theta_tag_p; // mV, threshold for LTP-related tag
+double theta_tag_d; // mV, threshold for LTD-related tag
 double z_max; // upper z bound
 
 public:
@@ -248,7 +248,7 @@ void saveNetworkParams(ofstream *f) const
 #endif
 	   << " s" << endl;
 	*f << "t_syn_delay = " << t_syn_delay << " s" << endl;
-	*f << "h_0 = " << h_0 << " nA s" << endl;
+	*f << "h_0 = " << h_0 << " mV" << endl;
 	*f << "w_ee = " << dtos(w_ee/h_0,1) << " h_0" << endl;
 	*f << "w_ei = " << dtos(w_ei/h_0,1) << " h_0" << endl;
 	*f << "w_ie = " << dtos(w_ie/h_0,1) << " h_0" << endl;
@@ -275,7 +275,10 @@ void saveNetworkParams(ofstream *f) const
 	*f << "gamma_d = " << gamma_d << endl;
 	*f << "theta_p = " << theta_p << endl;
 	*f << "theta_d = " << theta_d << endl;
-	*f << "sigma_plasticity = " << dtos(sigma_plasticity/h_0,2) << " h_0" << endl;
+	*f << "nu_th^LTP = " << LTP_FR_THRESHOLD << " Hz" << endl;
+	*f << "nu_th^LTD = " << LTD_FR_THRESHOLD << " Hz" << endl;
+	//*f << "sigma_plasticity = " << dtos(sigma_plasticity/h_0,2) << " h_0" << endl;
+	*f << "sigma_plasticity = " << sigma_plasticity << " mV" << endl;
 	*f << "alpha_p = " << alpha_p << endl;
 	*f << "alpha_c = " << alpha_c << endl;
 	*f << "alpha_d = " << alpha_d << endl;
@@ -507,25 +510,25 @@ int processTimeStep(int tb, ofstream* txt_spike_raster = NULL)
 			int n = neurons[m].getOutgoingConnection(in); // get index (in consecutive order) of postsynaptic neuron
 			double h_dev; // the deviation of the early-phase weight from its resting state
 
-			// Synaptic current
+			// Synaptic potentials
 			if (delayed_PSP) // if presynaptic spike occurred t_syn_delay ago
 			{
 				if (neurons[m].getType() == TYPE_EXC)
 				{
-					double psc; // the postsynaptic current
+					double psp; // the postsynaptic potential
 
 					if (neurons[n].getType() == TYPE_EXC) // E -> E
 					{
-						psc = h[m][n] + h_0 * z[m][n];
-						neurons[n].increaseExcSynapticCurrent(psc);
+						psp = h[m][n] + h_0 * z[m][n];
+						neurons[n].increaseExcSynapticPotential(psp);
 					}
 					else // E -> I
 					{
-						psc = w_ei;
-						neurons[n].increaseExcSynapticCurrent(psc);
+						psp = w_ei;
+						neurons[n].increaseExcSynapticPotential(psp);
 					}
 #if DENDR_SPIKES == ON
-					neurons[n].updateDendriteInput(psc); // contribution to dendritic spikes
+					neurons[n].updateDendriteInput(psp); // contribution to dendritic spikes
 #endif
 				}
 				else
@@ -533,11 +536,11 @@ int processTimeStep(int tb, ofstream* txt_spike_raster = NULL)
 					if (neurons[n].getType() == TYPE_EXC) // I -> E
 					{
 
-						neurons[n].increaseInhSynapticCurrent(w_ie);
+						neurons[n].increaseInhSynapticPotential(w_ie);
 					}
 					else // I -> I
 					{
-						neurons[n].increaseInhSynapticCurrent(w_ii);
+						neurons[n].increaseInhSynapticPotential(w_ii);
 					}
 				}
 			}
@@ -565,8 +568,8 @@ int processTimeStep(int tb, ofstream* txt_spike_raster = NULL)
 					double noise = sigma_plasticity * sqrt(tau_h) * sqrt(2) * norm_dist(rg) / sqrt(dt); // division by sqrt(dt) was not in Li et al., 2016
 					double C = 0.1 + gamma_p + gamma_d;
 					double hexp = exp(-dt*C/tau_h);
-					h[m][n] = h[m][n] * hexp + (0.1*h_0 + gamma_p + noise) / C * (1.- hexp);
-					// [simple Euler: h[m][n] += ((0.1 * (h_0 - h[m][n]) + gamma_p * (1-h[m][n]) - gamma_d * h[m][n] + noise)*(dt/tau_h));]
+					h[m][n] = h[m][n] * hexp + (0.1*h_0 + 10.*gamma_p + noise) / C * (1.- hexp);
+					// [simple Euler: h[m][n] += ((0.1 * (h_0 - h[m][n]) + gamma_p * (10 - h[m][n]) - gamma_d * h[m][n] + noise)*(dt/tau_h));]
 
 					if (abs(h[m][n] - h_0) > abs(max_dev))
 					{
@@ -1592,12 +1595,13 @@ int readConnections(string file, int format = 0)
 			}
 		}
 	}
+	
 	f.close();
-
-	reset();
 
 	if (m != (N-1) || n != N) // if dimensions do not match
 		return 0;
+	
+	reset();
 
 	return 2;
 }
@@ -1863,7 +1867,11 @@ void resetPlasticity(bool early_phase, bool late_phase, bool calcium, bool prote
  * Resets the network and all neurons to initial state (but maintain connectivity) */
 void reset()
 {
-	rg.seed(getClockSeed()); // set new seed by clock's epoch
+#ifdef TWO_NEURONS_ONE_SYNAPSE_MIN
+	rg.seed(0.); // determinsitic computation
+#else
+	rg.seed(getClockSeed()); // set new random seed by clock's epoch
+#endif
 	u_dist.reset(); // reset the uniform distribution for random numbers
 	norm_dist.reset(); // reset the normal distribution for random numbers
 
@@ -1872,12 +1880,26 @@ void reset()
 		neurons[m].reset();
 		for (int n=0; n<N; n++) // reset synapses
 		{
-			if (conn[m][n])
-				h[m][n] = h_0;
-			else
-				h[m][n] = 0.;
 			Ca[m][n] = 0.;
-			z[m][n] = 0.;
+			if (conn[m][n])
+			{
+#if RAND_INIT_WEIGHTS == ON
+				//double rand_weight_h = (h_0/30.) * norm_dist(rg) + h_0; // draw normal random number with mean h_0 and std. dev. h_0/30
+				//h[m][n] = (rand_weight_h > 0.) ? rand_weight_h : 0.; // set to randomly drawn value if hard bound is not exceeded
+
+				h[m][n] = h_0 * exp((h_0/30.) * norm_dist(rg)); // draw log-normal random number with median h_0 and std. dev. h_0/30
+				z[m][n] = 0.5*z_max * (exp((1./3.) * norm_dist(rg)) - 1); // draw log-normal random number with median 0 and std. dev. 1/3, and minimum 0.5
+#else
+
+				h[m][n] = h_0;
+				z[m][n] = 0.;
+#endif
+			}
+			else
+			{
+				h[m][n] = 0.;
+				z[m][n] = 0.;
+			}
 		}
 		resetLastSpikeIndex(m);
 		sum_h_diff[m] = 0.;
@@ -1918,9 +1940,9 @@ void setCaConstants(double _theta_p, double _theta_d, double _Ca_pre, double _Ca
 
 /*** setPSThresholds ***
  * Set thresholds for the onset of protein synthesis *
- * - double _theta_pro_P: the threshold for P synthesis (in units of h0) *
- * - double _theta_pro_C: the threshold for C synthesis (in units of h0) *
- * - double _theta_pro_D: the threshold for D synthesis (in units of h0) */
+ * - double _theta_pro_P: the threshold for P synthesis (in units of h_0) *
+ * - double _theta_pro_C: the threshold for C synthesis (in units of h_0) *
+ * - double _theta_pro_D: the threshold for D synthesis (in units of h_0) */
 void setPSThresholds(double _theta_pro_P, double _theta_pro_C, double _theta_pro_D)
 {
 	theta_pro_p = _theta_pro_P*h_0;
@@ -1941,14 +1963,19 @@ void setPSThresholds(double _theta_pro_P, double _theta_pro_C, double _theta_pro
  * - double _z_max: the upper z bound */
 
 Network(const double _dt, const int _Nl_exc, const int _Nl_inh, double _p_c, double _sigma_plasticity, double _z_max) :
-        dt(_dt), rg(getClockSeed()), u_dist(0.0,1.0), norm_dist(0.0,1.0), Nl_exc(_Nl_exc), Nl_inh(_Nl_inh), z_max(_z_max)
+        dt(_dt), u_dist(0.0,1.0), norm_dist(0.0,1.0), Nl_exc(_Nl_exc), Nl_inh(_Nl_inh), z_max(_z_max),
+#ifdef TWO_NEURONS_ONE_SYNAPSE_MIN
+        rg(0.)
+#else
+        rg(getClockSeed())
+#endif
 {
 	N = pow2(Nl_exc) + pow2(Nl_inh); // total number of neurons
 
 	p_c = _p_c; // set connection probability
 
 	t_syn_delay = 0.003; // from https://www.britannica.com/science/nervous-system/The-neuronal-membrane#ref606406, accessed 18-06-21
-#if defined TWO_NEURONS_ONE_SYNAPSE && !defined TWO_NEURONS_ONE_SYNAPSE_ALT
+#ifdef TWO_NEURONS_ONE_SYNAPSE_LI2016
 	t_syn_delay = dt;
 #endif
 
@@ -1964,7 +1991,7 @@ Network(const double _dt, const int _Nl_exc, const int _Nl_inh, double _p_c, dou
 	tau_h = 688.4; // from Graupner and Brunel (2012), hippocampal slices
 	gamma_p = 1645.6; // from Graupner and Brunel (2012), hippocampal slices
 	gamma_d = 313.1; // from Graupner and Brunel (2012), hippocampal slices
-	h_0 = 0.5*(gamma_p/(gamma_p+gamma_d)); // from Li et al. (2016)
+	h_0 = 5.*(gamma_p/(gamma_p+gamma_d)); // from Li et al. (2016)
 	theta_p = 3.0; // from Li et al. (2016)
 	theta_d = 1.2; // from Li et al. (2016)
 	sigma_plasticity = _sigma_plasticity; // from Graupner and Brunel (2012) but corrected by 1/sqrt(1000)
@@ -2081,20 +2108,20 @@ double getVoltage(int m) const
 	return neurons[m].getVoltage();
 }
 
-/*** getThreshold ***
+/*** getVoltageThreshold ***
  * Returns the value of the dynamic membrane threshold of neuron (i|j) *
  * - return: the membrane threshold in mV */
-double getThreshold(int i, int j) const
+double getVoltageThreshold(int i, int j) const
 {
-	return neurons[cNN(i,j)].getThreshold();
+	return neurons[cNN(i,j)].getVoltageThreshold();
 }
-double getThreshold(int m) const
+double getVoltageThreshold(int m) const
 {
-	return neurons[m].getThreshold();
+	return neurons[m].getVoltageThreshold();
 }
 
 /*** getCurrent ***
- * Returns total current effecting neuron (i|j) *
+ * Returns total external current affecting neuron (i|j) *
  * - int i: the row where the neuron is located *
  * - int j: the column where the neuron is located *
  * - return: the instantaneous current in nA */
@@ -2105,6 +2132,20 @@ double getCurrent(int i, int j) const
 double getCurrent(int m) const
 {
 	return neurons[m].getCurrent();
+}
+
+/*** getNetCurrent ***
+ * Returns total current affecting neuron (i|j), including external and leak currents *
+ * - int i: the row where the neuron is located *
+ * - int j: the column where the neuron is located *
+ * - return: the instantaneous current in nA */
+double getNetCurrent(int i, int j) const
+{
+	return neurons[cNN(i,j)].getNetCurrent();
+}
+double getNetCurrent(int m) const
+{
+	return neurons[m].getNetCurrent();
 }
 
 /*** getStimulusCurrent ***
@@ -2391,6 +2432,20 @@ double getDProteinAmount(int i, int j) const
 double getDProteinAmount(int m) const
 {
 	return neurons[m].getDProteinAmount();
+}
+
+/*** getMembraneResistance ***
+ * Returns the membrane resistance of a neuron *
+ * - int i: the row where the neuron is located *
+ * - int j: the column where the neuron is located *
+ * - return: the membrane resistance in MΩ */
+double getMembraneResistance(int i, int j) const
+{
+	return neurons[cNN(i,j)].getMembraneResistance();
+}
+double getMembraneResistance(int m) const
+{
+	return neurons[m].getMembraneResistance();
 }
 
 

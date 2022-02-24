@@ -2,7 +2,7 @@
  *** Definitions for network simulation settings ***
  ***************************************************/
 
-/*** Copyright 2017-2021 Jannik Luboeinski ***
+/*** Copyright 2017-2022 Jannik Luboeinski ***
  *** licensed under Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0) ***/
 
 // Generic definitions

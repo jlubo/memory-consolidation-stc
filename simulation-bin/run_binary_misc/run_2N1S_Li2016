@@ -1,0 +1,29 @@
+#!/bin/sh
+
+mkdir 2N1S_Li2016
+cd 2N1S_Li2016
+cp ../2N1S_Li2016.out .
+
+num_trials=100
+
+for (( i=1; i <= $num_trials; ++i ))
+do
+    ./2N1S_Li2016.out -learn=STET -Ca_pre=1.0 -Ca_post=0.2758 -purpose= 
+done
+
+for (( i=1; i <= $num_trials; ++i ))
+do
+    ./2N1S_Li2016.out -learn=WTET -Ca_pre=1.0 -Ca_post=0.2758 -purpose= 
+done
+
+for (( i=1; i <= $num_trials; ++i ))
+do
+    ./2N1S_Li2016.out -learn=SLFS -Ca_pre=1.0 -Ca_post=0.2758 -purpose= 
+done
+
+for (( i=1; i <= $num_trials; ++i ))
+do
+    ./2N1S_Li2016.out -learn=WLFS -Ca_pre=1.0 -Ca_post=0.2758 -purpose= 
+done
+
+cd ..

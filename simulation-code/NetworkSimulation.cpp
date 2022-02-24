@@ -3,34 +3,37 @@
  ***                         long-term plasticity                      ***
  *************************************************************************/
 
-/*** Copyright 2017-2021 Jannik Luboeinski ***
+/*** Copyright 2017-2022 Jannik Luboeinski ***
  *** licensed under Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0) ***/
 
 #include <iostream>
 #include <fstream>
 #include <unistd.h> // for chdir()
+#include <sys/types.h>
+#include <sys/stat.h> // for mkdir()
 #include "Definitions.hpp"
 
 using namespace std;
 
 // Simulation options (cf. Definitions.hpp)
-#define STIM_TYPE        OU_STIMULATION // the type of stimulation that enters the neurons (not to be confused with the stimulus protocol)
-#define NEURON_MODEL     LIF // definition of the neuron model
-#define SYNAPSE_MODEL    MONOEXP // the synapse model that is used
-#define PLASTICITY       CALCIUM_AND_STC // defines what type of plasticity shall be used (or OFF)
-#define PROTEIN_POOLS    POOLS_C // the protein pool setting for synaptic consolidation/plasticity-related proteins
-#define STIPULATE_CA     OFF // if ON: stipulate a cell assembly with strong interconnections at the beginning of the learning stimulus, no actual learning is required
-#define CORE_SHAPE       FIRST // shape and position of the cell assembly
-#define CORE_SIZE        150 // size of the cell assembly
-#define COND_BASED_SYN   OFF // if ON: use conductance-based synapses that may be different for inhibitory and excitatory neurons
-#define SYN_SCALING      OFF // if ON: use synaptic scaling following Tetzlaff et al., 2013
-#define DENDR_SPIKES     OFF // if ON: use dendritic spikes as described by Jahnke et al., 2015
-#define LTP_FR_THRESHOLD 40 // threshold (in Hz) that pre- and postsynaptic firing rate have to cross for LTP to be enabled (or OFF)
-#define LTD_FR_THRESHOLD OFF // threshold (in Hz) that pre- and postsynaptic firing rate have to cross for LTD to be enabled (or OFF)
-#define FF_AFTER_LEARN   ON // if ON: employ fast-forward computing after learning stimulus
-#define FF_AFTER_STIM    OFF // if ON: employ fast-forward computing as soon as all stimulation has ended
-#define FF_AFTER_NETLOAD OFF // if ON: employ fast-forward computing after loading a previous network state
-#define OSCILL_INP       OFF // period of sinusoidal oscillations of input to excitatory neurons, in time steps (or OFF)
+#define STIM_TYPE          OU_STIMULATION // the type of stimulation that enters the neurons (not to be confused with the stimulus protocol)
+#define NEURON_MODEL       LIF // definition of the neuron model
+#define SYNAPSE_MODEL      MONOEXP // the synapse model that is used
+#define PLASTICITY         CALCIUM_AND_STC // defines what type of plasticity shall be used (or OFF)
+#define RAND_INIT_WEIGHTS  OFF // specifies whether initial early-phase weight shall be randomly (log-normally) distributed or not
+#define PROTEIN_POOLS      POOLS_C // the protein pool setting for synaptic consolidation/plasticity-related proteins
+#define STIPULATE_CA       OFF // if ON: stipulate a cell assembly with strong interconnections at the beginning of the learning stimulus, no actual learning is required
+#define CORE_SHAPE         FIRST // shape and position of the cell assembly
+#define CORE_SIZE          150 // size of the cell assembly
+#define COND_BASED_SYN     OFF // if ON: use conductance-based synapses that may be different for inhibitory and excitatory neurons
+#define SYN_SCALING        OFF // if ON: use synaptic scaling following Tetzlaff et al., 2013
+#define DENDR_SPIKES       OFF // if ON: use dendritic spikes as described by Jahnke et al., 2015
+#define LTP_FR_THRESHOLD   40 // threshold (in Hz) that pre- and postsynaptic firing rate have to cross for LTP to be enabled (or OFF)
+#define LTD_FR_THRESHOLD   OFF // threshold (in Hz) that pre- and postsynaptic firing rate have to cross for LTD to be enabled (or OFF)
+#define FF_AFTER_LEARN     ON // if ON: employ fast-forward computing after learning stimulus
+#define FF_AFTER_STIM      OFF // if ON: employ fast-forward computing as soon as all stimulation has ended
+#define FF_AFTER_NETLOAD   OFF // if ON: employ fast-forward computing after loading a previous network state
+#define OSCILL_INP         OFF // period of sinusoidal oscillations of input to excitatory neurons, in time steps (or OFF)
 
 // Output options (cf. Definitions.hpp)
 #define SPIKE_PLOTTING           NUMBER_AND_RASTER // defines what information about spiking dynamics is saved and plotted
@@ -41,10 +44,10 @@ using namespace std;
 #define SAVE_NET_STATE           ON // if ON: output of whole simulation data before recall (files can be several hundreds of megabytes large)
 
 #include "SpecialCases.hpp"
-#include "Tools.hpp"
+#include "Tools.cpp"
 #include "Network.cpp"
-#include "Plots.hpp"
-#include "StimulusProtocols.hpp"
+#include "Plots.cpp"
+#include "StimulusProtocols.cpp"
 
 /*** NetworkSimulation class ***
  * simulates a network of neurons, has instance of Network class */
@@ -67,8 +70,7 @@ const int wfr; // timesteps, size of the time window for computing instantaneous
 string prot_learn; // the stimulation protocol for training
 string prot_recall; // the stimulation protocol for recall
 double recall_fraction; // recall stimulus is applied to this fraction of the original assembly
-double w_stim; // nA s, synaptic weight for incoming stimulation to neurons
-int N_stim; // the number of hypothetical synapses per neuron that are used for stimulation (each of strength w_stim)
+int N_stim; // the number of putative input synapses that are used to stimulate a neuron ('stim_strength' defines the strength of these)
 bool ff_enabled; // specifies if fast-forward mode can be used
 Network net;  // the network
 double z_max;  // maximum late-phase coupling strength
@@ -295,11 +297,15 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 
 	// Constants
 	const int n = int(ceil(t_max / dt)); // number of time steps
-	const int tenth_sec = int(round(0.1/dt)); // a tenth of asecond in timesteps
-	const double h_0 = net.getInitialWeight(); w_stim = h_0; // initial synaptic weight; set coupling strength for stimulation
+	const int tenth_sec = int(round(0.1/dt)); // a tenth of a second in timesteps
+	const double h_0 = net.getInitialWeight(); // initial synaptic weight (in mV)
+	const double stim_strength = h_0 / net.getMembraneResistance(0); // set strength for stimulation of neurons (formal unit: nC)
 
 	const string separator = getSeparator(); cout << separator << endl; // string of characters for a separator in command line
-	net.setSpikeStorageTime(n + int(round(wfr/2.))); // reserve enough RAM for fast spike storage
+	if (t_max > 100.) // for simulations of more than 100 sec. only reserve space for 100 sec. (see Neuron::setSpikeHistoryMemory())
+		net.setSpikeStorageTime(int(ceil(100. / dt))); // reserve enough RAM for fast spike storage
+	else
+		net.setSpikeStorageTime(n + int(round(wfr/2.))); // reserve enough RAM for fast spike storage
 
 	// Neuronal and synaptic output
 #ifdef TWO_NEURONS_ONE_SYNAPSE
@@ -342,7 +348,7 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 		inh_neuron_output = vector<int> {2500};
 		synapse_output = vector<synapse> {synapse(1,9),synapse(1,640),synapse(1,1300)};
 	}
-#endif
+#endif // TWO_NEURONS_ONE_SYNAPSE
 
 #ifndef TWO_NEURONS_ONE_SYNAPSE
 	// Read connectivity matrix from file
@@ -350,9 +356,9 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 	{
 		int r = net.readConnections(string("connections.txt"));
 		if (r == 1)
-			cout << "Importing connections failed - file could not be opened." << endl;
+			cout << "WARNING: importing connections failed - file could not be opened." << endl;
 		else if (r == 0)
-			cout << "Importing connections failed - dimension mismatch." << endl;
+			cout << "WARNING: importing connections failed - dimension mismatch." << endl;
 		else
 			cout << "Connections successfully imported." << endl;
 		remove("connections.txt");
@@ -363,9 +369,9 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 	{
 		int r = net.readCouplingStrengths(string("coupling_strengths.txt"));
 		if (r == 1)
-			cout << "Importing coupling strengths failed - file could not be opened." << endl;
+			cout << "WARNING: importing coupling strengths failed - file could not be opened." << endl;
 		else if (r == 0)
-			cout << "Importing coupling strengths failed - dimension mismatch." << endl;
+			cout << "WARNING: importing coupling strengths failed - dimension mismatch." << endl;
 		else
 			cout << "Coupling strengths successfully imported." << endl;
 		remove("coupling_strengths.txt");
@@ -375,9 +381,9 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 	int tb_start = net.loadNetworkState("../saved_state.txt") + 1;
 
 #ifdef SEEK_I_0
-	// Create working directory for this I_0 value
-	const string path = working_dir + "/I_0 " + dtos(net.getConstCurrent(1,1), 6); // path to working directory
-	system(concat("mkdir -p \"", path + "\"").c_str());
+	// Create subdirectory for this I_0 value
+	const string path = working_dir + "/I_0 " + dtos(net.getConstCurrent(1,1), 6); // path to subdirectory
+	mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH); // create subdirectory
 
 	// Try to change directory
 	if (chdir(path.c_str()) == -1) {
@@ -388,13 +394,23 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 	// Copy Python plot script
 	if (!copyFile("../plotFunctions.py", "plotFunctions.py"))
 	{
-		cout << "Python script 'plotFunctions.py' not found!" << endl;
+		cout << "ERROR: Python script 'plotFunctions.py' not found!" << endl;
 		return -2;
 	}
-#endif
+#endif // SEEK_I_0
 
-	// Create directory for network plots and copy Python plot script
-	system("mkdir -p \"network_plots\"");
+	// Create directory for network plots
+	const string path = working_dir + "/network_plots";  // path to 'network_plots' directory
+	if (mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)) // create 'network_plots' directory
+	{
+		cout << "ERROR: failed to create directory \"" << path << "\"!" << endl;
+		return -3;
+	}
+
+	if (!system(NULL)) // check if system() processor is available
+	{
+		cout << "WARNING: no system() processor available." << endl;
+	}
 
 #else // if TWO_NEURONS_ONE_SYNAPSE is defined
 
@@ -407,7 +423,7 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 		  << ", t_max = " << t_max << " s (" << dateStr("", !first_sim) << ")\x1b[0m" << endl;
 	cout << "Learning protocol: " << prot_learn << endl;
 	cout << "Recall protocol: " << prot_recall << endl;
-	cout << "Description: " << _purpose << endl; //rectangle, \x1b[34mt_pulse = " << t_pulse << " s, \x1b[35mfrequency = " << frequency << " Hz\x1b[0m" << endl;
+	cout << "Description: " << _purpose << endl;
 	cout << "Connectivity: \x1b[32mp_c = " << pc << ", \x1b[31mtau_syn = "
 #if SYNAPSE_MODEL == DELTA
 		  << 0
@@ -445,14 +461,14 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 	ofstream logf("log.txt"); // log file containing information about data processing
 
 	bool data_to_plot = false; // indicates if there is still network data that has to be plotted
-	bool STC = true; // indicates if late-phase dynamics occur
+	bool STC = true; // indicates if late-phase dynamics are (still) occurring
 
 	writePalViridis(); // create palette file for gnuplot color plots
 
 	// learning stimulation
-	Stimulus st_learn = createStimulusFromProtocols(prot_learn, "", dt, w_stim, N_stim, tau_syn, &logf); // create Stimulus object containing learning stimulation only
+	Stimulus st_learn = createStimulusFromProtocols(prot_learn, "", dt, stim_strength, N_stim, tau_syn, &logf); // create Stimulus object containing learning stimulation only
 	// recall stimulation
-	Stimulus st_recall = createStimulusFromProtocols("", prot_recall, dt, w_stim, N_stim, tau_syn, &logf); // create Stimulus object containing recall stimulation only
+	Stimulus st_recall = createStimulusFromProtocols("", prot_recall, dt, stim_strength, N_stim, tau_syn, &logf); // create Stimulus object containing recall stimulation only
 
 #if STIPULATE_CA == ON
 	Stimulus st_full = st_recall; // only stipulated cell assembly: recall stimulation is all (effective) stimulation there is
@@ -460,12 +476,12 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 	Stimulus st_full = st_learn; // no network, no recall: just a dummy for st_full has to be defined
 #else
 	// learning + recall stimulation
-	Stimulus st_full = createStimulusFromProtocols(prot_learn, prot_recall, dt, w_stim, N_stim, tau_syn, &logf); // create Stimulus object containing learning and recall stimulation
+	Stimulus st_full = createStimulusFromProtocols(prot_learn, prot_recall, dt, stim_strength, N_stim, tau_syn, &logf); // create Stimulus object containing learning and recall stimulation
 #endif
 #if OSCILL_INP != OFF
-	Stimulus st_oscill = createOscillStimulus(dt, n, OSCILL_INP, oscill_inp_mean, oscill_inp_amp); // oscillatory input for excitatory population
-	net.setBlockStimulus(st_oscill, pow2(Nl_exc)); // to excitatory population
-	//net.setBlockStimulus(st_oscill, pow2(Nl_inh), pow2(Nl_exc)); // to inhibitory population
+	Stimulus st_oscill = createOscillStimulus(dt, n, OSCILL_INP, oscill_inp_mean, oscill_inp_amp); // oscillatory input
+	//net.setBlockStimulus(st_oscill, pow2(Nl_exc)); // to excitatory population
+	net.setBlockStimulus(st_oscill, pow2(Nl_inh), pow2(Nl_exc)); // to inhibitory population
 #endif
 	int tb_stim_start = st_learn.getStimulationStart(); // time bin in which all stimulation begins
 	int tb_stim_end = st_full.getStimulationEnd(); // time bin in which all stimulation ends
@@ -495,7 +511,7 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 #endif
 
 #ifdef PLASTICITY_OVER_FREQ
-	Stimulus st_learn2 = createStimulusFromProtocols(prot_recall, "", dt, w_stim, N_stim, tau_syn, &logf); // create Stimulus object for stimulating second neuron
+	Stimulus st_learn2 = createStimulusFromProtocols(prot_recall, "", dt, stim_strength, N_stim, tau_syn, &logf); // create Stimulus object for stimulating second neuron
 #endif
 
 	double p = 0.0; // percentage of process completeness
@@ -591,6 +607,9 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 	cout << fixed << "I->E connectivity: " << total_c_count_inh_exc / double(pow2(Nl_exc*Nl_inh)) * 100 << " % (expected: " << pc*100 << " %)" << endl;
 	cout << fixed << "E->I connectivity: " << total_c_count_exc_inh / double(pow2(Nl_exc*Nl_inh)) * 100 << " % (expected: " << pc*100 << " %)" << endl;
 	cout << fixed << "I->I connectivity: " << total_c_count_inh_inh / double(pow2(Nl_inh*Nl_inh)-pow2(Nl_inh)) * 100 << " % (expected: " << pc*100 << " %)" << endl;
+		
+	int total_c_count = total_c_count_exc_exc + total_c_count_inh_exc + total_c_count_exc_inh + total_c_count_inh_inh;
+	cout << fixed << "Total number of connections: " << total_c_count << endl;
 
 // ==============================================================================================================================
 	// Actual simulation
@@ -948,9 +967,9 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 				txt_data << fixed
 				         << net.getVoltage(exc_neuron_output[nn]) << "\t\t" // exc. neuron voltage
 #if NEURON_MODEL == LIF
-				         << net.getCurrent(exc_neuron_output[nn]) << "\t\t" // exc. neuron total input current
+				         << net.getNetCurrent(exc_neuron_output[nn]) << "\t\t" // exc. neuron total current
 #elif NEURON_MODEL == MAT2
-				         << net.getThreshold(exc_neuron_output[nn]) << "\t\t" // exc. neuron threshold
+				         << net.getVoltageThreshold(exc_neuron_output[nn]) << "\t\t" // exc. neuron threshold
 #endif
 #if PROTEIN_POOLS == POOLS_C
 				         << net.getCProteinAmount(exc_neuron_output[nn]) << "\t\t"; // exc. neuron unspecific protein amount
@@ -969,9 +988,9 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 				txt_data << fixed
 				         << net.getVoltage(inh_neuron_output[nn]) << "\t\t" // inh. neuron voltage
 #if NEURON_MODEL == LIF
-				         << net.getCurrent(inh_neuron_output[nn]) << "\t\t"; // inh. neuron total input current
+				         << net.getNetCurrent(inh_neuron_output[nn]) << "\t\t"; // inh. neuron total current
 #elif NEURON_MODEL == MAT2
-				         << net.getThreshold(inh_neuron_output[nn]) << "\t\t"; // inh. neuron threshold
+				         << net.getVoltageThreshold(inh_neuron_output[nn]) << "\t\t"; // inh. neuron threshold
 #endif
 
 			for (int sn=0; sn < synapse_output.size(); sn++)
@@ -1220,11 +1239,15 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 
 // ==============================================================================================================================
 	txt_mean.close();
-#ifndef TWO_NEURONS_ONE_SYNAPSE
+#if !defined TWO_NEURONS_ONE_SYNAPSE
 	// Create plots of the mean and std. dev. of the weight and of the protein amount
 
 	createMeanWeightPlotCA(gplscript, t_max, h_0); // in the cell assembly
 	createMeanWeightPlotControl(gplscript, t_max, h_0); // in the control subpopulation
+#elif defined TWO_NEURONS_ONE_SYNAPSE_MIN
+	#if PROTEIN_POOLS == POOLS_C
+	plot2N1SMINSimResults(h_0, net.getThreshold(1,2), net.getThreshold(1,3), net.getThreshold(1,1), net.getThreshold(2,1));
+	#endif
 #endif
 // ==============================================================================================================================
 	// Display final information and save parameters

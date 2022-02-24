@@ -1,0 +1,70 @@
+#!/bin/sh
+
+# starts after the second assembly has been learned (data has to be located in 'organization/')
+# -> for this, 'run_learn_cons' has to be run first
+
+# applies third learning stimulus followed by 12 further learning steps, then consolidates
+
+# uses 'screen' to run process(es) in the background
+
+organization_dir="../../organization" # re-using binaries to stimulate neurons of first, second, and third assembly
+learned_dir="../../organization/2nd" # using initial states (not results!) from this directory
+
+cd organization_interleaved/
+
+cd "NOOVERLAP"
+mkdir A
+cp "$organization_dir/1st/FIRST/net.out" ./A
+mkdir B
+cp "$organization_dir/2nd/NOOVERLAP/net.out" ./B
+mkdir C
+cp "$organization_dir/3rd/NOOVERLAP/net.out" ./C
+cp "$learned_dir/NOOVERLAP/connections.txt" .
+cp "$learned_dir/NOOVERLAP/saved_state.txt" .
+cp ../run .
+cp ../getLastState.py .
+screen -d -m /bin/sh run
+cd ..
+
+cd "OVERLAP10"
+mkdir A
+cp "$organization_dir/1st/FIRST/net.out" ./A
+mkdir B
+cp "$organization_dir/2nd/OVERLAP10/net.out" ./B
+mkdir C
+cp "$organization_dir/3rd/OVERLAP10/net.out" ./C
+cp "$learned_dir/OVERLAP10/connections.txt" .
+cp "$learned_dir/OVERLAP10/saved_state.txt" .
+cp ../run .
+cp ../getLastState.py .
+screen -d -m /bin/sh run
+cd ..
+
+cd "OVERLAP10 no AC, no ABC"
+mkdir A
+cp "$organization_dir/1st/FIRST/net.out" ./A
+mkdir B
+cp "$organization_dir/2nd/OVERLAP10/net.out" ./B
+mkdir C
+cp "$organization_dir/3rd/OVERLAP10 no AC, no ABC/net.out" ./C
+cp "$learned_dir/OVERLAP10/connections.txt" .
+cp "$learned_dir/OVERLAP10/saved_state.txt" .
+cp ../run .
+cp ../getLastState.py .
+screen -d -m /bin/sh run
+cd ..
+
+cd "OVERLAP10 no BC, no ABC"
+mkdir A
+cp "$organization_dir/1st/FIRST/net.out" ./A
+mkdir B
+cp "$organization_dir/2nd/OVERLAP10/net.out" ./B
+mkdir C
+cp "$organization_dir/3rd/OVERLAP10 no BC, no ABC/net.out" ./C
+cp "$learned_dir/OVERLAP10/connections.txt" .
+cp "$learned_dir/OVERLAP10/saved_state.txt" .
+cp ../run .
+cp ../getLastState.py .
+screen -d -m /bin/sh run
+cd ../..
+

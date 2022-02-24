@@ -1,0 +1,7 @@
+#!/bin/sh
+
+# learn A, B, C, and consolidate them
+
+cd "organization_attractors"/1st/FIRST
+screen -d -m /bin/sh run # run process(es) in the background using 'screen'
+cd ../../..

@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# t = 15 ... 28810, learning C and consolidating
+./net.out -Nl=50 -Nl_inh=25 -t_max=28812 -N_stim=25 -pc=0.1 -zmax=5 -learn=TRIPLETat16.0 -recall=F100D1at28810.0 -w_ei=2 -w_ie=3.5 -w_ii=3.5 -output_period=10 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="3rd CA"
+
