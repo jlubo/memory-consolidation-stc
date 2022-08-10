@@ -83,9 +83,9 @@ nmods = np.arange(min_nm, max_nm+step_nm, step_nm).round(2)
 n_nmods = len(nmods)
 
 # stimulation frequencies
-min_f = 10
-max_f = 100
-step_f = 10
+min_f = 10 # Hz
+max_f = 100 # Hz
+step_f = 10 # Hz
 freqs = np.arange(min_f, max_f+step_f, step_f)
 n_freqs = len(freqs)
 
