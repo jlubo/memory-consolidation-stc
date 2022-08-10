@@ -44,7 +44,7 @@ Simulation parameters
 '''
 
 # basic parameters
-dt = 0.0002
+dt = 0.0002 # ms
 n_T = 100001
 n_Pop = 2000
 n_E = 1600
