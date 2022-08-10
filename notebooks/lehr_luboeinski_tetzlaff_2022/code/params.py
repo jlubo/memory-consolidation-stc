@@ -60,7 +60,7 @@ events = ['learn1','learn2','learn3','recall']
 # stimulation time
 stim_time = 0.100 # s
 
-# times of events
+# times of events (in seconds)
 t_events = {'10s': {'learn1': 10.0,
                     'learn2': 10.5,
                     'learn3': 11.0,
