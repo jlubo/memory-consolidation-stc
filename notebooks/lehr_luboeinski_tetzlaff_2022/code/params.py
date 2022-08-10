@@ -57,8 +57,8 @@ n_sessions = len(sessions)
 # all events
 events = ['learn1','learn2','learn3','recall']
 
-# simulation time
-stim_time = 0.100
+# stimulation time
+stim_time = 0.100 # s
 
 # times of events
 t_events = {'10s': {'learn1': 10.0,
