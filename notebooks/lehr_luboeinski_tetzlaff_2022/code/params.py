@@ -1,5 +1,5 @@
 # Copyright 2022 Andrew Lehr
-# The MIT LICENSE
+### License: Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 
 import numpy as np
 import os.path as path
@@ -44,7 +44,7 @@ Simulation parameters
 '''
 
 # basic parameters
-dt = 0.0002
+dt = 0.0002 # ms
 n_T = 100001
 n_Pop = 2000
 n_E = 1600
@@ -57,10 +57,10 @@ n_sessions = len(sessions)
 # all events
 events = ['learn1','learn2','learn3','recall']
 
-# simulation time
-stim_time = 0.100
+# stimulation time
+stim_time = 0.100 # s
 
-# times of events
+# times of events (in seconds)
 t_events = {'10s': {'learn1': 10.0,
                     'learn2': 10.5,
                     'learn3': 11.0,
@@ -83,9 +83,9 @@ nmods = np.arange(min_nm, max_nm+step_nm, step_nm).round(2)
 n_nmods = len(nmods)
 
 # stimulation frequencies
-min_f = 10
-max_f = 100
-step_f = 10
+min_f = 10 # Hz
+max_f = 100 # Hz
+step_f = 10 # Hz
 freqs = np.arange(min_f, max_f+step_f, step_f)
 n_freqs = len(freqs)
 
