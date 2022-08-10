@@ -1,6 +1,6 @@
 # Neuromodulator-dependent synaptic tagging and capture retroactively controls neural coding in spiking neural networks
-### Andrew B Lehr*, Jannik Luboeinski*, & Christian Tetzlaff
-#### * These authors contributed equally.
+### Andrew B Lehr\*, Jannik Luboeinski\*, & Christian Tetzlaff
+#### \* These authors contributed equally.
 ***
 ####
 
