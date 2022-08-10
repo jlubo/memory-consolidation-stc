@@ -2,7 +2,7 @@
 ### Utility function for different purposes regarding the reading of simulation data ###
 ########################################################################################
 
-### Copyright 2017-2022 Jannik Luboeinski
+### Copyright 2017-2022 Jannik Luboeinski, Andrew Lehr
 ### licensed under Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 ### Contact: jannik.lubo[at]gmx.de
 
@@ -249,7 +249,7 @@ def mergeRawData(rootpath, substr, output_file, remove_raw=False, sep_str='\t\t'
 
 ######################################
 # event_data_obj
-# This is a helper class for the stc_analysis_class 
+# This is a helper class for the stc_data_obj 
 # used to store all relevant data associated with stimulus events
 class event_data_obj:
     def __init__(self):
