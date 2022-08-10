@@ -1,5 +1,5 @@
 # Copyright 2022 Andrew Lehr
-# The MIT LICENSE
+### License: Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 
 import numpy as np
 import os.path as path
