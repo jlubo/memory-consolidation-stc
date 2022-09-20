@@ -990,44 +990,53 @@ def plotTotalSubPopWeights(filename, h_0, z_min, z_max, Nl_exc, s_CA, title = "T
 # plotMinOverview
 # Plots the results of a simulation of synaptic weights changing based on calcium dynamics
 # data_file: data file containing the values of the membrane potential, weights, calcium amount, etc. over time
+# col_neur: the first column containing data of the targeted neuron (the membrane potential, the next two columns contain membrane current and, if applicable, protein amount)
+# col_syn: the first column containing data of the targeted synapse (the early-phase weight, the next two columns contain late-phase weight and calcium amount)
 # h_0: initial weight
 # theta_tag: tagging threshold
 # theta_pro: protein synthesis threshold
 # theta_p: potentiation threshold for Ca dynamics
 # theta_d: depression threshold for Ca dynamics
-# store_path [optional]: path to store resulting graphics file
-def plotMinOverview(data_file, h_0, theta_tag, theta_pro, theta_p, theta_d, store_path = '.'):
+# store_path [optional]: path to the resulting graphics file
+def plotMinOverview(data_file, col_neur, col_syn, h_0, theta_tag, theta_pro, theta_p, theta_d, store_path = './traces.svg'):
 
 	data_stacked = np.loadtxt(data_file)
+	
+	xlim_0 = None
+	xlim_1 = None
+	xlim_auto = True
 	
 	fig, axes = plt.subplots(nrows=3, ncols=1, sharex=False, figsize=(10, 10))
 
 	# set axis labels for axes[0]
 	axes[0].set_xlabel("Time (ms)")
 	axes[0].set_ylabel("Synaptic weight (%)")
+	axes[0].set_xlim(xlim_0, xlim_1, auto = xlim_auto)
 
 	# convert x-axis values to ms
 	data_stacked[:,0] *= 1000
 	
 	# plot data for axes[0]
-	axes[0].plot(data_stacked[:,0], data_stacked[:,7]/h_0*100, color="#800000", label='h', marker='None', zorder=10)
-	axes[0].plot(data_stacked[:,0], (data_stacked[:,8]+1)*100, color="#1f77b4", label='z', marker='None', zorder=9)
-	axes[0].axhline(y=(theta_pro/h_0+1)*100, label='Protein thresh.', linestyle='-.', color="#dddddd", zorder=5)
-	axes[0].axhline(y=(theta_tag/h_0+1)*100, label='Tag thresh.', linestyle='dashed', color="#dddddd", zorder=4)
-	# total weight: color="#ff7f0e"
+	if col_syn >= 1: # if synapse data exist
+		axes[0].plot(data_stacked[:,0], data_stacked[:,col_syn]/h_0*100, color="#800000", label='h', marker='None', zorder=10)
+		axes[0].plot(data_stacked[:,0], (data_stacked[:,col_syn+1]+1)*100, color="#1f77b4", label='z', marker='None', zorder=9)
+		axes[0].axhline(y=(theta_pro/h_0+1)*100, label='Protein thresh.', linestyle='-.', color="#dddddd", zorder=5)
+		axes[0].axhline(y=(theta_tag/h_0+1)*100, label='Tag thresh.', linestyle='dashed', color="#dddddd", zorder=4)
+		# total weight: color="#ff7f0e"
 	
-	# create legend for axes[0]
-	axes[0].legend() #loc=(0.75,0.65)) #"center right")
+		# create legend for axes[0]
+		axes[0].legend() #loc=(0.75,0.65)) #"center right")
 
 	# set axis labels for axes[1] (and twin axis ax1twin)
 	axes[1].set_xlabel("Time (ms)")
 	axes[1].set_ylabel("Membrane potential (mV)")
+	axes[1].set_xlim(xlim_0, xlim_1, auto = xlim_auto)
 	ax1twin = axes[1].twinx()
 	ax1twin.set_ylabel("Current (nA)")
 	
 	# plot data for axes[1] (and twin axis ax1twin)
-	ax1g1 = axes[1].plot(data_stacked[:,0], data_stacked[:,1], color="#ff0000", label='Membrane pot.', marker='None', zorder=10)
-	ax1g2 = ax1twin.plot(data_stacked[:,0], data_stacked[:,2], color="#ffee00", label='Membrane curr.', marker='None', zorder=10)
+	ax1g1 = axes[1].plot(data_stacked[:,0], data_stacked[:,col_neur], color="#ff0000", label='Membrane pot.', marker='None', zorder=10)
+	ax1g2 = ax1twin.plot(data_stacked[:,0], data_stacked[:,col_neur+1], color="#ffee00", label='Membrane curr.', marker='None', zorder=10)
 	
 	# create common legend for axes[1] and ax1twin
 	#fig.legend(loc=(0.72,0.45)) #"center right")
@@ -1035,20 +1044,21 @@ def plotMinOverview(data_file, h_0, theta_tag, theta_pro, theta_p, theta_d, stor
 	handles, labels = axes[1].get_legend_handles_labels()
 	handles_twin, labels_twin = ax1twin.get_legend_handles_labels()
 	axes[1].legend(handles + handles_twin, labels + labels_twin)
-	#plt.xlim(90, 200)
 	
 	# set axis labels for axes[2]
 	axes[2].set_xlabel("Time (ms)")
 	axes[2].set_ylabel("Calcium or protein amount")
+	axes[2].set_xlim(xlim_0, xlim_1, auto = xlim_auto)
 	
 	# plot data for axes[2]
-	axes[2].plot(data_stacked[:,0], data_stacked[:,9], color="#c8c896", label='Ca', marker='None', zorder=8)
-	axes[2].plot(data_stacked[:,0], data_stacked[:,3], color="#008000", label='p', marker='None', zorder=7)
-	axes[2].axhline(y=theta_p, label='LTP thresh.', linestyle='dashed', color="#969664", zorder=7)
-	axes[2].axhline(y=theta_d, label='LTD thresh.', linestyle='dashed', color="#969696", zorder=6)
+	if col_syn >= 1: # if synapse data exist
+		axes[2].plot(data_stacked[:,0], data_stacked[:,col_syn+2], color="#c8c896", label='Ca', marker='None', zorder=8)
+		axes[2].plot(data_stacked[:,0], data_stacked[:,col_neur+2], color="#008000", label='p', marker='None', zorder=7) # protein amount is also only shown if synapse data exist (which means that an E->E synapse is considered)
+		axes[2].axhline(y=theta_p, label='LTP thresh.', linestyle='dashed', color="#969664", zorder=7)
+		axes[2].axhline(y=theta_d, label='LTD thresh.', linestyle='dashed', color="#969696", zorder=6)
 	
-	# create legend for axes[2]
-	axes[2].legend() #loc=(0.75,0.65)) #"center right")
+		# create legend for axes[2]
+		axes[2].legend() #loc=(0.75,0.65)) #"center right")
 	
 	# save figure as vector graphics
-	fig.savefig(os.path.join(store_path, 'standalone_lif_traces.svg'))
+	fig.savefig(store_path)

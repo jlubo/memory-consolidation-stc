@@ -83,7 +83,7 @@ vector<int> outgoing; // vector of all outgoing connections to neurons in a netw
 Stimulus cst; // current stimulus for this neuron
 minstd_rand0 rg; // default uniform generator for random numbers (seed is chosen in constructor)
 normal_distribution<double> norm_dist; // normal distribution to obtain Gaussian white noise, constructed in Neuron class constructor
-#ifdef TWO_NEURONS_ONE_SYNAPSE
+#if STIM_TYPE == POISSON_STIMULATION
 bool poisson_neuron; // indicates if the neuron solely serves as Poisson spike generator
 #endif
 
@@ -633,7 +633,7 @@ void processTimeStep(int tb_step, int tb_init)
 	I_int = (I_int_exc * (V_exc_syn_rev - V) + I_int_inh * (V_inh_syn_rev - V)) / 1000.; // divide by 1000 to get from nS*mV=pA to nA
 #endif
 
-#ifdef TWO_NEURONS_ONE_SYNAPSE
+#if STIM_TYPE == POISSON_STIMULATION
 	if (poisson_neuron == false)
 	{
 #endif
@@ -700,12 +700,9 @@ void processTimeStep(int tb_step, int tb_init)
 		                                                + I_dendr
 #endif
 		                                                         )) * (1. - exp(-delta_t/tau_mem)); // compute mem. pot. in mV (analytical solution)
-
-
-
 #endif
 
-#ifdef TWO_NEURONS_ONE_SYNAPSE
+#if STIM_TYPE == POISSON_STIMULATION
 	} // poisson_neuron == false
 
 	else
@@ -716,23 +713,19 @@ void processTimeStep(int tb_step, int tb_init)
 #endif
 	if (cst.isSet() && tb_init < 0 && abs(I_stim = cst.get(tb_step)) > EPSILON) // stimulation; get stimulus current in nA
 	{
-#if STIM_TYPE == POISSON_STIMULATION
-		V += R_mem * I_stim;
+#if STIM_TYPE == POISSON_STIMULATION || defined TWO_NEURONS_ONE_SYNAPSE_MIN
+	#if NEURON_MODEL == MAT2
+		V = ad_th + EPSILON; // definite spiking (the magnitude of I_stim is not important as long as it is greater than zero)
+	#elif NEURON_MODEL == LIF
+		V = V_th + EPSILON;
+	#endif
 #else
 		V += R_mem * I_stim * (1. - exp(-delta_t/tau_mem));
-#endif
-
-#ifdef TWO_NEURONS_ONE_SYNAPSE
-	#if NEURON_MODEL == MAT2
-		V = ad_th; // definite spiking (the magnitude of I_stim is not important as long as it is finite)
-	#elif NEURON_MODEL == LIF
-		V = V_th;
-	#endif
 #endif
 	}
 
 	if (refractory > EPSILON // if in refractory period
-#ifdef TWO_NEURONS_ONE_SYNAPSE
+#if STIM_TYPE == POISSON_STIMULATION
 	   && poisson_neuron == false
 #endif
 	   )
@@ -881,7 +874,7 @@ int getType() const
 	return type;
 }
 
-#ifdef TWO_NEURONS_ONE_SYNAPSE
+#if STIM_TYPE == POISSON_STIMULATION
 /*** setPoisson ***
  * Allows for making this neuron a Poisson neuron (used to generate Poissonian spikes only, without own voltage dynamics) *
  * - bool _poisson_neuron: indicates if the neuron shall be Poissonian */
@@ -991,7 +984,7 @@ Neuron(const double _dt) :
 	I_0 = 0.;
 	tau_OU = 0.005; // estimated
 
-#ifdef TWO_NEURONS_ONE_SYNAPSE
+#if STIM_TYPE == POISSON_STIMULATION
 	poisson_neuron = false;
 #endif
 

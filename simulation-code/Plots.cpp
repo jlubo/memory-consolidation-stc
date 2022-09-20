@@ -619,7 +619,7 @@ void createMeanWeightPlotControl(ofstream &gpl, double t_max, double h_0)
  * - theta_p: potentiation threshold for Ca dynamics *
  * - theta_d: depression threshold for Ca dynamics *
  * - plh_cols: number of columns to skip for they contain neuron data */
-void createSynapsePlot(vector<synapse> synapse_output, ofstream &gpl, double t_max, string stimulus, double h_0, double theta_tag,
+void createSynapsePlot(vector<Synapse> synapse_output, ofstream &gpl, double t_max, string stimulus, double h_0, double theta_tag,
                        double theta_pro, double theta_p, double theta_d, int plh_cols)
 {
 	string x_max; // maximum x-value as string
@@ -838,6 +838,19 @@ void createInhNeuronPlot(vector<int> neuron_output, ofstream &gpl, double t_max,
 	}
 }
 
+/*** pyPlot ***
+ * Runs a python function for plotting and adds the command to a script *
+ * - cmd: the command to run the python function */
+ 
+void pyPlot(string cmd)
+{
+	ofstream f ("pyplot", ofstream::out | ofstream::app);
+	f << cmd << endl; // save command in script file
+	f.close();
+	
+	system(cmd.c_str()); // execute command
+}
+
 
 /*** createNetworkPlotAveragedWeights ***
  * Creates a plot that displays firing rates and weights averaged over synapses; *
@@ -865,11 +878,7 @@ void createNetworkPlotAveragedWeights(double t, double h_0, int Nl, double z_max
 	                string("True)\""); // already_averaged
 #endif
 
-	ofstream f ("pyplot", ofstream::out | ofstream::app);
-	f << py_cmd << endl; // save command in script file
-	f.close();
-
-	system(py_cmd.c_str()); // execute command
+	pyPlot(py_cmd);
 }
 
 /*** createNetworkPlotWeights ***
@@ -889,33 +898,31 @@ void createNetworkPlotWeights(double t, double h_0, int Nl, double z_max)
 	                string("-0.5, ") + // z_min
 			dtos(z_max,1) + string(", ") + // z_max
 	                dtos(Nl,0) + string(")\""); // Nl
-
-	ofstream f ("pyplot", ofstream::out | ofstream::app);
-	f << py_cmd << endl; // save command in script file
-	f.close();
-
-	system(py_cmd.c_str()); // execute command
+	pyPlot(py_cmd);
 }
 #endif
 
-
-/*** plot2N1SMINSimResults ***
- * Creates a plot that displays the crucial neuron and synapses observables *
+/*** plotMinSimResults ***
+ * Creates a plot that displays crucial observables for one neuron and one synapse  *
+ * - col_neur: the first column containing data of the targeted neuron (the membrane potential, the next two columns contain membrane current and, if applicable, protein amount) *
+ * - col_syn: the first column containing data of the targeted synapse (the early-phase weight, the next two columns contain late-phase weight and calcium amount) *
  * - h_0: initial weight *
  * - theta_tag: tagging threshold *
  * - theta_pro: protein synthesis threshold *
  * - theta_p: potentiation threshold for Ca dynamics *
  * - theta_d: depression threshold for Ca dynamics *
+ * - store_path: path to the resulting graphics file *
  */
-#ifdef TWO_NEURONS_ONE_SYNAPSE_MIN
-void plot2N1SMINSimResults(double h_0, double theta_tag, double theta_pro, double theta_p, double theta_d)
+void plotMinSimResults(int col_neur, int col_syn, double h_0, double theta_tag, double theta_pro, double theta_p, double theta_d, string store_path)
 {
 	string py_cmd = string("python3 -c \"import plotFunctions as pf; pf.plotMinOverview(\'")
-	              + dateStr("_data.txt\'") + string(", ") 
-	              + dtos(h_0, OUTPUT_PRECISION) + (",") + dtos(theta_tag, OUTPUT_PRECISION) + string(",")
+	              + dateStr("_data.txt\'") + (",") 
+	              + to_string(col_neur) + (",") + to_string(col_syn) + (",")
+	              + dtos(h_0, OUTPUT_PRECISION) + (",") + dtos(theta_tag, OUTPUT_PRECISION) + (",")
 	              + dtos(theta_pro, OUTPUT_PRECISION) + (",") 
-	              + dtos(theta_p, OUTPUT_PRECISION) + (",") + dtos(theta_d, OUTPUT_PRECISION) + string(")\"");
+	              + dtos(theta_p, OUTPUT_PRECISION) + (",") + dtos(theta_d, OUTPUT_PRECISION) + (",")
+	              + ("'") + store_path + ("')\"");
 
-	system(py_cmd.c_str()); // execute command
+	pyPlot(py_cmd);
 }
-#endif
+

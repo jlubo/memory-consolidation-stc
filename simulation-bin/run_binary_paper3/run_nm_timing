@@ -1,0 +1,38 @@
+#!/bin/sh
+rm -f saved_state.txt
+
+run_simulations_nm()
+{
+	# duration of neuromodulation: 30 min
+	./net.out -Nl=40 -Nl_inh=20 -t_max=28815 -N_stim=4 -pc=0.1 -learn=TRIPLETf60 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -nm_begin=10.0 -nm_end=1810.0 -purpose="$2 NM beginning at 0min, recall after 8h"
+	#./net.out -Nl=40 -Nl_inh=20 -t_max=28815 -N_stim=4 -pc=0.1 -learn=TRIPLETf60 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -nm_begin=910.0 -nm_end=2710.0 -purpose="$2 NM beginning at 15min, recall after 8h"
+	./net.out -Nl=40 -Nl_inh=20 -t_max=28815 -N_stim=4 -pc=0.1 -learn=TRIPLETf60 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -nm_begin=1810.0 -nm_end=3610.0 -purpose="$2 NM beginning at 30min, recall after 8h"
+	./net.out -Nl=40 -Nl_inh=20 -t_max=28815 -N_stim=4 -pc=0.1 -learn=TRIPLETf60 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -nm_begin=3610.0 -nm_end=5410.0 -purpose="$2 NM beginning at 60min, recall after 8h"
+	./net.out -Nl=40 -Nl_inh=20 -t_max=28815 -N_stim=4 -pc=0.1 -learn=TRIPLETf60 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -nm_begin=5410.0 -nm_end=7210.0 -purpose="$2 NM beginning at 90min, recall after 8h"
+	./net.out -Nl=40 -Nl_inh=20 -t_max=28815 -N_stim=4 -pc=0.1 -learn=TRIPLETf60 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -nm_begin=7210.0 -nm_end=9010.0 -purpose="$2 NM beginning at 120min, recall after 8h"
+	./net.out -Nl=40 -Nl_inh=20 -t_max=28815 -N_stim=4 -pc=0.1 -learn=TRIPLETf60 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -nm_begin=9010.0 -nm_end=10810.0 -purpose="$2 NM beginning at 150min, recall after 8h"
+	./net.out -Nl=40 -Nl_inh=20 -t_max=28815 -N_stim=4 -pc=0.1 -learn=TRIPLETf60 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -nm_begin=10810.0 -nm_end=12610.0 -purpose="$2 NM beginning at 180min, recall after 8h"
+
+	# duration of neuromodulation: 60 min
+	./net.out -Nl=40 -Nl_inh=20 -t_max=28815 -N_stim=4 -pc=0.1 -learn=TRIPLETf60 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -nm_begin=10.0 -nm_end=3610.0 -purpose="$2 NM beginning at 0min, recall after 8h"
+	#./net.out -Nl=40 -Nl_inh=20 -t_max=28815 -N_stim=4 -pc=0.1 -learn=TRIPLETf60 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -nm_begin=910.0 -nm_end=4510.0 -purpose="$2 NM beginning at 15min, recall after 8h"
+	./net.out -Nl=40 -Nl_inh=20 -t_max=28815 -N_stim=4 -pc=0.1 -learn=TRIPLETf60 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -nm_begin=1810.0 -nm_end=5410.0 -purpose="$2 NM beginning at 30min, recall after 8h"
+	./net.out -Nl=40 -Nl_inh=20 -t_max=28815 -N_stim=4 -pc=0.1 -learn=TRIPLETf60 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -nm_begin=3610.0 -nm_end=7210.0 -purpose="$2 NM beginning at 60min, recall after 8h"
+	./net.out -Nl=40 -Nl_inh=20 -t_max=28815 -N_stim=4 -pc=0.1 -learn=TRIPLETf60 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -nm_begin=5410.0 -nm_end=9010.0 -purpose="$2 NM beginning at 90min, recall after 8h"
+	./net.out -Nl=40 -Nl_inh=20 -t_max=28815 -N_stim=4 -pc=0.1 -learn=TRIPLETf60 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -nm_begin=7210.0 -nm_end=10810.0 -purpose="$2 NM beginning at 120min, recall after 8h"
+	./net.out -Nl=40 -Nl_inh=20 -t_max=28815 -N_stim=4 -pc=0.1 -learn=TRIPLETf60 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -nm_begin=9010.0 -nm_end=12610.0 -purpose="$2 NM beginning at 150min, recall after 8h"
+	./net.out -Nl=40 -Nl_inh=20 -t_max=28815 -N_stim=4 -pc=0.1 -learn=TRIPLETf60 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -nm_begin=10810.0 -nm_end=14410.0 -purpose="$2 NM beginning at 180min, recall after 8h"
+
+	# duration of neuromodulation: until end of simulation
+	./net.out -Nl=40 -Nl_inh=20 -t_max=28815 -N_stim=4 -pc=0.1 -learn=TRIPLETf60 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -nm_begin=10.0 -nm_end=-1 -purpose="$2 NM beginning at 0min, recall after 8h"
+	#./net.out -Nl=40 -Nl_inh=20 -t_max=28815 -N_stim=4 -pc=0.1 -learn=TRIPLETf60 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -nm_begin=910.0 -nm_end=-1 -purpose="$2 NM beginning at 15min, recall after 8h"
+	./net.out -Nl=40 -Nl_inh=20 -t_max=28815 -N_stim=4 -pc=0.1 -learn=TRIPLETf60 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -nm_begin=1810.0 -nm_end=-1 -purpose="$2 NM beginning at 30min, recall after 8h"
+	./net.out -Nl=40 -Nl_inh=20 -t_max=28815 -N_stim=4 -pc=0.1 -learn=TRIPLETf60 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -nm_begin=3610.0 -nm_end=-1 -purpose="$2 NM beginning at 60min, recall after 8h"
+	./net.out -Nl=40 -Nl_inh=20 -t_max=28815 -N_stim=4 -pc=0.1 -learn=TRIPLETf60 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -nm_begin=5410.0 -nm_end=-1 -purpose="$2 NM beginning at 90min, recall after 8h"
+	./net.out -Nl=40 -Nl_inh=20 -t_max=28815 -N_stim=4 -pc=0.1 -learn=TRIPLETf60 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -nm_begin=7210.0 -nm_end=-1 -purpose="$2 NM beginning at 120min, recall after 8h"
+	./net.out -Nl=40 -Nl_inh=20 -t_max=28815 -N_stim=4 -pc=0.1 -learn=TRIPLETf60 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -nm_begin=9010.0 -nm_end=-1 -purpose="$2 NM beginning at 150min, recall after 8h"
+	./net.out -Nl=40 -Nl_inh=20 -t_max=28815 -N_stim=4 -pc=0.1 -learn=TRIPLETf60 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -nm_begin=10810.0 -nm_end=-1 -purpose="$2 NM beginning at 180min, recall after 8h"
+}
+
+run_simulations_nm "0.06" "Low" # low neuromodulator level
+run_simulations_nm "0.18" "High" # high neuromodulator level

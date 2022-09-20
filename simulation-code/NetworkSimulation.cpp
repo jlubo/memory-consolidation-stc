@@ -13,15 +13,13 @@
 #include <sys/stat.h> // for mkdir()
 #include "Definitions.hpp"
 
-using namespace std;
-
 // Simulation options (cf. Definitions.hpp)
 #define STIM_TYPE          OU_STIMULATION // the type of stimulation that enters the neurons (not to be confused with the stimulus protocol)
 #define NEURON_MODEL       LIF // definition of the neuron model
 #define SYNAPSE_MODEL      MONOEXP // the synapse model that is used
 #define PLASTICITY         CALCIUM_AND_STC // defines what type of plasticity shall be used (or OFF)
 #define RAND_INIT_WEIGHTS  OFF // specifies whether initial early-phase weight shall be randomly (log-normally) distributed or not
-#define PROTEIN_POOLS      POOLS_C // the protein pool setting for synaptic consolidation/plasticity-related proteins
+#define PROTEIN_POOLS      POOLS_C // the pools of plasticity-related proteins for late-phase plasticity
 #define STIPULATE_CA       OFF // if ON: stipulate a cell assembly with strong interconnections at the beginning of the learning stimulus, no actual learning is required
 #define CORE_SHAPE         FIRST // shape and position of the cell assembly
 #define CORE_SIZE          150 // size of the cell assembly
@@ -38,10 +36,13 @@ using namespace std;
 // Output options (cf. Definitions.hpp)
 #define SPIKE_PLOTTING           NUMBER_AND_RASTER // defines what information about spiking dynamics is saved and plotted
 #define PRINT_CONNECTIONS        ON // if ON: output of connectivity matrix of excitatory subnetwork using Network::printConnections()
+#define PRINT_LEARN_STIMULUS     OFF // if ON: output of learning stimulus using Stimulus::plotAll()
 #define STIM_PREPROC             OFF // defines if stimuli are pre-processed (at cost of memory, can speed up, but can also slow down runtime!)
 #define NET_OUTPUT_PRECISION     7 // precision of numbers (also of h_0) used for network plots
 #define OUTPUT_PRECISION         9 // precision of numbers used for plots over time
 #define SAVE_NET_STATE           ON // if ON: output of whole simulation data before recall (files can be several hundreds of megabytes large)
+
+using namespace std;
 
 #include "SpecialCases.hpp"
 #include "Tools.cpp"
@@ -82,7 +83,7 @@ double oscill_inp_amp; // nA, amplitude of sinusoidal oscillatory input to excit
 /*** Output parameters ***/
 vector<int> exc_neuron_output {};
 vector<int> inh_neuron_output {};
-vector<synapse> synapse_output {};
+vector<Synapse> synapse_output {};
 int output_period; // number of timesteps to pass for the next data output (if set to 1, most detailed output is obtained)
 vector<int> net_output {}; // vector of times selected for the output of network plots (mind the larger timesteps in FF mode!)
 
@@ -311,42 +312,54 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 #ifdef TWO_NEURONS_ONE_SYNAPSE
 	exc_neuron_output = vector<int> {0,1};
 	inh_neuron_output = vector<int> {};
-	synapse_output = vector<synapse> {synapse(1,0)};
+	synapse_output = vector<Synapse> {Synapse(1,0)};
 #elif defined SEEK_I_0
 	exc_neuron_output = vector<int> {};
 	inh_neuron_output = vector<int> {};
 #else
-	if (Nl_exc == 20)
+	if (Nl_exc == 2)
 	{
-		exc_neuron_output = vector<int> {0,1,2};
-		inh_neuron_output = vector<int> {400};
-		synapse_output = vector<synapse> {synapse(0,1),synapse(0,50),synapse(0,100),synapse(400,0)};
+#if defined MAX_ACTIVITY_NEURON // in the case of "small net"
+		exc_neuron_output = vector<int> {0,1,2,3};
+		inh_neuron_output = vector<int> {};
+		synapse_output = vector<Synapse> {Synapse(0,1),Synapse(0,2),Synapse(0,3),Synapse(2,3),Synapse(3,2)};
+#endif
 	}
 	else if (Nl_exc == 35)
 	{
 		//exc_neuron_output = vector<int> {608,609,610};
 		exc_neuron_output = vector<int> {0,1,2};
 		inh_neuron_output = vector<int> {1225};
-		//synapse_output = vector<synapse> {synapse(608,609),synapse(609,608),synapse(609,610)};
-		synapse_output = vector<synapse> {synapse(0,1),synapse(0,50),synapse(0,100)};
+		//synapse_output = vector<Synapse> {Synapse(608,609),Synapse(609,608),Synapse(609,610)};
+		synapse_output = vector<Synapse> {Synapse(0,1),Synapse(0,50),Synapse(0,100)};
 	}
 	else if (Nl_exc == 40)
 	{
 		//exc_neuron_output = vector<int> {816,817,818};
 		//exc_neuron_output = vector<int> {cNN(20,21),cNN(23,21),cNN(30,21)}; // three neurons: one "as", one "ans" and one "e"
 		//exc_neuron_output = vector<int> {1, 53, 260, 660, 777, 940, 941};
+#if defined MAX_ACTIVITY_NEURON
+		exc_neuron_output = vector<int> {0, 12, 335};
+		inh_neuron_output = vector<int> {1918, 1920, 1940}; // note: 1940 does not receive connection from 0
+		synapse_output = vector<Synapse> {Synapse(0,12)};
+#elif defined ONESPIKE // i.e., ONESPIKE_EXC or ONESPIKE_INH
+		exc_neuron_output = vector<int> {6, 17, 68};
+		inh_neuron_output = vector<int> {1615, 1690, 1760};
+		synapse_output = vector<Synapse> {Synapse(6,68)};
+#else 
 		exc_neuron_output = vector<int> {6, 68};
 		//inh_neuron_output = vector<int> {1615, 1710, 1750};
 		inh_neuron_output = vector<int> {1615};
-		//synapse_output = vector<synapse> {synapse(777,260), synapse(777,940), synapse(777,941),synapse(660,260),
-		//                                  synapse(660,940), synapse(660,941), synapse(782,1),  synapse(782,53)};
-		synapse_output = vector<synapse> {synapse(6,68)};
+		//synapse_output = vector<Synapse> {Synapse(777,260), Synapse(777,940), Synapse(777,941),Synapse(660,260),
+		//                                  Synapse(660,940), Synapse(660,941), Synapse(782,1),  Synapse(782,53)};
+		synapse_output = vector<Synapse> {Synapse(6,68)};
+#endif
 	}
 	else if (Nl_exc == 50)
 	{
 		exc_neuron_output = vector<int> {1,640,1300};
 		inh_neuron_output = vector<int> {2500};
-		synapse_output = vector<synapse> {synapse(1,9),synapse(1,640),synapse(1,1300)};
+		synapse_output = vector<Synapse> {Synapse(1,9),Synapse(1,640),Synapse(1,1300)};
 	}
 #endif // TWO_NEURONS_ONE_SYNAPSE
 
@@ -397,13 +410,15 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 		cout << "ERROR: Python script 'plotFunctions.py' not found!" << endl;
 		return -2;
 	}
+#else
+	const string path = working_dir;
 #endif // SEEK_I_0
 
 	// Create directory for network plots
-	const string path = working_dir + "/network_plots";  // path to 'network_plots' directory
-	if (mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)) // create 'network_plots' directory
+	const string nppath = path + "/network_plots";  // path to 'network_plots' directory
+	if (mkdir(nppath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)) // create 'network_plots' directory
 	{
-		cout << "ERROR: failed to create directory \"" << path << "\"!" << endl;
+		cout << "ERROR: failed to create directory \"" << nppath << "\"!" << endl;
 		return -3;
 	}
 
@@ -488,6 +503,10 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 	int tb_stim_learn_end = st_learn.getStimulationEnd(); // time bin in which learning stimulation ends
 	int tb_recall_start = st_recall.getStimulationStart(); // time bin in which recall stimulation begins
 	net.setStimulationEnd(tb_stim_end);
+
+#if PRINT_LEARN_STIMULUS == ON
+	st_learn.plotAll("learning_stimulus");
+#endif
 
 	if (tb_start > 0)
 		logf << "Network state loaded, starting simulation from t = " << dtos(tb_start*dt, 3) << " s" << endl;
@@ -629,13 +648,13 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 		         << "theta(" << exc_neuron_output[nn] << ")\t\t" // exc. neuron threshold
 #endif
 #if PROTEIN_POOLS == POOLS_C
-		         << "p^C(" << exc_neuron_output[nn] << ")\t\t"; // exc. neuron unspecific protein amount
+		         << "p^C(" << exc_neuron_output[nn] << ")\t\t"; // exc. neuron unspecific (common) protein amount
 #elif PROTEIN_POOLS == POOLS_PD
 		         << "p^LTP(" << exc_neuron_output[nn] << ")\t\t" // exc. neuron LTP protein amount
 		         << "p^LTD(" << exc_neuron_output[nn] << ")\t\t"; // exc. neuron LTD protein amount
 #elif PROTEIN_POOLS == POOLS_PCD
 		         << "p^LTP(" << exc_neuron_output[nn] << ")\t\t" // exc. neuron LTP protein amount
-			 << "p^C(" << exc_neuron_output[nn] << ")\t\t" // exc. neuron unspecific protein amount
+		         << "p^C(" << exc_neuron_output[nn] << ")\t\t" // exc. neuron unspecific protein amount
 		         << "p^LTD(" << exc_neuron_output[nn] << ")\t\t"; // exc. neuron LTD protein amount
 #endif
 	}
@@ -700,6 +719,15 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 				net.setSingleNeuronStimulus(0, st_learn2);
 	#endif
 
+#elif defined MAX_ACTIVITY_NEURON
+				// only stimulate neuron 0
+				net.setSingleNeuronStimulus(0, st_learn);
+#elif defined ONESPIKE_EXC
+				// only stimulate neuron 6
+				net.setSingleNeuronStimulus(6, st_learn);
+#elif defined ONESPIKE_INH
+				// only stimulate neuron 1615
+				net.setSingleNeuronStimulus(1615, st_learn);
 #else
 		
 	#if defined MEMORY_CONSOLIDATION_P1
@@ -848,7 +876,7 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 #endif
 			}
 
-			if (j == n) // very last timestep
+			if (j == n) // very last timestep-
 			{
 #if !defined MEMORY_CONSOLIDATION_P1 && SAVE_NET_STATE == ON
 				net.saveNetworkState("saved_state.txt", j);
@@ -880,7 +908,7 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 				logf << "Tags will have vanished at t = " << dtos(net.getTagVanishTime(), 3) << " s" << endl;
 
 #if PROTEIN_POOLS == POOLS_C || PROTEIN_POOLS == POOLS_PCD
-		         	logf << "Protein synthesis (C) will have ended at t = " << dtos(ps_end[1], 3) << " s" << endl;
+				logf << "Protein synthesis (C) will have ended at t = " << dtos(ps_end[1], 3) << " s" << endl;
 #endif
 #if PROTEIN_POOLS == POOLS_PD || PROTEIN_POOLS == POOLS_PCD
 				logf << "Protein synthesis (P) will have ended at t = " << dtos(ps_end[0], 3) << " s" << endl
@@ -972,14 +1000,14 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 				         << net.getVoltageThreshold(exc_neuron_output[nn]) << "\t\t" // exc. neuron threshold
 #endif
 #if PROTEIN_POOLS == POOLS_C
-				         << net.getCProteinAmount(exc_neuron_output[nn]) << "\t\t"; // exc. neuron unspecific protein amount
+				         << net.getCProteinAmount(exc_neuron_output[nn]) << "\t\t"; // exc. neuron unspecific (common) protein amount
 #elif PROTEIN_POOLS == POOLS_PD
 
 				         << net.getPProteinAmount(exc_neuron_output[nn]) << "\t\t" // exc. neuron LTP protein amount
 				         << net.getDProteinAmount(exc_neuron_output[nn]) << "\t\t"; // exc. neuron LTD protein amount
 #elif PROTEIN_POOLS == POOLS_PCD
 				         << net.getPProteinAmount(exc_neuron_output[nn]) << "\t\t" // exc. neuron LTP protein amount
-				         << net.getCProteinAmount(exc_neuron_output[nn]) << "\t\t" // exc. neuron unspecific protein amount
+				         << net.getCProteinAmount(exc_neuron_output[nn]) << "\t\t" // exc. neuron unspecific (common) protein amount
 				         << net.getDProteinAmount(exc_neuron_output[nn]) << "\t\t"; // exc. neuron LTD protein amount
 #endif
 			}
@@ -1002,6 +1030,10 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 				if (sn < synapse_output.size()-1)
 					txt_data << "\t\t";
 			}
+#if PROTEIN_POOLS == POOLS_C || PROTEIN_POOLS == POOLS_PCD
+			txt_data << fixed 
+			         << "\t\t" << net.getThreshold(THRP_C, THRW_PRO);
+#endif
 			txt_data << "\r\n";
 
 #ifndef TWO_NEURONS_ONE_SYNAPSE
@@ -1049,7 +1081,7 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 					{
 						for (int n=0; n < pow2(Nl_exc); n++)
 						{
-							*txt_net_t << fixed << net.getEarlySynapticStrength(synapse(m,n));
+							*txt_net_t << fixed << net.getEarlySynapticStrength(Synapse(m,n));
 
 							if (n < pow2(Nl_exc) - 1)
 								*txt_net_t << "\t\t";
@@ -1063,7 +1095,7 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 					{
 						for (int n=0; n < pow2(Nl_exc); n++)
 						{
-							*txt_net_t << fixed << net.getLateSynapticStrength(synapse(m,n));
+							*txt_net_t << fixed << net.getLateSynapticStrength(Synapse(m,n));
 
 							if (n < pow2(Nl_exc) - 1)
 								*txt_net_t << "\t\t";
@@ -1146,11 +1178,9 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 	logf << "Mean firing rate (exc. population): " << dtos(mfr, 6, true) << " +- " << dtos(sdfr, 6, true) << endl
 	     << "Mean firing rate (inh. population): " << dtos(mfr_inh, 6, true) << " +- " << dtos(sdfr_inh, 6, true) << endl;
 
-
 #ifdef SEEK_I_0
 	*seekic = mfr; // return mean firing rate in "SEEK_I_0" mode
 #endif
-
 
 // ==============================================================================================================================
 	// Create mean firing rate map plots
@@ -1225,16 +1255,16 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 	createExcNeuronPlot(exc_neuron_output, gplscript, t_max);
 #if PROTEIN_POOLS == POOLS_C  // spare one columns for exc. neurons because of protein synthesis
 	createInhNeuronPlot(inh_neuron_output, gplscript, t_max, 3*exc_neuron_output.size());
-	createSynapsePlot(synapse_output, gplscript, t_max, prot_learn, h_0, net.getThreshold(1,2), net.getThreshold(1,3), net.getThreshold(1,1), net.getThreshold(2,1),
-                          3*exc_neuron_output.size()+2*inh_neuron_output.size());
+	createSynapsePlot(synapse_output, gplscript, t_max, prot_learn, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA),
+	                  3*exc_neuron_output.size()+2*inh_neuron_output.size());
 #elif PROTEIN_POOLS == POOLS_PD  // spare two columns for exc. neurons because of protein synthesis
 	createInhNeuronPlot(inh_neuron_output, gplscript, t_max, 4*exc_neuron_output.size());
-	createSynapsePlot(synapse_output, gplscript, t_max, prot_learn, h_0, net.getThreshold(1,2), net.getThreshold(1,3), net.getThreshold(1,1), net.getThreshold(2,1),
-                          4*exc_neuron_output.size()+2*inh_neuron_output.size());
+	createSynapsePlot(synapse_output, gplscript, t_max, prot_learn, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_P, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA),
+	                  4*exc_neuron_output.size()+2*inh_neuron_output.size());
 #elif PROTEIN_POOLS == POOLS_PCD  // spare three columns for exc. neurons because of protein synthesis
 	createInhNeuronPlot(inh_neuron_output, gplscript, t_max, 5*exc_neuron_output.size());
-	createSynapsePlot(synapse_output, gplscript, t_max, prot_learn, h_0, net.getThreshold(1,2), net.getThreshold(1,3), net.getThreshold(1,1), net.getThreshold(2,1),
-                          5*exc_neuron_output.size()+2*inh_neuron_output.size());
+	createSynapsePlot(synapse_output, gplscript, t_max, prot_learn, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_P, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA),
+	                  5*exc_neuron_output.size()+2*inh_neuron_output.size());
 #endif
 
 // ==============================================================================================================================
@@ -1244,9 +1274,27 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 
 	createMeanWeightPlotCA(gplscript, t_max, h_0); // in the cell assembly
 	createMeanWeightPlotControl(gplscript, t_max, h_0); // in the control subpopulation
-#elif defined TWO_NEURONS_ONE_SYNAPSE_MIN
-	#if PROTEIN_POOLS == POOLS_C
-	plot2N1SMINSimResults(h_0, net.getThreshold(1,2), net.getThreshold(1,3), net.getThreshold(1,1), net.getThreshold(2,1));
+#endif
+
+	// "plotMinSimResults": overview over important observables for one synapse and one neuron (in the network)
+#if PROTEIN_POOLS == POOLS_C
+	#if defined MAX_ACTIVITY_NEURON
+	plotMinSimResults(1, 16, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), "traces_0.svg");
+	plotMinSimResults(7, 16, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), "traces_335.svg");
+	plotMinSimResults(14, -1, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), "traces_1940.svg");
+	#elif defined ONESPIKE_EXC
+	plotMinSimResults(1, 16, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), "traces_6.svg");
+	plotMinSimResults(7, 16, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), "traces_68.svg");
+	plotMinSimResults(14, -1, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), "traces_1760.svg");
+	#elif defined ONESPIKE_INH
+	plotMinSimResults(4, -1, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), "traces_17.svg");
+	plotMinSimResults(10, -1, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), "traces_1615.svg");
+	plotMinSimResults(12, -1, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), "traces_1690.svg");
+	#elif defined TWO_NEURONS_ONE_SYNAPSE
+	plotMinSimResults(1, 7, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), "traces_0.svg");
+	plotMinSimResults(4, 7, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), "traces_1.svg");
+	#else
+	plotMinSimResults(1, 9, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), "traces_6.svg");
 	#endif
 #endif
 // ==============================================================================================================================
@@ -1301,28 +1349,31 @@ void setSeekICVar(double *_seekic)
  * Sets the simulation parameters on given values and resets network(s) */
 void setParams(double _I_0, double _sigma_WN, double _tau_syn, double _w_ee, double _w_ei, double _w_ie, double _w_ii, 
                double _oscill_inp_mean, double _oscill_inp_amp,
-               string _prot_learn, string _prot_recall, int _output_period, int _N_stim, double _theta_p, double _theta_d,
-               double _Ca_pre, double _Ca_post, double _theta_pro_P, double _theta_pro_C, double _theta_pro_D, double _recall_fraction)
+               string _prot_learn, string _prot_recall, int _N_stim, double _recall_fraction,
+               double _theta_p, double _theta_d, double _Ca_pre, double _Ca_post, 
+               double _theta_pro_P, double _theta_pro_C, double _theta_pro_D,
+               int _nm_paradigm_index, double _nm_amp, double _nm_begin, double _nm_end, int _output_period)
 {
-#if OSCILL_INP != OFF
-	oscill_inp_mean = _oscill_inp_mean;
-	oscill_inp_amp = _oscill_inp_amp;
-#endif
-	tau_syn = _tau_syn;
-	prot_learn = _prot_learn;
-	prot_recall = _prot_recall;
-	recall_fraction = _recall_fraction;
-	output_period = _output_period;
-	N_stim = _N_stim;
 	net.setConstCurrent(_I_0);
 	net.setSigma(_sigma_WN);
+	tau_syn = _tau_syn;
 	net.setSynTimeConstant(_tau_syn);
 	w_ei = _w_ei;
 	w_ie = _w_ie;
 	w_ii = _w_ii;
 	net.setCouplingStrengths(_w_ee, _w_ei, _w_ie, _w_ii);
+#if OSCILL_INP != OFF
+	oscill_inp_mean = _oscill_inp_mean;
+	oscill_inp_amp = _oscill_inp_amp;
+#endif
+	prot_learn = _prot_learn;
+	prot_recall = _prot_recall;
+	N_stim = _N_stim;
+	recall_fraction = _recall_fraction;
 	net.setCaConstants(_theta_p, _theta_d, _Ca_pre, _Ca_post);
 	net.setPSThresholds(_theta_pro_P, _theta_pro_C, _theta_pro_D);
+	net.setNeuromodulationParameters(_nm_paradigm_index, _nm_amp, _nm_begin, _nm_end);
+	output_period = _output_period;
 	net.reset();
 }
 

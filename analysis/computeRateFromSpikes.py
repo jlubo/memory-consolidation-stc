@@ -14,11 +14,16 @@ import os
 np.set_printoptions(threshold=1e10, linewidth=200) # extend console print range for numpy arrays
 
 # main parameters
-Ne = 2500 # number of neurons in the excitatory population
+'''Ne = 2500 # number of neurons in the excitatory population
 Ni = 625 # number of neurons in the inhibitory population
 Na = 600 # number of neurons in one cell assembly
 overlap = 0.1 # relative size of the overlap
-period_duration = 0.01 # binning period (in units of seconds)
+period_duration = 0.01 # binning period (in units of seconds)'''
+Ne = 1600 # number of neurons in the excitatory population
+Ni = 400 # number of neurons in the inhibitory population
+Na = 150 # number of neurons in one cell assembly
+overlap = 0 # relative size of the overlap
+period_duration = 0.1 # binning period (in units of seconds)
 
 # derived parameters
 Nl = int(round(np.sqrt(Ne))) # the number of excitatory neurons in one line of a quadratic grid
@@ -31,7 +36,8 @@ N = Ne + Ni # the number of neurons in the whole network
 # Recursively looks for a data files, extracts spiking data from them and computes mean firing rates
 # directory: the directory to look into
 # fout: file handle to output file
-def extractRecursion(directory, fout):
+# col_sep [optional]: characters separating columns in the data file
+def extractRecursion(directory, fout, col_sep = '\t\t'):
 
 	data_found = False # specifies if any data has been found
 	rawpaths = Path(directory)
@@ -46,8 +52,10 @@ def extractRecursion(directory, fout):
 		full_path = str(x)
 		(full_path_head, filename) = os.path.split(full_path)
 
-		if x.is_file() and "_spike_raster.txt" in filename:
+		if x.is_file() and ("_spikes.txt" in filename or "_spike_raster.txt" in filename):
 
+			if "_spikes.txt" in filename: # Arbor data
+				col_sep = ' '
 			data_found = True
 
 			print("========================")
@@ -57,11 +65,20 @@ def extractRecursion(directory, fout):
 			# read the last line and compute number of periods
 			try:
 				with open(full_path, 'rb') as f:
+					first_line = f.readline().decode()
 					f.seek(-2, os.SEEK_END)
 					while f.read(1) != b'\n': # seek last line
 						f.seek(-2, os.SEEK_CUR)
 					last_line = f.readline().decode()
-				num_periods_tot = int(float(last_line.split('\t\t')[0]) / period_duration) + 1
+				#num_periods_tot = int(float(last_line.split(col_sep)[0]) / period_duration) + 1
+				t_first = float(first_line.split(col_sep)[0])
+				t_shift = abs(t_first) if t_first < 0 else 0 # shift if there have been spikes at negative times
+
+				if "_spikes.txt" in filename: # Arbor data
+					num_periods_tot = int(np.ceil((float(last_line.split(col_sep)[0]) + t_shift) / 1000 / period_duration)) + 1
+				else:
+					num_periods_tot = int(np.ceil((float(last_line.split(col_sep)[0]) + t_shift) / period_duration)) + 1
+				
 			except IOError:
 				print('Error opening "' + filename + '"')
 				exit()
@@ -86,10 +103,12 @@ def extractRecursion(directory, fout):
 
 			f = open(full_path)
 			for line in f:
-				segs = line.split('\t\t')
+				segs = line.split(col_sep)
 
 				if (segs[0] != ""):
 					t = float(segs[0])
+					if "_spikes.txt" in filename: # Arbor data
+						t /= 1000 # convert ms to s
 					n = int(segs[1])
 					current_period = int(np.floor(t / period_duration))
 					tot_spikes[current_period] += 1
@@ -133,10 +152,10 @@ def extractRecursion(directory, fout):
 				mean_tot = tot_spikes[i] / N / period_duration
 
 				# write time (at 1/2 of a period) and values for this period
-				fout.write(str(round((i+0.5)*period_duration,4)) + "\t\t" + \
-				           str(mean_A) + "\t\t" + str(mean_I_AB) + "\t\t" + str(mean_B) + "\t\t" + \
-						   str(mean_I_AC) + "\t\t" + str(mean_I_BC) + "\t\t" + str(mean_I_ABC) + "\t\t" + str(mean_C) + "\t\t" + \
-				           str(mean_ctrl) + "\t\t" + str(mean_inh) + "\t\t" + str(mean_tot) + "\n")
+				fout.write(str(round((i+0.5)*period_duration,4)) + col_sep + \
+				           str(mean_A) + col_sep + str(mean_I_AB) + col_sep + str(mean_B) + col_sep + \
+						   str(mean_I_AC) + col_sep + str(mean_I_BC) + col_sep + str(mean_I_ABC) + col_sep + str(mean_C) + col_sep + \
+				           str(mean_ctrl) + col_sep + str(mean_inh) + col_sep + str(mean_tot) + "\n")
 
 
 		elif x.is_dir():

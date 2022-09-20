@@ -1,0 +1,28 @@
+#!/bin/sh
+rm -f saved_state.txt
+
+run_simulations_nm()
+{
+	./net.out -Nl=40 -Nl_inh=20 -t_max=30 -N_stim=4 -pc=0.1 -learn=TRIPLETf10 -recall=F100D1at20.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -purpose="Recall after 10s, nm=$1"
+	./net.out -Nl=40 -Nl_inh=20 -t_max=30 -N_stim=4 -pc=0.1 -learn=TRIPLETf20 -recall=F100D1at20.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -purpose="Recall after 10s, nm=$1"
+	./net.out -Nl=40 -Nl_inh=20 -t_max=30 -N_stim=4 -pc=0.1 -learn=TRIPLETf30 -recall=F100D1at20.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -purpose="Recall after 10s, nm=$1"
+	./net.out -Nl=40 -Nl_inh=20 -t_max=30 -N_stim=4 -pc=0.1 -learn=TRIPLETf40 -recall=F100D1at20.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -purpose="Recall after 10s, nm=$1"
+	./net.out -Nl=40 -Nl_inh=20 -t_max=30 -N_stim=4 -pc=0.1 -learn=TRIPLETf50 -recall=F100D1at20.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -purpose="Recall after 10s, nm=$1"
+	./net.out -Nl=40 -Nl_inh=20 -t_max=30 -N_stim=4 -pc=0.1 -learn=TRIPLETf60 -recall=F100D1at20.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -purpose="Recall after 10s, nm=$1"
+	./net.out -Nl=40 -Nl_inh=20 -t_max=30 -N_stim=4 -pc=0.1 -learn=TRIPLETf70 -recall=F100D1at20.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -purpose="Recall after 10s, nm=$1"
+	./net.out -Nl=40 -Nl_inh=20 -t_max=30 -N_stim=4 -pc=0.1 -learn=TRIPLETf80 -recall=F100D1at20.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -purpose="Recall after 10s, nm=$1"
+	./net.out -Nl=40 -Nl_inh=20 -t_max=30 -N_stim=4 -pc=0.1 -learn=TRIPLETf90 -recall=F100D1at20.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -purpose="Recall after 10s, nm=$1"
+	./net.out -Nl=40 -Nl_inh=20 -t_max=30 -N_stim=4 -pc=0.1 -learn=TRIPLETf100 -recall=F100D1at20.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_const=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -nm_amp=$1 -purpose="Recall after 10s, nm=$1"
+}
+
+run_simulations_nm "0.00"
+run_simulations_nm "0.02"
+run_simulations_nm "0.04"
+run_simulations_nm "0.06"
+run_simulations_nm "0.08"
+run_simulations_nm "0.10"
+run_simulations_nm "0.12"
+run_simulations_nm "0.14"
+run_simulations_nm "0.16"
+run_simulations_nm "0.18"
+

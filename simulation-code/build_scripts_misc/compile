@@ -1,0 +1,15 @@
+#!/bin/sh
+
+current_working_dir=${PWD}
+cd ..
+
+out_dir="../simulation-bin/run_binary_misc"
+mkdir -p "${out_dir}"
+
+rm -f code.zip
+zip -q -D code.zip * -x *.out *.o *.txt
+g++ -std=c++11 -O1 NetworkMain.cpp -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default \
+    -Wno-unused-result -lboost_serialization -static -o "${out_dir}/net.out"
+rm -f code.zip
+
+cd "${current_working_dir}"

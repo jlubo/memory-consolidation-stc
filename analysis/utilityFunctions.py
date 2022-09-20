@@ -4,7 +4,6 @@
 
 ### Copyright 2017-2022 Jannik Luboeinski, Andrew Lehr
 ### licensed under Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-### Contact: jannik.lubo[at]gmx.de
 
 import numpy as np
 import os
@@ -192,9 +191,15 @@ def readParams(path):
 # filename: a string
 # return: true if presumably there is a timestamp, false if not
 def hasTimestamp(filename):
+
 	try:
-		if filename[2] == "-" and filename[5] == "-" and filename[8] == "_" and \
-		   filename[11] == "-" and filename[14] == "-":
+		offset = 0 # number of characters after which the timestamp begins
+		for prefix in ["data_", "tmp_data_"]:
+			if filename[0:len(prefix)] == prefix:
+				offset = len(prefix)
+
+		if filename[offset+2] == "-" and filename[offset+5] == "-" and filename[offset+8] == "_" and \
+		   filename[offset+11] == "-" and filename[offset+14] == "-":
 			return True
 	except:
 		pass

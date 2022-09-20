@@ -15,17 +15,40 @@ from pathlib import Path
 np.set_printoptions(threshold=1e10, linewidth=200) # extend console print range for numpy arrays
 
 # calculateMIa
-# Calculates mutual information of the activity distribution of the network at two timesteps and returns it along with the self-information of
-# the reference distribution
+# Calculates the mutual information and the self-information of the reference distribution from given firing rate distributions (reference/learning, and recall)
+# v_ref: the reference activity distribution (or the activity distribution during learning)
+# v_recall: the activity distribution during recall
+# return: mutual information between reference/learning distribution and recall distribution, and self-information of reference distribution and recall distirbution
+def calculateMIa(v_ref, v_recall):
+
+	margEntropyActL = marginalEntropy(v_ref)
+	print("margEntropyActL = " + str(margEntropyActL))
+
+	margEntropyActR = marginalEntropy(v_recall)
+	print("margEntropyActR = " + str(margEntropyActR))
+
+	jointEntropyAct = jointEntropy(v_ref, v_recall)
+	print("jointEntropyAct = " + str(jointEntropyAct))
+
+	MIa = mutualInformation(margEntropyActL, margEntropyActR, jointEntropyAct)
+	print("MIa = " + str(MIa))
+
+	return MIa, margEntropyActL, margEntropyActR
+
+# calculateMIaFromFile
+# Calculates mutual information of the activity distribution of the network at two timesteps, and the self-information of
+# the reference distribution; reads recall distribution from file; reads reference distribution either from file or uses a model
 # nppath: path to the network_plots directory to read the data from
 # timestamp: a string containing date and time (to access correct paths)
 # Nl_exc: the number of excitatory neurons in one line of a quadratic grid
-# time_for_activity: the time that at which the activites shall be read out (some time during recall)
-# time_ref: the reference time (for getting the activity distribution during learning)
-# core: the neurons in the cell assembly (for stipulation; only required if no activity distribution during learning is available)
-def calculateMIa(nppath, timestamp, Nl_exc, time_for_activity, time_ref = "11.0", core = np.array([])):
+# time_for_activity [optional]: the time that at which the activites shall be read out (some time during recall)
+# time_ref [optional]: the reference time (for getting the activity distribution during learning)
+# core [optional]: the neurons in the cell assembly (for stipulation; only required if no activity distribution during learning is available)
+# return: mutual information between reference/learning distribution and recall distribution, and self-information of reference distribution
+def calculateMIaFromFile(nppath, timestamp, Nl_exc, time_for_activity = "20.1", time_ref = "11.0", core = np.array([])):
 
-	if time_ref: # use reference firing rate distribution from data (for learned cell assembly)
+	### Get data ###
+	if time_ref: # if provided, use reference firing rate distribution from file (for learned cell assembly)
 		times_for_readout_list = [time_ref, time_for_activity] # the simulation times at which the activities shall be read out
 		print("Using reference distribution at " + time_ref + "...")
 	else: # use model firing rate distribution (for stipulated cell assembly)
@@ -39,8 +62,6 @@ def calculateMIa(nppath, timestamp, Nl_exc, time_for_activity, time_ref = "11.0"
 	h = [np.zeros((Nl_exc**2,Nl_exc**2)) for x in times_for_readout_list]
 	z = [np.zeros((Nl_exc**2,Nl_exc**2)) for x in times_for_readout_list]
 	v = [np.zeros((Nl_exc,Nl_exc)) for x in times_for_readout_list]
-
-	v_array = np.zeros(Nl_exc*Nl_exc) # data array
 
 	rawpaths = Path(nppath)
 
@@ -68,32 +89,14 @@ def calculateMIa(nppath, timestamp, Nl_exc, time_for_activity, time_ref = "11.0"
 		except OSError:
 			raise
 
-	### Activity ###
-	if time_ref: # use reference firing rate distribution from data (for learned cell assembly)
-		margEntropyActL = marginalEntropy(v[0])
-		print("margEntropyActL = " + str(margEntropyActL))
-
-		margEntropyActR = marginalEntropy(v[1])
-		print("margEntropyActR = " + str(margEntropyActR))
-
-		jointEntropyAct = jointEntropy(v[0],v[1])
-		print("jointEntropyAct = " + str(jointEntropyAct))
+	### Get results ###
+	if time_ref: # if provided, use reference firing rate distribution from file (for learned cell assembly)
+		MIa, self_MIa_ref = calculateMIa(v[0], v[1])
 
 	else: # use model firing rate distribution (for stipulated cell assembly)
-		margEntropyActL = marginalEntropy(v_model)
-		print("margEntropyActL = " + str(margEntropyActL))
+		MIa, self_MIa_ref = calculateMIa(v_model, v[0])
 
-		margEntropyActR = marginalEntropy(v[0])
-		print("margEntropyActR = " + str(margEntropyActR))
-
-		jointEntropyAct = jointEntropy(v_model,v[0])
-		print("jointEntropyAct = " + str(jointEntropyAct))
-
-	### Results and Output ###
-	MIa = mutualInformation(margEntropyActL, margEntropyActR, jointEntropyAct)
-	print("MIa = " + str(MIa))
-
-	return MIa, margEntropyActL
+	return MIa, self_MIa_ref
 
 # marginalEntropy
 # Computes the marginal entropy of an array

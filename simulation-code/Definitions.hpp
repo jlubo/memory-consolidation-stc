@@ -10,6 +10,7 @@
 #define EPSILON 10e-12 // very small number that is counted as zero
 #define ON 1 // to switch on a function
 #define OFF 0 // to switch off a function
+#define NAN std::numeric_limits<double>::quiet_NaN()
 
 // STIM_TYPE
 #define POISSON_STIMULATION 1 // enables stimulation with Poisson-like spiking
@@ -64,8 +65,17 @@
 #define OVERLAP20_3RD_NO_BC_NO_ABC 18 // use a third block of neurons as the assembly, overlapping by 20% with the second assembly exclusively
 #define RAND 19 // use randomly selected neurons as the assembly
 
-// PLASTICITY
+// PLASTICITY MECHANISMS
 #define CALCIUM 1 // use the calcium model as plasticity mechanism (early phase only)
 #define CALCIUM_AND_STC 2 // use the calcium model with synaptic and capture as plasticity mechanism
 #define STDP 3 // use an STDP rule as plasticity mechanism (early phase only)
 #define STDP_AND_STC 4 // use an STDP rule with synaptic and capture as plasticity mechanism
+
+// PLASTICITY THRESHOLDS
+#define THRP_P 1 // for LTP
+#define THRP_D 2 // for LTD
+#define THRP_C 3 // for both LTP and LTD
+#define THRW_CA 1 // early-phase calcium threshold
+#define THRW_TAG 2 // tagging threshold
+#define THRW_PRO 3 // protein synthesis threshold
+

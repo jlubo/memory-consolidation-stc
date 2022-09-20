@@ -84,8 +84,10 @@ Stimulus createStimulusFromProtocols(string prot_learn, string prot_recall, doub
 		st.setPoissonStimulation(stim_strength, N_stim, frequency, index); // Poisson-distributed stimulation must be used
 	}
 #endif
-	else if (strstr(pt, "F") == pt && strstr(pt, "D") > pt + 1) // "generic" protocol
+	else if (strstr(pt, "F") == pt && strstr(pt, "D") > pt + 1)
 	{
+		// "generic" protocol
+		// example: "F100D1at10.5" -> stimulation with 100Hz for 0.1s (MIND THE UNUSUAL UNIT!), beginning at t=10.5s
 		double duration, at;
 		char* pt2 = strstr(pt, "D");
 		char* pt3 = strstr(pt, "at");
@@ -126,26 +128,27 @@ Stimulus createStimulusFromProtocols(string prot_learn, string prot_recall, doub
 	}
 	else if (!prot_learn.compare("MIN2N1S"))
 	{
-		frequency = 1.; // Hz
-		//index = st.addStimulationInterval(int(round(2.0/dt)), int(round(2.5/dt))); // add start and end time of stimulation
-		index = st.addStimulationInterval(int(round(0.01/dt)), int(round(0.015/dt))); // add start and end time of stimulation
+		frequency = 1.; // Hz, rules that only one pulse (of duration dt, see stimFunc()) is conveyed
+		index = st.addStimulationInterval(int(round(0.01/dt)), int(round(0.015/dt))); // add time of stimulation (end time is not important here)
 		stimFunc(&st, frequency, stim_strength, N_stim, tau_syn, index); // actually add stimulation to the interval
-		index = st.addStimulationInterval(int(round(0.02/dt)), int(round(0.025/dt))); // add start and end time of stimulation
+		index = st.addStimulationInterval(int(round(0.02/dt)), int(round(0.025/dt))); // add time of stimulation (end time is not important here)
 		stimFunc(&st, frequency, stim_strength, N_stim, tau_syn, index); // actually add stimulation to the interval
-		index = st.addStimulationInterval(int(round(0.03/dt)), int(round(0.035/dt))); // add start and end time of stimulation
+		index = st.addStimulationInterval(int(round(0.03/dt)), int(round(0.035/dt))); // add time of stimulation (end time is not important here)
 		stimFunc(&st, frequency, stim_strength, N_stim, tau_syn, index); // actually add stimulation to the interval
-		index = st.addStimulationInterval(int(round(0.04/dt)), int(round(0.045/dt))); // add start and end time of stimulation
+		index = st.addStimulationInterval(int(round(0.04/dt)), int(round(0.045/dt))); // add time of stimulation (end time is not important here)
 		stimFunc(&st, frequency, stim_strength, N_stim, tau_syn, index); // actually add stimulation to the interval
-		index = st.addStimulationInterval(int(round(0.05/dt)), int(round(0.055/dt))); // add start and end time of stimulation
+		index = st.addStimulationInterval(int(round(0.05/dt)), int(round(0.055/dt))); // add time of stimulation (end time is not important here)
 		stimFunc(&st, frequency, stim_strength, N_stim, tau_syn, index); // actually add stimulation to the interval
-		index = st.addStimulationInterval(int(round(0.06/dt)), int(round(0.065/dt))); // add start and end time of stimulation
+		index = st.addStimulationInterval(int(round(0.06/dt)), int(round(0.065/dt))); // add time of stimulation (end time is not important here)
 		stimFunc(&st, frequency, stim_strength, N_stim, tau_syn, index); // actually add stimulation to the interval
-		index = st.addStimulationInterval(int(round(0.1/dt)), int(round(0.105/dt))); // add start and end time of stimulation
+		index = st.addStimulationInterval(int(round(0.1/dt)), int(round(0.105/dt))); // add time of stimulation (end time is not important here)
 		stimFunc(&st, frequency, stim_strength, N_stim, tau_syn, index); // actually add stimulation to the interval
 	}
 	else if (!prot_learn.compare("MINCONV"))
 	{
-
+		frequency = int(round(1/dt)); // Hz, rules that stimulation occurs in every timestep (see stimFunc())
+		index = st.addStimulationInterval(int(round(0.0/dt)), int(round(0.1/dt))); // add start and end time of stimulation
+		stimFunc(&st, frequency, 0.15, N_stim, tau_syn, index); // actually add stimulation to the interval
 	}
 	else if (!prot_learn.compare("TRIPLET"))
 	{

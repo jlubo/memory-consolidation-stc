@@ -8,15 +8,15 @@
 #include <random>
 #include <sstream>
 
-using namespace std;
-
 #include "Neuron.cpp"
 
-struct synapse // structure for synapse definition
+/*** Synapse structure ***
+ * defines a synapse by specifying pre- and postsynaptic neuron */
+struct Synapse
 {
 	int presyn_neuron; // the number of the presynaptic neuron
 	int postsyn_neuron; // the number of the postsynaptic neuron
-	synapse(int _presyn_neuron, int _postsyn_neuron) // constructor
+	Synapse(int _presyn_neuron, int _postsyn_neuron) // constructor
 	{
 		presyn_neuron = _presyn_neuron;
 		postsyn_neuron = _postsyn_neuron;
@@ -76,9 +76,9 @@ double Ca_post; // increase in calcium current evoked by postsynaptic spike
 double tau_Ca; // s, time constant for calcium dynamics
 double tau_Ca_steps; // time constant for calcium dynamics in timesteps
 double tau_h; // s, time constant for early-phase plasticity
-double tau_pp; // h, time constant of LTP-related protein synthesis
-double tau_pc; // h, time constant of common protein synthesis
-double tau_pd; // h, time constant of LTD-related protein synthesis
+double tau_p_p; // min, time constant of LTP-related protein synthesis
+double tau_p_c; // min, time constant of common protein synthesis
+double tau_p_d; // min, time constant of LTD-related protein synthesis
 double tau_z; // min, time constant of consolidation
 double gamma_p; // constant for potentiation process
 double gamma_d; // constant for depression process
@@ -96,7 +96,14 @@ double theta_tag_p; // mV, threshold for LTP-related tag
 double theta_tag_d; // mV, threshold for LTD-related tag
 double z_max; // upper z bound
 
+/*** Neuromodulation parameters ***/
+double nm_paradigm_index; // index of the paradigm for modeling the neuromodulator concentration and protein synthesis threshold
+double nm_amp; // amplitude of the neuromodulator concentration
+Stimulus nm_protocol; // neuromodulation protocol modeled by a Stimulus object
+double (Network::*psth_c_function_ptr)(double) const; // pointer to the function used to compute the protein synthesis threshold from the neuromodulator concentration
+
 public:
+
 #ifdef TWO_NEURONS_ONE_SYNAPSE
 bool tag_glob; // specifies if a synapse was tagged ever
 bool ps_glob; // specifies if protein synthesis ever occurred in any neuron
@@ -153,7 +160,6 @@ int tb_max_sum_diff_d; // time bin at which max_sum_diff_d was encountered
  * by its consecutive number *
  * - int n: the consecutive element number */
 #define symm(n) (cNN(col(n),row(n)))
-
 
 /*** shallBeConnected ***
  * Draws a uniformly distributed random number from the interval 0.0 to 1.0 and returns, *
@@ -266,9 +272,9 @@ void saveNetworkParams(ofstream *f) const
 	*f << "Ca_post = " << Ca_post << endl;
 	*f << "tau_Ca = " << tau_Ca << " s" << endl;
 	*f << "tau_h = " << tau_h << " s" << endl;
-	*f << "tau_pp = " << tau_pp << " h" << endl;
-	*f << "tau_pc = " << tau_pc << " h" << endl;
-	*f << "tau_pd = " << tau_pd << " h" << endl;
+	*f << "tau_p_p = " << tau_p_p << " min" << endl;
+	*f << "tau_p_c = " << tau_p_c << " min" << endl;
+	*f << "tau_p_d = " << tau_p_d << " min" << endl;
 	*f << "tau_z = " << tau_z << " min" << endl;
 	*f << "z_max = " << z_max << endl;
 	*f << "gamma_p = " << gamma_p << endl;
@@ -283,12 +289,34 @@ void saveNetworkParams(ofstream *f) const
 	*f << "alpha_c = " << alpha_c << endl;
 	*f << "alpha_d = " << alpha_d << endl;
 
-	double nm = 1. / (theta_pro_c/h_0) - 0.001; // compute neuromodulator concentration from threshold theta_pro_c	
+	//double nm_amp = 1. / (theta_pro_c/h_0) - 0.001; // compute amplitude of neuromodulator concentration from threshold theta_pro_c	
 	*f << "theta_pro_p = " << dtos(theta_pro_p/h_0,2) << " h_0" << endl;
-	*f << "theta_pro_c = " << dtos(theta_pro_c/h_0,2) << " h_0 (nm = " << dtos(nm,2) << ")" << endl;
+	//*f << "theta_pro_c = " << dtos(theta_pro_c/h_0,2) << " h_0 (nm = " << dtos(nm_amp,2) << ")" << endl;
+	*f << "theta_pro_c = " << dtos(theta_pro_c/h_0,2) << " h_0" << endl;
 	*f << "theta_pro_d = " << dtos(theta_pro_d/h_0,2) << " h_0" << endl;
 	*f << "theta_tag_p = " << dtos(theta_tag_p/h_0,2) << " h_0" << endl;
 	*f << "theta_tag_d = " << dtos(theta_tag_d/h_0,2) << " h_0" << endl;
+
+	// parameters of NeuromodulatorFunctions object
+	*f << endl;
+	*f << "Neuromodulation parameters:" << endl;
+	*f << "paradigm = " << nm_paradigm_index << endl;
+	*f << "nm_amp = " << dtos(nm_amp,2);
+#if PROTEIN_POOLS == POOLS_C || PROTEIN_POOLS == POOLS_PCD
+	if (nm_paradigm_index >= 0)
+		*f << " (equals theta_pro_c = " << dtos((this->*psth_c_function_ptr)(nm_amp)/h_0,2) << " h_0)";
+#endif
+	*f << endl;
+	if (nm_protocol.getStimulationDuration() > 0)
+	{
+		*f << "nm_begin = " << dtos(nm_protocol.getStimulationStart()*dt,1) << " s (" << nm_protocol.getStimulationStart() << " steps)" << endl;
+		*f << "nm_end = " << dtos(nm_protocol.getStimulationEnd()*dt,1) << " s (" << nm_protocol.getStimulationEnd() << " steps)" << endl;
+	}
+	else
+	{
+		*f << "nm_begin = " << NAN << endl;
+		*f << "nm_end = " << NAN << endl;
+	}
 
 	neurons[0].saveNeuronParams(f); // all neurons have the same parameters, take the first one
 }
@@ -359,6 +387,17 @@ template<class Archive> void serialize(Archive &ar, const unsigned int version)
 	}
 }
 
+#if PROTEIN_POOLS == POOLS_C || PROTEIN_POOLS == POOLS_PCD
+/*** getThetaProC ***
+ * Returns the threshold value for protein synthesis (for common pool) as a function of neuromodulator concentration *
+ * (cf. Clopath et al., 2008)
+ * - double nm: neuromodulator concentration in arbitrary units *
+ * - return: threshold value in mV */
+inline double getThetaProC_Clopath2008(double nm) const 
+{
+	return 1. / (nm + 0.001) * h_0; // compute protein synthesis threshold from neuromodulator concentration
+}
+#endif
 
 /*** processTimeStep ***
  * Processes one timestep (of duration dt) for the network [rich mode / compmode == 1] *
@@ -372,6 +411,11 @@ int processTimeStep(int tb, ofstream* txt_spike_raster = NULL)
 	int st_CA = tb - t_Ca_delay_steps; // presynaptic spike time for evoking calcium contribution in this timestep tb
 	bool STC = false; // specifies if at least one synapse is tagged and receives proteins
 	bool ps_neuron = false; // specifies if at least one neuron is exhibiting protein synthesis
+
+#if PROTEIN_POOLS == POOLS_C || PROTEIN_POOLS == POOLS_PCD
+	if (nm_protocol.isSet()) // if neuromodulation protocol is set (otherwise using defualt 'theta_pro_c' value)
+		theta_pro_c = (this->*psth_c_function_ptr)(nm_protocol.get(tb)); // compute protein synthesis threshold from neuromodulator amount
+#endif
 
 	/*******************************************************/
 	// compute neuronal dynamics
@@ -435,9 +479,9 @@ int processTimeStep(int tb, ofstream* txt_spike_raster = NULL)
 
 		ps_neuron = ps_neuron || (sum_h_diff_p[m] >= theta_pro_p) || (sum_h_diff_d[m] >= theta_pro_d);
 
-		pa_p = pa_p * exp(-dt/(tau_pp * 3600.)) + alpha_p * step(sum_h_diff_p[m] - theta_pro_p) * (1. - exp(-dt/(tau_pp * 3600.)));
-		pa_d = pa_d * exp(-dt/(tau_pd * 3600.)) + alpha_d * step(sum_h_diff_d[m] - theta_pro_d) * (1. - exp(-dt/(tau_pd * 3600.)));
-		// [simple Euler: pa += (- pa + alpha * step(sum_h_diff - theta_pro)) * (dt / (tau_p * 3600.));]
+		pa_p = pa_p * exp(-dt/(tau_p_p * 60.)) + alpha_p * step(sum_h_diff_p[m] - theta_pro_p) * (1. - exp(-dt/(tau_p_p * 60.)));
+		pa_d = pa_d * exp(-dt/(tau_p_d * 60.)) + alpha_d * step(sum_h_diff_d[m] - theta_pro_d) * (1. - exp(-dt/(tau_p_d * 60.)));
+		// [simple Euler: pa += (- pa + alpha * step(sum_h_diff - theta_pro)) * (dt / (tau_p * 60.));]
 
 		sum_h_diff_p[m] = 0.;
 		sum_h_diff_d[m] = 0.;
@@ -457,7 +501,7 @@ int processTimeStep(int tb, ofstream* txt_spike_raster = NULL)
 
 		ps_neuron = ps_neuron || (sum_h_diff[m] >= theta_pro_c);
 
-		pa_c = pa_c * exp(-dt/(tau_pc * 3600.)) + alpha_c * step(sum_h_diff[m] - theta_pro_c) * (1. - exp(-dt/(tau_pc * 3600.))); // === ESSENTIAL ===
+		pa_c = pa_c * exp(-dt/(tau_p_c * 60.)) + alpha_c * step(sum_h_diff[m] - theta_pro_c) * (1. - exp(-dt/(tau_p_c * 60.))); // === ESSENTIAL ===
 
 		sum_h_diff[m] = 0.;
 	#else
@@ -587,7 +631,7 @@ int processTimeStep(int tb, ofstream* txt_spike_raster = NULL)
 					double C = 0.1 + gamma_d;
 					double hexp = exp(-dt*C/tau_h);
 					h[m][n] = h[m][n] * hexp + (0.1*h_0 + noise) / C * (1.- hexp);
-					// [simple Euler: h[m][n] += ((0.1 * (h_0 - h[m][n]) + gamma_d * h[m][n] + noise)*(dt/tau_h));]
+					// [simple Euler: h[m][n] += ((0.1 * (h_0 - h[m][n]) - gamma_d * h[m][n] + noise)*(dt/tau_h));]
 
 					if (abs(h[m][n] - h_0) > abs(max_dev))
 					{
@@ -746,6 +790,11 @@ int processTimeStep_FF(int tb, double delta_t, ofstream* logf)
 	bool STC = false; // specifies if at least one synapse is tagged and receives proteins
 	bool ps_neuron = false; // specifies if at least one neuron is exhibiting protein synthesis
 
+#if PROTEIN_POOLS == POOLS_C || PROTEIN_POOLS == POOLS_PCD
+	if (nm_protocol.isSet()) // if neuromodulation protocol is set (otherwise using defualt 'theta_pro_c' value)
+		theta_pro_c = (this->*psth_c_function_ptr)(nm_protocol.get(tb)); // compute protein synthesis threshold from neuromodulator amount
+#endif
+
 	/*******************************************************/
 	// compute neuronal dynamics
 	for (int m=0; m<N; m++) // loop over neurons (in consecutive order)
@@ -772,19 +821,19 @@ int processTimeStep_FF(int tb, double delta_t, ofstream* logf)
 
 			if (delta_t < p_synth_end_p) // rising phase only
 			{
-				pa_p = pa_p * exp(-delta_t/(tau_pp * 3600.)) + alpha_p * (1. - exp(-delta_t/(tau_pp * 3600.)));
+				pa_p = pa_p * exp(-delta_t/(tau_p_p * 60.)) + alpha_p * (1. - exp(-delta_t/(tau_p_p * 60.)));
 			}
 			else // rising phase transitioning to declining phase
 			{
-				pa_p = pa_p * exp(-p_synth_end_p/(tau_pp * 3600.)) + alpha_p * (1. - exp(-p_synth_end_p/(tau_pp * 3600.)));
-				pa_p = pa_p * exp(-(delta_t-p_synth_end_p)/(tau_pp * 3600.));
+				pa_p = pa_p * exp(-p_synth_end_p/(tau_p_p * 60.)) + alpha_p * (1. - exp(-p_synth_end_p/(tau_p_p * 60.)));
+				pa_p = pa_p * exp(-(delta_t-p_synth_end_p)/(tau_p_p * 60.));
 
 				*logf << "Protein synthesis (P) ending in neuron " << m << " (t = " << p_synth_end_p + tb*dt << " s)" << endl;
 			}
 		}
 		else // declining phase only
 		{
-			pa_p = pa_p * exp(-delta_t/(tau_pp * 3600.));
+			pa_p = pa_p * exp(-delta_t/(tau_p_p * 60.));
 		}
 
 		// Depression pool
@@ -796,19 +845,19 @@ int processTimeStep_FF(int tb, double delta_t, ofstream* logf)
 
 			if (delta_t < p_synth_end_d) // rising phase only
 			{
-				pa_d = pa_d * exp(-delta_t/(tau_pd * 3600.)) + alpha_d * (1. - exp(-delta_t/(tau_pd * 3600.)));
+				pa_d = pa_d * exp(-delta_t/(tau_p_d * 60.)) + alpha_d * (1. - exp(-delta_t/(tau_p_d * 60.)));
 			}
 			else // rising phase transitioning to declining phase
 			{
-				pa_d = pa_d * exp(-p_synth_end_d/(tau_pd * 3600.)) + alpha_d * (1. - exp(-p_synth_end_d/(tau_pd * 3600.)));
-				pa_d = pa_d * exp(-(delta_t-p_synth_end_d)/(tau_pd * 3600.));
+				pa_d = pa_d * exp(-p_synth_end_d/(tau_p_d * 60.)) + alpha_d * (1. - exp(-p_synth_end_d/(tau_p_d * 60.)));
+				pa_d = pa_d * exp(-(delta_t-p_synth_end_d)/(tau_p_d * 60.));
 
 				*logf << "Protein synthesis (D) ending in neuron " << m << " (t = " << p_synth_end_d + tb*dt << " s)" << endl;
 			}
 		}
 		else // declining phase only
 		{
-			pa_d = pa_d * exp(-delta_t/(tau_pd * 3600.));
+			pa_d = pa_d * exp(-delta_t/(tau_p_d * 60.));
 
 		}
 
@@ -831,19 +880,19 @@ int processTimeStep_FF(int tb, double delta_t, ofstream* logf)
 
 			if (delta_t < p_synth_end_c) // rising phase only
 			{
-				pa_c = pa_c * exp(-delta_t/(tau_pc * 3600.)) + alpha_c * (1. - exp(-delta_t/(tau_pc * 3600.)));
+				pa_c = pa_c * exp(-delta_t/(tau_p_c * 60.)) + alpha_c * (1. - exp(-delta_t/(tau_p_c * 60.)));
 			}
 			else // rising phase transitioning to declining phase
 			{
-				pa_c = pa_c * exp(-p_synth_end_c/(tau_pc * 3600.)) + alpha_c * (1. - exp(-p_synth_end_c/(tau_pc * 3600.)));
-				pa_c = pa_c * exp(-(delta_t-p_synth_end_c)/(tau_pc * 3600.));
+				pa_c = pa_c * exp(-p_synth_end_c/(tau_p_c * 60.)) + alpha_c * (1. - exp(-p_synth_end_c/(tau_p_c * 60.)));
+				pa_c = pa_c * exp(-(delta_t-p_synth_end_c)/(tau_p_c * 60.));
 
 				*logf << "Protein synthesis (C) ending in neuron " << m << " (t = " << p_synth_end_c + tb*dt << " s)" << endl;
 			}
 		}
 		else // declining phase only
 		{
-			pa_c = pa_c * exp(-delta_t/(tau_pc * 3600.));
+			pa_c = pa_c * exp(-delta_t/(tau_p_c * 60.));
 		}
 
 		sum_h_diff[m] = 0.;
@@ -1041,29 +1090,44 @@ vector<double> getProteinSynthesisEnd()
 
 /*** getThreshold ***
  * Returns a specified threshold value (for tag or protein synthesis) *
- * - plast: the type of plasticity (1: LTP, 2: LTD)
- * - which: the type of threshold (1: early-phase calcium treshold, 2: tagging threshold, 3: protein synthesis threshold)
+ * - plast: the type of plasticity (LTP, LTD, or common)
+ * - which: the type of threshold (early-phase calcium threshold, tagging threshold, or protein synthesis threshold)
  * - return: the threshold value */
 double getThreshold(int plast, int which)
 {
-	if (plast == 1) // LTP
+	if (plast == THRP_P) // LTP
 	{
-		if (which == 1) // early-phase calcium treshold
-			return theta_p;
-		else if (which == 2) // tagging threshold
-			return theta_tag_p;
-		else // protein synthesis threshold
-			return theta_pro_p;
+		switch (which) 
+		{
+			case THRW_CA: // early-phase calcium threshold
+				return theta_p;
+			case THRW_TAG: // tagging threshold
+				return theta_tag_p;
+			case THRW_PRO: // protein synthesis threshold
+				return theta_pro_p;
+		}
 	}
-	else // LTD
+	else if (plast == THRP_D) // LTD
 	{
-		if (which == 1) // early-phase calcium treshold
-			return theta_d;
-		else if (which == 2) // tagging threshold
-			return theta_tag_d;
-		else // protein synthesis threshold
-			return theta_pro_d;
+		switch (which) 
+		{
+			case THRW_CA: // early-phase calcium threshold
+				return theta_d;
+			case THRW_TAG: // tagging threshold
+				return theta_tag_d;
+			case THRW_PRO: // protein synthesis threshold
+				return theta_pro_d;
+		}
 	}
+	else if (plast == THRP_C) // common
+	{
+		switch (which) 
+		{
+			case THRW_PRO: // protein synthesis threshold
+				return theta_pro_c;
+		}
+	}
+	return -1.;
 }
 
 
@@ -1324,6 +1388,8 @@ void setCouplingStrengths(double _w_ee, double _w_ei, double _w_ie, double _w_ii
 	w_ei = _w_ei * h_0;
 	w_ie = _w_ie * h_0;
 	w_ii = _w_ii * h_0;
+
+	//cout << "w_ei=" << w_ei << ", w_ie=" << w_ie << ", w_ii=" << w_ii << endl;
 }
 
 /*** getInitialWeight ***
@@ -1335,27 +1401,27 @@ double getInitialWeight()
 
 /*** getSynapticCalcium ***
  * Returns the calcium amount at a given synapse *
- * - synapse s: structure specifying pre- and postsynaptic neuron *
+ * - Synapse s: structure specifying pre- and postsynaptic neuron *
  * - return: the synaptic calcium amount */
-double getSynapticCalcium(synapse s) const
+double getSynapticCalcium(Synapse s) const
 {
 	return Ca[s.presyn_neuron][s.postsyn_neuron];
 }
 
 /*** getEarlySynapticStrength ***
  * Returns the early-phase synaptic strength at a given synapse *
- * - synapse s: structure specifying pre- and postsynaptic neuron *
+ * - Synapse s: structure specifying pre- and postsynaptic neuron *
  * - return: the early-phase synaptic strength */
-double getEarlySynapticStrength(synapse s) const
+double getEarlySynapticStrength(Synapse s) const
 {
 	return h[s.presyn_neuron][s.postsyn_neuron];
 }
 
 /*** getLateSynapticStrength ***
  * Returns the late-phase synaptic strength at a given synapse *
- * - synapse s: structure specifying pre- and postsynaptic neuron *
+ * - Synapse s: structure specifying pre- and postsynaptic neuron *
  * - return: the late-phase synaptic strength */
-double getLateSynapticStrength(synapse s) const
+double getLateSynapticStrength(Synapse s) const
 {
 	return z[s.presyn_neuron][s.postsyn_neuron];
 }
@@ -1867,8 +1933,8 @@ void resetPlasticity(bool early_phase, bool late_phase, bool calcium, bool prote
  * Resets the network and all neurons to initial state (but maintain connectivity) */
 void reset()
 {
-#ifdef TWO_NEURONS_ONE_SYNAPSE_MIN
-	rg.seed(0.); // determinsitic computation
+#if defined TWO_NEURONS_ONE_SYNAPSE_MIN || defined TWO_NEURONS_ONE_SYNAPSE_CONV
+	rg.seed(0.); // deterministic computation
 #else
 	rg.seed(getClockSeed()); // set new random seed by clock's epoch
 #endif
@@ -1950,6 +2016,44 @@ void setPSThresholds(double _theta_pro_P, double _theta_pro_C, double _theta_pro
 	theta_pro_d = _theta_pro_D*h_0;
 }
 
+/*** setNeuromodulationParameters ***
+ * Set parameters for the neuromodulation protocol *
+ * - int _nm_paradigm_index: specifies which neuromodulator paradigm is to be used (for negative value, removes the neuromodulation) *
+ * - double _nm_amp [optional]: the amplitude of the neuromodulation (exact meaning depends on the paradigm) *
+ * - double _nm_begin [optional]: the beginning of neuromodulation *
+ * - double _nm_end [optional]: the end of neuromodulation */
+void setNeuromodulationParameters(int _nm_paradigm_index, double _nm_amp = NAN, double _nm_begin = NAN, double _nm_end = NAN)
+{
+	if (_nm_paradigm_index < 0)
+	{
+		nm_protocol.clear();
+	}
+#if PROTEIN_POOLS == POOLS_C || PROTEIN_POOLS == POOLS_PCD
+	else if (_nm_paradigm_index == 0)
+	{
+		int index = nm_protocol.addStimulationInterval(int(round(_nm_begin/dt)), int(round(_nm_end/dt))); // add interval with start and end time of neuromodulation
+
+		nm_protocol.setDetStimulation(10, index); // set deterministic neuromodulation (with period duration of ten timesteps)
+		nm_protocol.addRectPulse(_nm_amp, 0, 10, index); // add rectangular pulse lasting for ten timesteps
+		//nm_protocol.plotAll("nm_protocol");
+		
+		psth_c_function_ptr = &Network::getThetaProC_Clopath2008; // set pointer to function computing the protein synthesis threshold from the neuromodulator amount
+	}
+#endif
+	/*else if (_nm_paradigm_index == 1) // TODO: other paradigms
+	{
+		
+	}*/
+	else
+	{
+		cout << "WARNING: specified neuromodulation function " << _nm_paradigm_index << " is not implemented!" << endl;
+		return;
+	}
+		
+	nm_paradigm_index = _nm_paradigm_index;
+	nm_amp = _nm_amp;
+}
+
 /*** Constructor ***
  * Sets all parameters, creates neurons and synapses *
  * --> it is required to call setSynTimeConstant and setCouplingStrengths immediately *
@@ -1961,10 +2065,9 @@ void setPSThresholds(double _theta_pro_P, double _theta_pro_C, double _theta_pro
  * - double _p_c: connection probability *
  * - double _sigma_plasticity: standard deviation of the plasticity *
  * - double _z_max: the upper z bound */
-
 Network(const double _dt, const int _Nl_exc, const int _Nl_inh, double _p_c, double _sigma_plasticity, double _z_max) :
-        dt(_dt), u_dist(0.0,1.0), norm_dist(0.0,1.0), Nl_exc(_Nl_exc), Nl_inh(_Nl_inh), z_max(_z_max),
-#ifdef TWO_NEURONS_ONE_SYNAPSE_MIN
+        dt(_dt), u_dist(0.0,1.0), norm_dist(0.0,1.0), Nl_exc(_Nl_exc), Nl_inh(_Nl_inh), z_max(_z_max), nm_protocol(_dt),
+#if defined TWO_NEURONS_ONE_SYNAPSE_MIN || defined TWO_NEURONS_ONE_SYNAPSE_CONV
         rg(0.)
 #else
         rg(getClockSeed())
@@ -1997,9 +2100,9 @@ Network(const double _dt, const int _Nl_exc, const int _Nl_inh, double _p_c, dou
 	sigma_plasticity = _sigma_plasticity; // from Graupner and Brunel (2012) but corrected by 1/sqrt(1000)
 
 	// Biophysical parameters for protein synthesis and late phase
-	tau_pp = 1.0; // from Li et al. (2016)
-	tau_pc = 1.0; // from Li et al. (2016)
-	tau_pd = 1.0; // from Li et al. (2016)
+	tau_p_p = 60.0; // from Li et al. (2016)
+	tau_p_c = 60.0; // from Li et al. (2016)
+	tau_p_d = 60.0; // from Li et al. (2016)
 	alpha_p = 1.0; // from Li et al. (2016)
 	alpha_c = 1.0; // from Li et al. (2016)
 	alpha_d = 1.0; // from Li et al. (2016)
@@ -2009,6 +2112,7 @@ Network(const double _dt, const int _Nl_exc, const int _Nl_inh, double _p_c, dou
 	theta_pro_d = 0.5*h_0; //
 	theta_tag_p = 0.2*h_0; // from Li et al. (2016)
 	theta_tag_d = 0.2*h_0; // from Li et al. (2016)
+	setNeuromodulationParameters(-1);
 
 	// Create neurons and synapse matrices
 	neurons = vector<Neuron> (N, Neuron(_dt));
@@ -2045,11 +2149,11 @@ Network(const double _dt, const int _Nl_exc, const int _Nl_inh, double _p_c, dou
 		}
 	}
 
-#ifdef TWO_NEURONS_ONE_SYNAPSE
+#if defined TWO_NEURONS_ONE_SYNAPSE_LI2016 || defined TWO_NEURONS_ONE_SYNAPSE_P1
 	neurons[1].setPoisson(true);
-	#ifdef PLASTICITY_OVER_FREQ
+#elif defined PLASTICITY_OVER_FREQ
 	neurons[0].setPoisson(true);
-	#endif
+	neurons[1].setPoisson(true);
 #endif
 }
 

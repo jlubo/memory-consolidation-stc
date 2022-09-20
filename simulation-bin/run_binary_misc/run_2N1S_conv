@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# Neuron that receives a constant current such that its membrane converges to a depolarized state
+./2N1S_conv.out -t_max=0.2 -learn= -I_0=0.15 -Ca_pre=1.0 -Ca_post=0.2758 -purpose="Const. current convergence"
+
+# Neuron that is first stimulated with a constant current such that its membrane converges to a depolarized state, and then 
+# relaxes back to the reversal potential 
+./2N1S_conv.out -t_max=0.2 -learn="MINCONV" -N_stim=1 -I_0=0.0 -Ca_pre=1.0 -Ca_post=0.2758 -purpose="Const. current convergence"
+

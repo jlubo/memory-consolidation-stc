@@ -30,6 +30,9 @@ double tau_syn = 0.005; // s, synaptic time constant
 double I_0 = 0.15; // nA, mean current applied to the individual neurons (e.g., mean of the OU process)
 double sigma_WN = 0.05; // nA s^1/2, standard deviation of the input current (e.g., std. dev. of the Gaussian white noise driving the OU process)
 
+double recall_fraction = 0.5; // the fraction of neurons in the cell assembly that is stimulated to trigger recall
+int N_stim = 25; // number of hypothetical synapses used for stimulation
+
 double theta_p = 3.0; // the calcium threshold for early-phase potentiation
 double theta_d = 1.2; // the calcium threshold for early-phase depression
 double Ca_pre = 0.6; // the postsynaptic calcium contribution evoked by a presynaptic spike (Li et al., 2016, not adjusted: 1.0)
@@ -39,13 +42,20 @@ double sigma_plasticity = 9.1844 / sqrt(1000) * 10.; // mV, standard deviation o
 double theta_pro_P = 0.5; // protein synthesis threshold for pool P in units of h_0
 double theta_pro_C = 0.5; // protein synthesis threshold for pool C in units of h_0
 double theta_pro_D = 0.5; // protein synthesis threshold for pool D in units of h_0
+
+#ifdef MEMORY_CONSOLIDATION_NM_STC_P3
+int nm_paradigm_index = 0; // defines the paradigm for modeling the neuromodulator concentration and protein synthesis threshold
+#else
+int nm_paradigm_index = -1;
+#endif
+double nm_amp = 2.; // amplitude of the neuromodulator concentration (exact meaning depends on the paradigm)
+double nm_begin = 0; // s, defines the begin time for the neuromodulation protocol
+double nm_end = -1.; // s, defines the end time for the neuromodulation protocol
+
 double z_max = 1.; // the upper late-phase bound
 
-double recall_fraction = 0.5; // the fraction of neurons in the cell assembly that is stimulated to trigger recall
-int N_stim = 25; // number of hypothetical synapses used for stimulation
-
-double oscill_inp_mean = 0.; // nA, 
-double oscill_inp_amp = 0.; // nA, 
+double oscill_inp_mean = 0.; // nA, the mean value of oscillatory input current
+double oscill_inp_amp = 0.; // nA, the amplitude of oscillatory input current
 
 bool ff_enabled = true; // specifies if fast-forward mode (no computation of spiking dynamics) is allowed
 int output_period = 10; // in general, every "output_period-th" timestep, data will be recorded for plotting
@@ -120,8 +130,8 @@ int main(int argc, char** argv)
 			w_ii = read;
 		else if (strstr(argv[i], "-z_max=") == argv[i] || strstr(argv[i], "-zmax=") == argv[i])
 			z_max = read;
-		else if (strstr(argv[i], "-nm=") == argv[i])
-			theta_pro_C = 1. / (read + 0.001); // compute threshold theta_pro_C (in units of h_0) from neuromodulator concentration
+		else if (strstr(argv[i], "-nm_amp=") == argv[i] || strstr(argv[i], "-nm=") == argv[i])
+			nm_amp = read;
 		else if (strstr(argv[i], "-theta_pro_C=") == argv[i] || strstr(argv[i], "-theta_pro=") == argv[i])
 			theta_pro_C = read;
 		else if (strstr(argv[i], "-theta_pro_P=") == argv[i])
@@ -164,6 +174,12 @@ int main(int argc, char** argv)
 			Ca_post = read;
 		else if (strstr(argv[i], "-r=") == argv[i])
 			recall_fraction = read;
+		else if (strstr(argv[i], "-nm_paradigm=") == argv[i])
+			nm_paradigm_index = (int)read;
+		else if (strstr(argv[i], "-nm_begin=") == argv[i])
+			nm_begin = read;
+		else if (strstr(argv[i], "-nm_end=") == argv[i])
+			nm_end = read;
 
 		// specifying parameter file (all parameters passed previously will be overwritten)
 		//else if (strstr(argv[i], "-F") == argv[i] && (i+1) < argc && strstr(argv[i+1], "-") != argv[i])
@@ -187,7 +203,7 @@ int main(int argc, char** argv)
 	cout << "TWO_NEURONS_ONE_SYNAPSE*" << endl;
 	#endif
 	
-	#if defined TWO_NEURONS_ONE_SYNAPSE_MIN
+	#if defined TWO_NEURONS_ONE_SYNAPSE_MIN || defined TWO_NEURONS_ONE_SYNAPSE_CONV
 	output_period = 1;
 	#else
 	output_period = 100;
@@ -196,12 +212,13 @@ int main(int argc, char** argv)
 	
 	Nl_exc = 2;
 	Nl_inh = 0;
+	#if !defined TWO_NEURONS_ONE_SYNAPSE_CONV
 	I_0 = 0.;
+	#endif
 	sigma_WN = 0.;
 	N_stim = 1;
 #elif defined SEEK_I_0
 	purpose = "seek";
-	purpose_set = true;
 	output_period = 1000;
 #endif
 	// Create working directory and files
@@ -218,12 +235,17 @@ int main(int argc, char** argv)
 	extractFileFromBinary("code.zip", data, data_end); // extracts code.zip out of the binary
 	extractFileFromBinary("plotFunctions.py", data2, data2_end); // extracts plotFunctions.py out of the binary
 	writeRunFile(string("run"), argc, argv); // writes the command line that was used to run this program in a file
-
+	if (nm_end < -EPSILON) 
+	{
+		nm_end = t_max;
+		cout << "End time of neuromodulation set to end time of the simulation." << endl;
+	}
+	
 	// Create NetworkSimulation object and set computational parameters
 	NetworkSimulation sn = NetworkSimulation(Nl_exc, Nl_inh, dt, t_max, p_c, sigma_plasticity, z_max, t_wfr, ff_enabled);
 
 	// Seeking I_0
-#ifdef SEEK_I_0 //----------------------------------------------------------------------
+#ifdef SEEK_I_0 //-----------------------------------------------------------------------
 
 	ofstream seekICData(dateStr("_I_0_nu.txt"));
 	ofstream seekICResult(dateStr("_I_0.txt"));
@@ -235,21 +257,19 @@ int main(int argc, char** argv)
 
 	sn.setSeekICVar(&seekICVar); // pass address of seekICVar to NetworkSimulation object
 
-#endif //-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
-	
-	sn.setParams(I_0, sigma_WN, tau_syn, w_ee, w_ei, w_ie, w_ii, oscill_inp_mean, oscill_inp_amp,
-	             prot_learn, prot_recall, output_period, N_stim, theta_p, theta_d, Ca_pre, Ca_post, theta_pro_P, theta_pro_C, theta_pro_D, recall_fraction);
+	while(true) // is cancelled by "break" once target firing rate has been found
+	{
+#endif //-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
 
-#ifndef SEEK_I_0
+	sn.setParams(I_0, sigma_WN, tau_syn, w_ee, w_ei, w_ie, w_ii, oscill_inp_mean, oscill_inp_amp,
+                 prot_learn, prot_recall, N_stim, recall_fraction, theta_p, theta_d, Ca_pre, Ca_post, 
+	             theta_pro_P, theta_pro_C, theta_pro_D, nm_paradigm_index, nm_amp, nm_begin, nm_end, output_period); // set main parameters for the simulation
+
+#ifndef SEEK_I_0 //----------------------------------------------------------------------
 
 	sn.simulate(path, true, purpose); // run the actual simulation
 
-#else //------------------------------------------------------------------------------------
-
-	while(true) // is cancelled by "break" once target firing rate has been found
-	{
-		sn.setParams(I_0, sigma_WN, tau_syn, w_ee, w_ei, w_ie, w_ii, oscill_inp_mean, oscill_inp_amp,
-	             prot_learn, prot_recall, output_period, N_stim, theta_p, theta_d, Ca_pre, Ca_post, theta_pro_P, theta_pro_C, theta_pro_D, recall_fraction); // TODO: remove syntactic redundance
+#else //-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
 
 		sn.simulate(path, (I_0 == I_0_start) ? true : false, purpose); // run the actual simulation
 

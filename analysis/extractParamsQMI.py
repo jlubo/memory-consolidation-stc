@@ -22,14 +22,16 @@ Nl_exc = 40 # the number of excitatory neurons in one line of a quadratic grid
 ref_time = "11.0" # readout time for the reference firing rate or weight distribution (typically during learning)
 
 # extractRecursion
-# Recursively looks for data directories and extracts parameters and the Q and MI measures from them
-# For 8h-recall simulation data that itself does not contain the data from during learing, the related data
-# from during learning has to be available, with the same description and an earlier timestamp!
+# Recursively looks for data directories and extracts parameters and the Q and MI measures from them.
+# For data of 8h-recall simulations that itself does not contain the learning process, the related data
+# from during learning has to be available under the timestamp immediately previous to the timestamp 
+# of the 8h-recall simulation!
 # directory: the directory to look in
 # fout: file handle to output file
 def extractRecursion(directory, fout):
 
 	data_found = False # specifies if any data has been found
+	prev_path_tail = None
 	rawpaths = Path(directory)
 	MI = []
 
@@ -51,18 +53,17 @@ def extractRecursion(directory, fout):
 				data_found = True
 				print("========================")
 
-				if "_TRIPLET" in path_tail: # presumed simulation that contains the learning process and 10s-recall
-					[timestamp, prev_desc] = path_tail.split("_TRIPLET", 1)
+				if "_TRIPLET" in path_tail: # presume simulation that contains the learning process and 10s-recall
+					timestamp = path_tail.split("_TRIPLET", 1)[0]
 					prev_full_path = full_path # to copy file containing the reference data to another data folder
-					prev_path = path_tail
-					prev_timestamp = timestamp
-					prev_desc = prev_desc.split(" ", 1)[1] # extract description, to later link with a data folder for 8h-recall
-				else: # presumed simulation that contains 8h-recall
-					[timestamp, desc] = path_tail.split(" ", 1) # extract timestamp and description, to link with a previous data folder for learning
-					if desc == prev_desc: # temporarily copy reference data file if the state of this simulation has been loaded from previous one
+					prev_path_tail = path_tail
+				else: # presume simulation that contains 8h-recall, following a previous simulation containing the learning process
+					timestamp = path_tail.split(" ", 1)[0]
+					if prev_path_tail is not None: # temporarily copy reference data file if the state of this simulation has been loaded from previous one
+						src_file = prev_full_path + os.sep + "network_plots" + os.sep + prev_path_tail.split("_TRIPLET", 1)[0] + "_net_" + ref_time + ".txt"
 						dest_file = full_path + os.sep + "network_plots" + os.sep + timestamp + "_net_" + ref_time + ".txt"
-						copyfile(prev_full_path + os.sep + "network_plots" + os.sep + prev_timestamp + "_net_" + ref_time + ".txt", \
-						         dest_file)
+						copyfile(src_file, dest_file)
+						print("Copying learning data from '" + prev_path_tail + "'...")
 					else:
 						print("No previous data folder found, errors may occur...")
 
@@ -88,7 +89,7 @@ def extractRecursion(directory, fout):
 
 				# compute the Q value
 				try:
-					Q, Q_err, v_as, v_as_err, v_ans, v_ans_err, v_ctrl, v_ctrl_err = calculateQ(full_path + os.sep + "network_plots" + os.sep, timestamp, core, Nl_exc, readout_time, params[16])
+					Q, Q_err, v_as, v_as_err, v_ans, v_ans_err, v_ctrl, v_ctrl_err = calculateMeanRatesAndQ(full_path + os.sep + "network_plots" + os.sep, timestamp, core, Nl_exc, readout_time, params[16])
 				except OSError as e:
 					print(traceback.format_exc())
 				except ValueError as e:
@@ -102,9 +103,9 @@ def extractRecursion(directory, fout):
 				# compute the MI and selfMI value
 				try:
 					if "STIP" in params[8]: # stipulated CA
-						MI, selfMI = calculateMIa(full_path + os.sep + "network_plots" + os.sep, timestamp, Nl_exc, readout_time, "", core)
+						MI, selfMI = calculateMIaFromFile(full_path + os.sep + "network_plots" + os.sep, timestamp, Nl_exc, readout_time, "", core)
 					else: # learned CA
-						MI, selfMI = calculateMIa(full_path + os.sep + "network_plots" + os.sep, timestamp, Nl_exc, readout_time, ref_time)
+						MI, selfMI = calculateMIaFromFile(full_path + os.sep + "network_plots" + os.sep, timestamp, Nl_exc, readout_time, ref_time)
 				except OSError as e:
 					print(traceback.format_exc())
 				except ValueError as e:

@@ -118,25 +118,29 @@ string dtos(double num, int n = 0, bool dont_allow_zero = false)
 
 }
 
-
 /*** dateStr ***
- * Returns a string containing a time stamp of 18 char's, *
+ * Adds a string containing a time stamp of 18 char's, *
  * optionally added to the start of another string *
- * - str [optional]: a character array to which the time stamp will be added  *
+ * - str [optional]: a string to which the time stamp will be added  *
  * - fixdate [optional]: true if this time shall be fixed, false by default *
  * - return: the date string plus the specified string, if stated */
-string dateStr(string str = "", bool fixdate = false) 
+static string datestr = "";
+string dateStr(string str = "", bool fixdate = false)
 {
 	const int len = 19; // time stamp length: 18 characters (plus terminating \0)
-	static string datestr("");
 
 	if (fixdate == true) // if this date is to be fixed, update date
 	{
 		char buf[len];
-		time_t t = time(NULL);
-		struct tm *now  = localtime(&t);
-		strftime(buf, len, "%y-%m-%d_%H-%M-%S", now); 
-		datestr.assign(buf);
+		string new_datestr;
+		do
+		{
+			time_t t = time(NULL);
+			struct tm *now  = localtime(&t);
+			strftime(buf, len, "%y-%m-%d_%H-%M-%S", now);
+			new_datestr.assign(buf);
+		} while (new_datestr == datestr);
+		datestr = new_datestr;
 	}
 
 	return datestr + str;
@@ -427,9 +431,9 @@ void showChDirErrMessage()
  * Gets a random generator seed from the computer clock, guarantees not to return *
  * the same seed in two subsequent calls (very important!) *
  * - return: clock counts since epoch of the clock */
-static unsigned int getClockSeed()
+static unsigned int last_seed = 0;
+unsigned int getClockSeed()
 {
-	static int last_seed;
 	int seed;
 
 	while ( (seed = chrono::system_clock::now().time_since_epoch().count()) == last_seed ) {}
@@ -437,6 +441,7 @@ static unsigned int getClockSeed()
 
 	return seed;
 }
+
 
 /*** step ***
  * Heaviside step function, returns 1 for x >= 0 and 0 else *

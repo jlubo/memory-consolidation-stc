@@ -1,2 +1,9 @@
 *.out
 *pycache*/
+*_TRIPLET*/
+*_F*/
+*_MINCONV*/
+*_MIN2N1S*/
+plasticity_type.txt
+*Const.*/
+simulation-bin/run_binary_misc/connections.txt

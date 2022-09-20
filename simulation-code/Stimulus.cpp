@@ -271,6 +271,40 @@ class Stimulus
 			
 			
 		}
+			
+		/*** isShapeDefined ***
+		 * Tests whether or not a deterministic shape of the Interval object is defined *
+		 * - return: true if a shape is defined, false if not */
+		inline bool isShapeDefined() const
+		{
+			if (n > 0)
+				return true;
+			else
+				return false;
+		}
+
+		/*** readStimulusShape ***
+		 * Returns the value of the stimulus shape (the stimulus period) at a certain time bin *
+		 * - i: time bin in stimulus period
+		 * - return: stimulus shape at given time */
+		double readStimulusShape(int i) const
+		{
+			if (isShapeDefined())
+				return shape[i % n];
+			else
+				return 0.;
+		}
+
+		/*** freeShape ***
+		 * Frees the memory reserved for the shape array, in case there is reserved memory */
+		void freeShape()
+		{
+			if (isShapeDefined())
+			{
+				delete[] shape;
+				n = 0;
+			}
+		}
 
 		/*** get ***
 		 * Returns the current magnitude of the stimulation in the interval that may consist of a deterministic *
@@ -281,10 +315,7 @@ class Stimulus
 		{
 			double ret;
 
-			if (n > 0)
-				ret = shape[(t_step-start) % n]; // deterministic contribution
-			else
-				ret = 0.;
+			ret = readStimulusShape(t_step-start); // deterministic contribution
 
 #if STIM_TYPE == POISSON_STIMULATION
 
@@ -305,41 +336,6 @@ class Stimulus
 
 #endif
 			return ret;
-		}
-
-		/*** readStimulusShape ***
-		 * Returns the value of the stimulus shape (the stimulus period) at a certain time bin *
-		 * - i: time bin in stimulus period
-		 * - return: stimulus shape at given time */
-		double readStimulusShape(int i) const
-		{
-			if (n > 0)
-				return shape[i % n];
-			else
-				return 0.;
-		}
-
-			
-		/*** isShapeDefined ***
-		 * Tests whether or not a deterministic shape of the Interval object is defined *
-		 * - return: false if a shape is defined, true if not */
-		bool isShapeDefined() const
-		{
-			if (n > 0)
-				return false;
-			else
-				return true;
-		}
-
-		/*** freeShape ***
-		 * Frees the memory reserved for the shape array, in case there is reserved memory */
-		void freeShape()
-		{
-			if (n > 0)
-			{
-				delete[] shape;
-				n = 0;
-			}
 		}
 
 		/*** copy ***
@@ -699,24 +695,35 @@ class Stimulus
 		if (!f.is_open())
 			throw runtime_error(string("File ") + string(txt) + string(" could not be opened."));
 
-		cout << "stimulation_start = " << stimulation_start << ", stimulation_end = " << stimulation_end << endl;
-		cout << "dt = " << dt << endl;
-
-
+		cout << "Plotting Stimulus object labeled '" << name << "'" << endl;
+		cout << "\tstimulation_start = " << stimulation_start*dt << " s, stimulation_end = " << stimulation_end*dt << " s" << endl;
+		cout << "\tdt = " << dt << " s" << endl;
 
 		// write data file
+		f << fixed << (stimulation_start-100)*dt << "\t\t\t" // some timesteps before stimulation
+		  << 0. << "\t\t\t" << false << "\t\t\t" << NAN << "\t\t\t" << NAN << "\t\t\t"
+#if STIM_PREPROC == ON
+		  << 0
+#endif
+		  << endl 
+		  << fixed << (stimulation_start-1)*dt << "\t\t\t"
+		  << 0. << "\t\t\t" << false << "\t\t\t" << NAN << "\t\t\t" << NAN << "\t\t\t"
+#if STIM_PREPROC == ON
+		  << 0
+#endif
+		  << endl;
 		for (int t_step=stimulation_start; t_step<stimulation_end; t_step++) // loop over timesteps
 		{
-			double shape = std::numeric_limits<double>::quiet_NaN();
+			double shape = 0.;
 			bool poisson = false;
-			double s_mean = std::numeric_limits<double>::quiet_NaN();
-			double s_sigma = std::numeric_limits<double>::quiet_NaN();
+			double s_mean = NAN;
+			double s_sigma = NAN;
 
 			for (int i=0; i<intervals.size(); i++) // loop over stimulus intervals
 			{
 				if (t_step >= intervals[i].start && t_step < intervals[i].end)
 				{
-					if (!intervals[i].isShapeDefined())
+					if (intervals[i].isShapeDefined())
 						shape = intervals[i].readStimulusShape(t_step-intervals[i].start);
 #if STIM_TYPE == POISSON_STIMULATION
 					poisson = (intervals[i].getPoissonNeuronNumber() > 0);
@@ -730,13 +737,25 @@ class Stimulus
 				}
 			}
 
-			f << fixed << double(t_step)*dt << "\t\t\t" 
+			f << fixed << t_step*dt << "\t\t\t" 
 			  << shape << "\t\t\t" << poisson << "\t\t\t" << s_mean << "\t\t\t" << s_sigma << "\t\t\t"
 #if STIM_PREPROC == ON
 			  << stim_flags[t_step-stimulation_start]
 #endif
 			  << endl;
 		}
+		f << fixed << (stimulation_end+1)*dt << "\t\t\t" // some timesteps after stimulation
+		  << 0. << "\t\t\t" << false << "\t\t\t" << NAN << "\t\t\t" << NAN << "\t\t\t"
+#if STIM_PREPROC == ON
+		  << 0
+#endif
+		  << endl
+		  << fixed << (stimulation_end+100)*dt << "\t\t\t"
+		  << 0. << "\t\t\t" << false << "\t\t\t" << NAN << "\t\t\t" << NAN << "\t\t\t"
+#if STIM_PREPROC == ON
+		  << 0
+#endif
+		  << endl;
 		f.close();
 
 		// open script file
@@ -745,10 +764,10 @@ class Stimulus
 			throw runtime_error(string("File ") + string(gpl) + string(" could not be opened."));
 
 		// write script file
-		f << "set term pdf enhanced font \"FrontPage, 20\" color solid lw 2.5" << endl;
+		f << "set term pdf enhanced font \"Sans, 20\" color solid lw 2.5" << endl;
 		f << "set output '" << pdf << "'" << endl;
-		f << "set xlabel \"t / s\"" << endl;
-		f << "set ylabel \"a.u.\"" << endl;
+		f << "set xlabel \"Time (s)\"" << endl;
+		f << "set ylabel \"Stimulation (a.u.)\"" << endl;
 		f << "set y2range [0:2]" << endl;
 		f << "set key horizontal outside top left" << endl;
 		f << "unset y2tics" << endl;

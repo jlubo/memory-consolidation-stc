@@ -13,19 +13,19 @@ from subprocess import call
 from shutil import copyfile
 import os
 import traceback
-from utilityFunctions import readParams
+from utilityFunctions import readParams, hasTimestamp
 
 np.set_printoptions(threshold=1e10, linewidth=200) # extend console print range for numpy arrays
-Nl = 50 # the number of excitatory neurons in one line of a quadratic grid
-Ne = 2500
-Ni = 625
-N = 3125 # the number of neurons in the whole network
+Ne = 1600 # the number of excitatory neurons 
+Ni = 400 # the number of inhibitory neurons 
+N = Ne + Ni # the number of neurons in the whole network
 
 # extractRecursion
 # Recursively looks for data directories and extracts parameters and the Q measure from them
 # directory: the directory to look in
 # fout: file handle to output file
-def extractRecursion(directory, fout):
+# col_sep [optional]: characters separating columns in the data file
+def extractRecursion(directory, fout, col_sep = '\t\t'):
 
 	data_found = False # specifies if any data has been found
 	rawpaths = Path(directory)
@@ -44,7 +44,7 @@ def extractRecursion(directory, fout):
 			full_path = str(x)
 			path_tail = os.path.split(full_path)[1] # extract the folder name
 
-			if hasTimestamp(path):
+			if hasTimestamp(path_tail):
 
 				data_found = True
 
@@ -58,13 +58,15 @@ def extractRecursion(directory, fout):
 				print("------------------------")
 				params = readParams(full_path + os.sep + timestamp + "_PARAMS.txt")
 
-				core = np.arange(params[12]) # define the cell assembly
+				# define the cell assembly
+				Na = params[12]
+				core = np.arange(Na) 
 
 				# write the parameter values to the output file
-				fout.write(timestamp + "\t\t")
+				fout.write(timestamp + col_sep)
 
 				for i in range(len(params)):
-					fout.write(str(params[i]) + "\t\t")
+					fout.write(str(params[i]) + col_sep)
 
 				# read out *_spike_raster.txt:
 				frpath = full_path + os.sep + timestamp + "_spike_raster.txt"
@@ -83,7 +85,7 @@ def extractRecursion(directory, fout):
 				tot_spikes = np.zeros(len(tws), dtype=int) # number of spikes in the whole network
 
 				for line in f:
-					segs = line.split('\t\t')
+					segs = line.split(col_sep)
 
 					if (segs[0] != ""):
 						t = float(segs[0])
@@ -108,14 +110,14 @@ def extractRecursion(directory, fout):
 				f.close()
 
 				for j in range(len(tws)):
-					#fout.write(str(CA_spikes[j] / Na / 0.5) + "\t\t" + str(c_spikes[j] / (Ne-Na) / 0.5) + "\t\t" + str(inh_spikes[j] / Ni / 0.5) + \
-					#	   "\t\t" + str(tot_spikes[j] / N / 0.5) + "\n")
-					fout.write(str(CA_spikes[j] / Na / 0.5) + "\t\t" + str(c_spikes[j] / (Ne-Na) / 0.5) + "\t\t")
+					#fout.write(str(CA_spikes[j] / Na / 0.5) + col_sep + str(c_spikes[j] / (Ne-Na) / 0.5) + col_sep + str(inh_spikes[j] / Ni / 0.5) + \
+					#	   col_sep + str(tot_spikes[j] / N / 0.5) + "\n")
+					fout.write(str(CA_spikes[j] / Na / 0.5) + col_sep + str(c_spikes[j] / (Ne-Na) / 0.5) + col_sep)
 
 				fout.write("\n")
 
 			else:
-				ret = extractRecursion(directory + os.sep + path, fout)
+				ret = extractRecursion(directory + os.sep + path_tail, fout)
 				data_found = data_found or ret
 
 	return data_found
