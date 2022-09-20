@@ -4,7 +4,7 @@
 ## Outline
 
 This package serves to simulate recurrent spiking neural networks with calcium-based synaptic plasticity and synaptic tagging and capture.
-The generic C++ code and build scripts for specific simulations are located in the directory __simulation-code/__. Building will create binaries in the directory __simulation-bin/__, which contains scripts to run the specific simulations. Building has been tested with g++ 10.3.0 and boost 1.77.0 on Linux kernel 5.13.0. Besides that, pre-compiled binaries are available as part of the latest release.
+The generic C++ code and build scripts for specific simulations are located in the directory __simulation-code/__. Building will create binaries in the directory __simulation-bin/__, which contains scripts to run the specific simulations. Building has been tested with g++ 10.3.0 and boost 1.77.0 on Linux kernel 5.13.0.
 
 The directory __analysis/__ contains Python scripts serving to analyze the data produced by the simulations.
 
