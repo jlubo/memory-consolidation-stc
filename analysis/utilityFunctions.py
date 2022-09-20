@@ -2,13 +2,14 @@
 ### Utility function for different purposes regarding the reading of simulation data ###
 ########################################################################################
 
-### Copyright 2017-2022 Jannik Luboeinski
+### Copyright 2017-2022 Jannik Luboeinski, Andrew Lehr
 ### licensed under Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 ### Contact: jannik.lubo[at]gmx.de
 
 import numpy as np
 import os
 from pathlib import Path
+from collections import defaultdict
 epsilon = 1e-11 # very small number that is counted as zero
 
 ######################################
@@ -245,3 +246,17 @@ def mergeRawData(rootpath, substr, output_file, remove_raw=False, sep_str='\t\t'
 	for i in range(num_rows):
 		fout.write(all_data[i] + '\n')
 	fout.close()
+
+######################################
+# event_data_obj
+# This is a helper class for the stc_data_obj 
+# used to store all relevant data associated with stimulus events
+class event_data_obj:
+    def __init__(self):
+        self.ts = defaultdict(dict)
+        self.ids = defaultdict(dict)
+        self.files = defaultdict(dict)
+        self.path = defaultdict(dict)
+        self.n_files = None
+        self.which = None
+        self.time_required = None
