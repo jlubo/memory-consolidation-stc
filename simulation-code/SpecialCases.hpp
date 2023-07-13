@@ -107,7 +107,10 @@
 //#define PLASTICITY_OVER_FREQ
 #ifdef PLASTICITY_OVER_FREQ
 	#define TWO_NEURONS_ONE_SYNAPSE // sets general flag of single synapse simulations
-	// here, NEURON_MODEL and SYNAPSE_MODEL options are rather irrelevant because pre- and postsynaptic neuron are modeled as Poisson neurons
+	#undef STIM_TYPE
+	#define STIM_TYPE POISSON_STIMULATION // uses Poisson-like spikes
+	// here, NEURON_MODEL and SYNAPSE_MODEL options are rather irrelevant because 
+	//  presynaptic _and_ postsynaptic neuron are modeled as Poisson neurons
 	#warning "Special case: PLASTICITY_OVER_FREQ"
 #endif
 
@@ -200,11 +203,11 @@
 	#warning "Special case: TWO_NEURONS_ONE_SYNAPSE_LI2016"
 #endif
 
-// Special case of minimal example for early-phase plasticity, induced by a few pre-defined spikes
+// Special case of simple example for early-phase plasticity, induced by a few pre-defined spikes
 // --> neuron 0 is stimulated via neuron 1, which is depolarized following the stimulus protocol
 // --> changes some global variables in int main()
-//#define TWO_NEURONS_ONE_SYNAPSE_MIN
-#ifdef TWO_NEURONS_ONE_SYNAPSE_MIN
+//#define TWO_NEURONS_ONE_SYNAPSE_BASIC_EARLY
+#ifdef TWO_NEURONS_ONE_SYNAPSE_BASIC_EARLY
 	#define TWO_NEURONS_ONE_SYNAPSE // sets general flag of single synapse simulations
 	#undef STIM_TYPE
 	#define STIM_TYPE DET_STIMULATION // uses Poisson-like spikes
@@ -240,7 +243,50 @@
 	#define OSCILL_INP OFF
 	#undef SAVE_NET_STATE
 	#define SAVE_NET_STATE OFF // switches off saving the network state
-	#warning "Special case: TWO_NEURONS_ONE_SYNAPSE_MIN"
+	#warning "Special case: TWO_NEURONS_ONE_SYNAPSE_BASIC_EARLY"
+#endif
+
+// Special case of simple example for late-phase plasticity, induced by strong stimulation
+// --> neuron 0 is stimulated via neuron 1, which is depolarized following the stimulus protocol
+// --> changes some global variables in int main()
+//#define TWO_NEURONS_ONE_SYNAPSE_BASIC_LATE
+#ifdef TWO_NEURONS_ONE_SYNAPSE_BASIC_LATE
+	#define TWO_NEURONS_ONE_SYNAPSE // sets general flag of single synapse simulations
+	#undef STIM_TYPE
+	#define STIM_TYPE OU_STIMULATION
+	#undef NEURON_MODEL
+	#define NEURON_MODEL LIF // uses Leaky Integrate-and-Fire Model
+	#undef SYNAPSE_MODEL
+	#define SYNAPSE_MODEL MONOEXP // uses monoexponential synapses
+	#undef PLASTICITY
+	#define PLASTICITY CALCIUM_AND_STC // switches on plasticity
+	#undef RAND_INIT_WEIGHTS
+	#define RAND_INIT_WEIGHTS OFF
+	#undef PROTEIN_POOLS
+	#define PROTEIN_POOLS POOLS_C // uses protein pool setting C
+	#undef STIPULATE_CA
+	#define STIPULATE_CA OFF // switches off stipulation of a cell assembly
+	#undef COND_BASED_SYN
+	#define COND_BASED_SYN OFF
+	#undef SYN_SCALING
+	#define SYN_SCALING OFF
+	#undef DENDR_SPIKES
+	#define DENDR_SPIKES OFF
+	#undef LTP_FR_THRESHOLD
+	#define LTP_FR_THRESHOLD OFF
+	#undef LTD_FR_THRESHOLD
+	#define LTD_FR_THRESHOLD OFF
+	#undef FF_AFTER_LEARN
+	#define FF_AFTER_LEARN ON
+	#undef FF_AFTER_STIM
+	#define FF_AFTER_STIM OFF
+	#undef FF_AFTER_NETLOAD
+	#define FF_AFTER_NETLOAD OFF
+	#undef OSCILL_INP
+	#define OSCILL_INP OFF
+	#undef SAVE_NET_STATE
+	#define SAVE_NET_STATE OFF // switches off saving the network state
+	#warning "Special case: TWO_NEURONS_ONE_SYNAPSE_BASIC_LATE"
 #endif
 
 // Special case of neuron that is first stimulated with a constant current such that its membrane converges to a depolarized state, and then 

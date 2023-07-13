@@ -50,10 +50,10 @@ def extractRecursion(sup_directory, fout, col_sep = '\t\t'):
 
 			data_found = True
 			if "_spikes.txt" in path_tail:
-				arbor = True
+				other_simulator = True
 				col_sep = ' '
 			else:
-				arbor = False
+				other_simulator = False
 				col_sep = '\t\t'
 
 			[timestamp, _] = path_tail.split("_spike", 1)
@@ -63,18 +63,18 @@ def extractRecursion(sup_directory, fout, col_sep = '\t\t'):
 			print("------------------------")
 			
 			# setting the parameters
-			if arbor:
+			if other_simulator:
 				# load parameter configuration from JSON file
 				config = json.load(open(os.path.join(sup_directory, timestamp + "_config.json"), "r"))
 				Na = config['populations']['N_CA']
 				p_r = config['populations']['p_r']
 
 				# define the readout time for learning
-				readout_time_0 = float(config['simulation']['learn_protocol']['time']) + 1.0
+				readout_time_0 = float(config['simulation']['learn_protocol']['time_start']) + 1.0
 				print("readout_time_0 =",  readout_time_0)
 
 				# define the readout time for recall
-				readout_time_1 = float(config['simulation']['recall_protocol']['time']) + 0.1
+				readout_time_1 = float(config['simulation']['recall_protocol']['time_start']) + 0.1
 				print("readout_time_1 =",  readout_time_1)
 				
 				# get values of important parameters
@@ -143,7 +143,7 @@ def extractRecursion(sup_directory, fout, col_sep = '\t\t'):
 				segs = line.split(col_sep)
 
 				if (segs[0] != ""):
-					if arbor:
+					if other_simulator:
 						t = float(segs[0].lstrip("\x00")) / 1000 # convert ms to s
 					else:
 						t = float(segs[0].lstrip("\x00"))

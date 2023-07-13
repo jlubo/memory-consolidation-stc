@@ -1418,12 +1418,12 @@ double getEarlySynapticStrength(Synapse s) const
 }
 
 /*** getLateSynapticStrength ***
- * Returns the late-phase synaptic strength at a given synapse *
+ * Returns the late-phase synaptic strength (multiplied by h_0) at a given synapse *
  * - Synapse s: structure specifying pre- and postsynaptic neuron *
  * - return: the late-phase synaptic strength */
 double getLateSynapticStrength(Synapse s) const
 {
-	return z[s.presyn_neuron][s.postsyn_neuron];
+	return z[s.presyn_neuron][s.postsyn_neuron]*h_0;
 }
 
 /*** getMeanEarlySynapticStrength ***
@@ -1455,7 +1455,7 @@ double getMeanEarlySynapticStrength(int n, int off=0) const
 }
 
 /*** getMeanLateSynapticStrength ***
- * Returns the mean late-phase synaptic strength (averaged over all synapses within the given set of neurons) *
+ * Returns the mean late-phase synaptic strength (multiplied by h_0; averaged over all synapses within the given set of neurons) *
  * - int n: the number of neurons that shall be considered (e.g., n=Nl_exc^2 for all excitatory neurons, or n=N for all neurons) *
  * - int off [optional]: the offset that defines at which neuron number the considered range begins *
  * - return: the mean late-phase synaptic strength */
@@ -1479,7 +1479,7 @@ double getMeanLateSynapticStrength(int n, int off=0) const
 
 	z_mean /= c_number;
 
-	return z_mean;
+	return z_mean*h_0;
 }
 
 /*** getSDEarlySynapticStrength ***
@@ -1512,7 +1512,7 @@ double getSDEarlySynapticStrength(double mean, int n, int off=0) const
 }
 
 /*** getSDLateSynapticStrength ***
- * Returns the standard deviation of the late-phase synaptic strength (over all synapses within the given set of neurons) *
+ * Returns the standard deviation of the late-phase synaptic strength (multiplied by h_0; over all synapses within the given set of neurons) *
  * - double mean: the mean of the late-phase syn. strength within the given set
  * - int n: the number of neurons that shall be considered (e.g., n=Nl_exc^2 for all excitatory neurons, or n=N for all neurons) *
  * - int off [optional]: the offset that defines at which neuron number the considered range begins *
@@ -1537,7 +1537,7 @@ double getSDLateSynapticStrength(double mean, int n, int off=0) const
 
 	z_sd = sqrt(z_sd / c_number);
 
-	return z_sd;
+	return z_sd*h_0;
 }
 
 /*** getMeanCProteinAmount ***
@@ -1933,7 +1933,7 @@ void resetPlasticity(bool early_phase, bool late_phase, bool calcium, bool prote
  * Resets the network and all neurons to initial state (but maintain connectivity) */
 void reset()
 {
-#if defined TWO_NEURONS_ONE_SYNAPSE_MIN || defined TWO_NEURONS_ONE_SYNAPSE_CONV
+#ifdef TWO_NEURONS_ONE_SYNAPSE_CONV
 	rg.seed(0.); // deterministic computation
 #else
 	rg.seed(getClockSeed()); // set new random seed by clock's epoch
@@ -2067,7 +2067,7 @@ void setNeuromodulationParameters(int _nm_paradigm_index, double _nm_amp = NAN, 
  * - double _z_max: the upper z bound */
 Network(const double _dt, const int _Nl_exc, const int _Nl_inh, double _p_c, double _sigma_plasticity, double _z_max) :
         dt(_dt), u_dist(0.0,1.0), norm_dist(0.0,1.0), Nl_exc(_Nl_exc), Nl_inh(_Nl_inh), z_max(_z_max), nm_protocol(_dt),
-#if defined TWO_NEURONS_ONE_SYNAPSE_MIN || defined TWO_NEURONS_ONE_SYNAPSE_CONV
+#ifdef TWO_NEURONS_ONE_SYNAPSE_CONV
         rg(0.)
 #else
         rg(getClockSeed())

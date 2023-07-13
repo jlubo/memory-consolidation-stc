@@ -8,21 +8,11 @@ The generic C++ code and build scripts for specific simulations are located in t
 
 The directory __analysis/__ contains Python scripts serving to analyze the data produced by the simulations.
 
-The package that is provided here has been developed and used for the following publications:
+The directory __notebooks/__ contains Jupyter notebooks serving to reproduce data with a more graphical user interface.
 
-1. Luboeinski, J., Tetzlaff, C. Memory consolidation and improvement by synaptic tagging and capture in recurrent neural networks. Commun. Biol. 4, 275 (2021). https://doi.org/10.1038/s42003-021-01778-y ---
-   _original model underlying the simulation code, investigation of synaptic consolidation and improvement of a single memory representation_
-
-2. Luboeinski, J., Tetzlaff, C. Organization and priming of long-term memory representations with two-phase plasticity. Cogn. Comput. (2022). https://doi.org/10.1007/s12559-022-10021-7 ---
-   _extension of the model, investigation of functional consequences of interactions between multiple memory representations in different paradigms_
-
-3. Lehr, A.B., Luboeinski, J., Tetzlaff, C. Neuromodulator-dependent synaptic tagging and capture retroactively controls neural coding in spiking neural networks. Sci. Rep., under review (2022). ---
-   _extension of the model, investigation of the effects of neuromodulator-dependent protein synthesis on memory consolidation_
-
-4. Luboeinski, J. The Role of Synaptic Tagging and Capture for Memory Dynamics in Spiking Neural Networks \[Dissertation\]. University of Göttingen (2021). https://doi.org/10.53846/goediss-463 ---
-   _extension of the model, further investigation of multiple memory representations with attractor dynamics as well as characterization of plasticity regimes depending on pre- and post-synaptic firing rate_
-
-Please cite accordingly if you use parts of the software package or the model for your research (BibTeX code is found [here](BIBTEX.md)). Note that the simulation code provided here contains some features that have not been used in any publication yet. Please feel free to contact us for any questions.
+The package that is provided here has been developed and used for a number of publications (see the list [here](PUBLICATIONS.md)).
+Please cite accordingly if you use parts of the code or the model for your research (BibTeX code can be found [here](BIBTEX.md)). 
+Also note that the simulation code provided here contains some features that have not been used in any publication yet. Please feel free to [contact us](mailto:mail@jlubo.net) for any questions or comments!
 
 
 ## Simulation code
@@ -73,19 +63,20 @@ The simulation code comes with shell scripts (in addition to the included Makefi
 	* __compile__ - compiles the code as it is (without setting any specific preprocessor definition for a particular simulation)
 	* __compile_2N1S_conv__ - compiles the code for testing the convergence of the membrane potential
 	* __compile_2N1S_Li2016__ - compiles the code for simulating the effect of basic plasticity induction protocols at a single synapse, with the same model as in Li, Kulvicius, Tetzlaff, PLOS ONE, 2016
-	* __compile_2N1S_minimal__ - compiles the code for a minimal example of the induction of early-phase plasticity by a few pre-defined spikes
+	* __compile_2N1S_basic_early__ - compiles the code for a simple example of the induction of early-phase plasticity by a few pre-defined spikes
 	* __compile_activation_attractors__ - compiles the code for network simulations to investigate the spontaneous activation of assemblies in the absence of plasticity and in the presence of background noise or in the presence of 1 Hz/5 Hz oscillatory input to the inhibitory population
-	* __compile_CA150__ - compiles the code for network simulations of learning, consolidation, and recall of a memory representation of 150 neurons
+	* __compile_CA200__ - compiles the code for network simulations of learning, consolidation, and recall of a memory representation of 200 neurons
 	* __compile_max_activity__ - compiles the code for a network that has one neuron spiking at maximal activity
 	* __compile_onespike__ - compiles the code for a network that is stimulated with a single pulse to evoke one spike in one neuron
-	* __compile_organization_attractors__ - compiles the code for network simulations of learning and consolidating three attractor memory representations in different organizational paradigms
-	* __compile_PFreq__ - compiles the code for network simulations to characterize plasticity regimes depending on pre- and post-synaptic firing rate
+	* __compile_organization_attractors__ - compiles the code for a network that learns and consolidates three attractor memory representations in different organizational paradigms
+	* __compile_PFreq__ - compiles the code for simulations serving to characterize plasticity regimes depending on pre- and post-synaptic firing rate
 
-The simulation is run by executing the binary file with or without command line options (as defined in __NetworkMain.cpp__, e.g., via one of the following shell scripts).
-Please note that in addition there are preprocessor options that can be set before compiling (e.g., in __NetworkSimulation.cpp__) but cannot be changed during
+### Running a simulation
+To run a simulation, execute the binary file with or without command line options (as defined in __NetworkMain.cpp__, e.g., via one of the following shell scripts).
+Please note that in addition, there are preprocessor options that can be set before compiling (see, for example, __NetworkSimulation.cpp__ or one of the __compile\*__ scripts) but that cannot be changed during
 runtime.
 
-The binaries and run scripts for the studies mentioned above are located in subdirectories of __simulation-bin/__. Please note that some of these scripts trigger a cascade of many simulations by using the `screen` command. This may cause less powerful machines to take very long or to run into memory issues. In those cases, you might consider to run simulations separately.
+The binaries and run scripts for the studies mentioned above are located in subdirectories of __simulation-bin/__. Please note that some of these scripts trigger a cascade of many simulations by using the `screen` command (which has to be installed). This may cause less powerful machines to take very long or to run into memory issues. In those cases, you might consider to run simulations separately.
 
 * __run_binary_paper1/__:
 
@@ -94,7 +85,8 @@ The binaries and run scripts for the studies mentioned above are located in subd
 	* __run_IRS__ - learn a memory representation, save the network state, and recall after 10 seconds; load the network state, apply intermediate stimulation, let the memory representation consolidate, and recall after 8 hours
 	* __run_varied_inhibition__ - learn a memory representation, save the network state, and recall after 10 seconds; load the network state, let the memory representation consolidate, and recall after 8 hours; do this for varied inhibition parameters
 	* __run_varied_size__ - learn a memory representation, save the network state, and recall after 10 seconds; load the network state, let the memory representation consolidate, and recall after 8 hours; do this for varied cell assembly size
-	* __connections.txt__ - the default connectivity matrix used for this paper; if this file is absent, the simulation program will automatically generate a new network structure
+	* __connections.txt__ - the default connectivity matrix used in this paper; if this file is absent, the simulation program will automatically generate a new connectivity structure
+
 
 * __run_binary_paper2/__:
 
@@ -117,15 +109,18 @@ The binaries and run scripts for the studies mentioned above are located in subd
 
 * __run_binary_misc/__:
 
-	* __run_2N1S_conv__ - tests the convergence of the neuronal membrane potential following current stimulation
 	* __run_2N1S_Li2016__ - reproduce single-synapse data resulting from basic induction protocols for synaptic plasticity, with the same model as in Li, Kulvicius, Tetzlaff, PLOS ONE, 2016
-	* __run_2N1S_minimal__ - minimal example of the induction of early-phase plasticity by a few pre-defined spikes, with stochastic plasticity dynamics
-	* __run_2N1S_minimal_det__ - minimal example of the induction of early-phase plasticity by a few pre-defined spikes, with deterministic plasticity dynamics
+	* __run_2N1S_basic_early__ - simple example of the induction of early-phase plasticity by a few pre-defined spikes, with stochastic plasticity dynamics
+	* __run_2N1S_basic_early_det__ - simple example of the induction of early-phase plasticity by a few pre-defined spikes, with deterministic plasticity dynamics
+	* __run_2N1S_basic_late__ - simple example of the induction of late-phase plasticity by prolonged substantial stimulation of one neuron
+	* __run_2N1S_conv__ - tests the convergence of the neuronal membrane potential following current stimulation
 	* __run_activation_attractors__ - simulate the activity in a previously consolidated network for 3 minutes without plasticity (it is required to run __run_learn_cons_attractors__ beforehand)
+	* __run_benchmark__ - pipeline for benchmarks of runtime and memory usage; can be used with different paradigms ('CA200', '2N1S\_basic\_late', ...)
 	* __run_learn_cons_attractors__ - subsequently learn 3 attractor memory representations; consolidate for 8 hours after learning each assembly
 	* __run_PFreq__ - network simulations to characterize plasticity regimes depending on pre- and post-synaptic firing rate
-	* __connections.txt__ - the default connectivity matrix used for paper 1
-	
+	* __track_allocated_memory__ - script to track the memory usage of a given process
+
+
 ## Analysis scripts
 
 The following scripts, located in __analysis/__, serve to process and analyze the data produced by the simulation code. They were tested to run with Python 3.7.3, NumPy 1.20.1, SciPy 1.6.0, and pandas 1.0.3.
@@ -150,7 +145,7 @@ Also note that not all script files and functions have to be used to reproduce t
 * __extractParamsQMIfromSpikes.py__ - recursively extracts the Q and MI measures along with the simulation parameters from directories containing spike raster data (can be used to process many datasets)
 * __frequencyAnalysisSpikeRaster.py__ - computes the frequency spectrum of spike raster data
 * __meanCorrelations.py__ - computes firing rate correlations for neuron pairs from spike raster data and averages over subpopulations of the network
-* __nmAnalysisClass.py__ - generates temporal traces and analyzes their consolidation; produces most of the final data for paper 3 (an interactive frontend for this is found in __notebooks/__)
+* __nmAnalysisClass.py__ - generates temporal traces and analyzes their consolidation; produces most of the final data for paper 3 (["Neuromodulator-dependent synaptic tagging..."](https://doi.org/10.1038/s41598-022-22430-7); an interactive frontend for this is found in __notebooks/__)
 * __numberOfSpikesInBins.py__ - computes the distribution of spikes per time bin from cell assembly time series data
 * __overlapParadigms.py__ - defines paradigms of overlapping cell assemblies
 * __utilityFunctions.py__ - diverse utility functions, e.g., to read firing rate, early- and late-phase weight data from `[timestamp]_net_[time].txt` files produced by the simulation program
@@ -163,4 +158,5 @@ The following subfolders of __notebooks/__ contain interactive Jupyter notebooks
 
 ### Files
 
-* __lehr_luboeinski_tetzlaff_2022/__ - reproduces figures of paper 3
+* __lehr_luboeinski_tetzlaff_2022/__ - reproduces figures of paper 3 (["Neuromodulator-dependent synaptic tagging..."](https://doi.org/10.1038/s41598-022-22430-7))
+* __arbor_reproduction/__ - runs basic early- and late phase plasticity simulations to cross-validate an [Arbor implementation] of the same model

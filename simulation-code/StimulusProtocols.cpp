@@ -9,7 +9,7 @@
  * Function for either adding a fixed rectangular pulse, Gaussian stimulation, Ornstein-Uhlenbeck stimulation *
  * or Poissonian stimulation *
  * - st: pointer to the Stimulus object to be modified *
- * - frequency: the stimulation frequency *
+ * - frequency: either the mean activity of the stimulation source, or occurrence frequency of the determinstic shape (in Hz) *
  * - stim_strength: coupling strength between input layer and receiving layer *
  * - N_stim: number of neurons in the input layer *
  * - tau_syn: the synaptic time constant *
@@ -26,9 +26,7 @@ void stimFunc(Stimulus* st, double frequency, double stim_strength, int N_stim, 
 #elif STIM_TYPE == POISSON_STIMULATION
 	st->setPoissonStimulation(stim_strength, N_stim, frequency, index); // use Poisson-distributed pulses
 #endif
-
 }
-
 
 /*** createStimulusFromProtocols ***
  * Creates a Stimulus object according to specified stimulation protocols *
@@ -126,7 +124,7 @@ Stimulus createStimulusFromProtocols(string prot_learn, string prot_recall, doub
 		index = st.addStimulationInterval(int(round(5.0/dt)), int(round(5.04/dt))); // add start and end time of stimulation
 		stimFunc(&st, frequency, stim_strength, N_stim, tau_syn, index); // actually add stimulation to the interval
 	}
-	else if (!prot_learn.compare("MIN2N1S"))
+	else if (!prot_learn.compare("BASIC_EARLY"))
 	{
 		frequency = 1.; // Hz, rules that only one pulse (of duration dt, see stimFunc()) is conveyed
 		index = st.addStimulationInterval(int(round(0.01/dt)), int(round(0.015/dt))); // add time of stimulation (end time is not important here)
@@ -142,6 +140,12 @@ Stimulus createStimulusFromProtocols(string prot_learn, string prot_recall, doub
 		index = st.addStimulationInterval(int(round(0.06/dt)), int(round(0.065/dt))); // add time of stimulation (end time is not important here)
 		stimFunc(&st, frequency, stim_strength, N_stim, tau_syn, index); // actually add stimulation to the interval
 		index = st.addStimulationInterval(int(round(0.1/dt)), int(round(0.105/dt))); // add time of stimulation (end time is not important here)
+		stimFunc(&st, frequency, stim_strength, N_stim, tau_syn, index); // actually add stimulation to the interval
+	}
+	else if (!prot_learn.compare("BASIC_LATE"))
+	{
+		frequency = 5000.; // Hz
+		index = st.addStimulationInterval(int(round(0.0/dt)), int(round(14400.0/dt))); // add start and end time of stimulation
 		stimFunc(&st, frequency, stim_strength, N_stim, tau_syn, index); // actually add stimulation to the interval
 	}
 	else if (!prot_learn.compare("MINCONV"))

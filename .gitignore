@@ -3,7 +3,10 @@
 *_TRIPLET*/
 *_F*/
 *_MINCONV*/
-*_MIN2N1S*/
+*_BASIC_*/
+stand-alone_data_*
+.ipynb_checkpoints
 plasticity_type.txt
 *Const.*/
 simulation-bin/run_binary_misc/connections.txt
+benchmark_*/

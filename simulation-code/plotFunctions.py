@@ -1019,7 +1019,7 @@ def plotMinOverview(data_file, col_neur, col_syn, h_0, theta_tag, theta_pro, the
 	# plot data for axes[0]
 	if col_syn >= 1: # if synapse data exist
 		axes[0].plot(data_stacked[:,0], data_stacked[:,col_syn]/h_0*100, color="#800000", label='h', marker='None', zorder=10)
-		axes[0].plot(data_stacked[:,0], (data_stacked[:,col_syn+1]+1)*100, color="#1f77b4", label='z', marker='None', zorder=9)
+		axes[0].plot(data_stacked[:,0], (data_stacked[:,col_syn+1]/h_0+1)*100, color="#1f77b4", label='z', marker='None', zorder=9)
 		axes[0].axhline(y=(theta_pro/h_0+1)*100, label='Protein thresh.', linestyle='-.', color="#dddddd", zorder=5)
 		axes[0].axhline(y=(theta_tag/h_0+1)*100, label='Tag thresh.', linestyle='dashed', color="#dddddd", zorder=4)
 		# total weight: color="#ff7f0e"

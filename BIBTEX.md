@@ -27,13 +27,14 @@
 	@article{Lehr2022,
 	   title={Neuromodulator-dependent synaptic tagging and capture retroactively controls neural coding in spiking neural networks},
 	   author={Lehr, Andrew B. and Luboeinski, Jannik and Tetzlaff, Christian},
-	   journal={Scientific Reports (under review)},
-	   volume={},
-	   number={},
+	   journal={Scientific Reports},
+	   volume={12},
+	   number={17772},
 	   year={2022},
-	   publisher={},
-	   doi={},
-	   url={}
+	   note={These authors contributed equally: Andrew B. Lehr and Jannik Luboeinski.},
+	   publisher={Nature Publishing Group},
+	   doi={10.1038/s41598-022-22430-7},
+	   url={https://doi.org/10.1038/s41598-022-22430-7}
 	}
 
 	@phdthesis{Luboeinski2021thesis,

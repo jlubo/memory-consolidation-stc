@@ -517,7 +517,7 @@ void createMeanWeightPlotCA(ofstream &gpl, double t_max, double h_0)
 	  << "unset key" << endl // for better view
 	  << "set ytics 1 nomirror" << endl
 	  << endl
-	  << "h0 = " << h_0 << endl
+	  << "h_0 = " << h_0 << endl
 	  << endl
 	  << "set xlabel \"" << x_label << "\"" << endl
 	  << "set ylabel \"arb. units\"" << endl
@@ -525,12 +525,12 @@ void createMeanWeightPlotCA(ofstream &gpl, double t_max, double h_0)
 		<< "set style fill transparent solid 0.8 noborder" << endl
 	  << "set samples 1000" << endl
 	  << "plot [0:" << x_max << "][0.0:3.2] "
-		<< "\"" << dateStr("_mean_weight.txt") << "\" using " << x_data << ":(($2+h0*$4-$3-h0*$5)/h0):(($2+h0*$4+$3+h0*$5)/h0) notitle lw 2 lc rgb rgb(255,127,14) with filledcurves, \\" << endl << spaces
-	        << "\"\" using " << x_data << ":(($2-$3)/h0):(($2+$3)/h0) notitle lw 2 lc rgb rgb(128,0,0) with filledcurves, \\" << endl << spaces
+		<< "\"" << dateStr("_mean_weight.txt") << "\" using " << x_data << ":(($2+h_0*$4-$3-h_0*$5)/h_0):(($2+h_0*$4+$3+h_0*$5)/h_0) notitle lw 2 lc rgb rgb(255,127,14) with filledcurves, \\" << endl << spaces
+	        << "\"\" using " << x_data << ":(($2-$3)/h_0):(($2+$3)/h_0) notitle lw 2 lc rgb rgb(128,0,0) with filledcurves, \\" << endl << spaces
 	        << "\"\" using " << x_data << ":($4-$5+1):($4+$5+1) notitle lw 2 lc rgb rgb(31,119,180) with filledcurves, \\" << endl << spaces
 	        << "\"\" using " << x_data << ":($6-$7):($6+$7) notitle lw 2 lc rgb rgb (0,128,0) with filledcurves, \\" << endl << spaces
-                << "\"\" using " << x_data << ":(($2+h0*$4)/h0) title \"⟨w(t)/h_0⟩\" lw 2 lc rgb rgb(255,127,14) with lines, \\" << endl << spaces
-	        << "\"\" using " << x_data << ":($2/h0) title \"⟨h(t)/h_0⟩\" lw 2 lc rgb rgb(128,0,0) with lines, \\" << endl << spaces
+                << "\"\" using " << x_data << ":(($2+h_0*$4)/h_0) title \"⟨w(t)/h_0⟩\" lw 2 lc rgb rgb(255,127,14) with lines, \\" << endl << spaces
+	        << "\"\" using " << x_data << ":($2/h_0) title \"⟨h(t)/h_0⟩\" lw 2 lc rgb rgb(128,0,0) with lines, \\" << endl << spaces
 	        << "\"\" using " << x_data << ":($4+1) title \"⟨z(t)+1⟩\" lw 2 lc rgb rgb(31,119,180) with lines, \\" << endl << spaces
 	        << "\"\" using " << x_data << ":6 title \"⟨p(t)⟩\" lw 2 lc rgb rgb(0,128,0) with lines, \\" << endl << spaces;
 
@@ -581,7 +581,7 @@ void createMeanWeightPlotControl(ofstream &gpl, double t_max, double h_0)
 	  << "unset key" << endl // for better view
 	  << "set ytics 1 nomirror" << endl
 	  << endl
-	  << "h0 = " << h_0 << endl
+	  << "h_0 = " << h_0 << endl
 	  << endl
 	  << "set xlabel \"" << x_label << "\"" << endl
 	  << "set ylabel \"arb. units\"" << endl
@@ -589,12 +589,12 @@ void createMeanWeightPlotControl(ofstream &gpl, double t_max, double h_0)
 		<< "set style fill transparent solid 0.8 noborder" << endl
 	  << "set samples 1000" << endl
 	  << "plot [0:" << x_max << "][0.0:3.2] "
-		<< "\"" << dateStr("_mean_weight.txt") << "\" using " << x_data << ":(($8+h0*$10-$9-h0*$11)/h0):(($8+h0*$10+$9+h0*$11)/h0) notitle lw 2 lc rgb rgb(255,127,14) with filledcurves, \\" << endl << spaces
-	        << "\"\" using " << x_data << ":(($8-$9)/h0):(($8+$9)/h0) notitle lw 2 lc rgb rgb(128,0,0) with filledcurves, \\" << endl << spaces
+		<< "\"" << dateStr("_mean_weight.txt") << "\" using " << x_data << ":(($8+h_0*$10-$9-h_0*$11)/h_0):(($8+h_0*$10+$9+h_0*$11)/h_0) notitle lw 2 lc rgb rgb(255,127,14) with filledcurves, \\" << endl << spaces
+	        << "\"\" using " << x_data << ":(($8-$9)/h_0):(($8+$9)/h_0) notitle lw 2 lc rgb rgb(128,0,0) with filledcurves, \\" << endl << spaces
 	        << "\"\" using " << x_data << ":($10-$11+1):($10+$11+1) notitle lw 2 lc rgb rgb(31,119,180) with filledcurves, \\" << endl << spaces
 	        << "\"\" using " << x_data << ":($12-$13):($12+$13) notitle lw 2 lc rgb rgb (0,128,0) with filledcurves, \\" << endl << spaces
-                << "\"\" using " << x_data << ":(($8+h0*$10)/h0) title \"⟨w(t)/h_0⟩\" lw 2 lc rgb rgb(255,127,14) with lines, \\" << endl << spaces
-	        << "\"\" using " << x_data << ":($8/h0) title \"⟨h(t)/h_0⟩\" lw 2 lc rgb rgb(128,0,0) with lines, \\" << endl << spaces
+                << "\"\" using " << x_data << ":(($8+h_0*$10)/h_0) title \"⟨w(t)/h_0⟩\" lw 2 lc rgb rgb(255,127,14) with lines, \\" << endl << spaces
+	        << "\"\" using " << x_data << ":($8/h_0) title \"⟨h(t)/h_0⟩\" lw 2 lc rgb rgb(128,0,0) with lines, \\" << endl << spaces
 	        << "\"\" using " << x_data << ":($10+1) title \"⟨z(t)+1⟩\" lw 2 lc rgb rgb(31,119,180) with lines, \\" << endl << spaces
 	        << "\"\" using " << x_data << ":12 title \"⟨p(t)⟩\" lw 2 lc rgb rgb(0,128,0) with lines, \\" << endl << spaces;
 
@@ -657,7 +657,7 @@ void createSynapsePlot(vector<Synapse> synapse_output, ofstream &gpl, double t_m
 		  << "set label 1 at graph 0.04, graph 0.9 \"" << stimulus << "\" font \"Sans,22\" textcolor rgb rgb(255,123,0)" << endl
 		  << "set ytics 1 nomirror" << endl
 		  << endl
-		  << "h0 = " << h_0 << endl
+		  << "h_0 = " << h_0 << endl
 		  << "theta_pro = " << theta_pro << endl
 		  << "theta_tag = " << theta_tag << endl
 		  << "theta_p = " << theta_p << endl
@@ -668,17 +668,17 @@ void createSynapsePlot(vector<Synapse> synapse_output, ofstream &gpl, double t_m
 		  << endl
 		  << "set samples 1000" << endl
 		  << "plot [0:" << x_max << "][0.0:3.2] \"" << dateStr("_data.txt") << "\" using " << x_data << ":(($" << plh_cols+i*3+2 <<
-		     "+h0*$" << plh_cols+i*3+3 << ")/h0) title \"w(t)/h_0\" lw 2 lc rgb rgb(255,127,14) with lines, \\" << endl
+		     "+$" << plh_cols+i*3+3 << ")/h_0) title \"w(t)/h_0\" lw 2 lc rgb rgb(255,127,14) with lines, \\" << endl
 		  << spaces << "\"" << dateStr("_data.txt") << "\" using " << x_data << ":" << plh_cols+i*3+4 << " title \"Ca\" lw 2 lc rgb rgb(200,200,150) with lines, \\" << endl
-		  << spaces << "\"" << dateStr("_data.txt") << "\" using " << x_data << ":($" << plh_cols+i*3+2 << "/h0) title \"h(t)/h_0\" lw 2 lc rgb rgb(128,0,0) with lines, \\" << endl
-		  << spaces << "\"" << dateStr("_data.txt") << "\" using " << x_data << ":($" << plh_cols+i*3+3 << "+1) title \"z(t)+1\" lw 2 lc rgb rgb(31,119,180) with lines, \\" << endl
+		  << spaces << "\"" << dateStr("_data.txt") << "\" using " << x_data << ":($" << plh_cols+i*3+2 << "/h_0) title \"h(t)/h_0\" lw 2 lc rgb rgb(128,0,0) with lines, \\" << endl
+		  << spaces << "\"" << dateStr("_data.txt") << "\" using " << x_data << ":($" << plh_cols+i*3+3 << "/h_0+1) title \"z(t)+1\" lw 2 lc rgb rgb(31,119,180) with lines, \\" << endl
 		  << spaces << "1/0 title \" \" w dots lc rgb \"white\", \\" << endl
 		  << spaces << "1/0 title \" \" w dots lc rgb \"white\", \\" << endl
 		  << spaces << "1/0 title \" \" w dots lc rgb \"white\", \\" << endl
 		  << spaces << "1/0 title \" \" w dots lc rgb \"white\", \\" << endl
 		  << spaces << "1/0 title \" \" w dots lc rgb \"white\", \\" << endl
-		  << spaces << "(h0+theta_pro)/h0 title \"{/Symbol q}_{pro}\" lc rgb rgb(0,128,0) lw 2 dt 2 with lines, \\" << endl
-		  << spaces << "(h0+theta_tag)/h0 title \"{/Symbol q}_{tag}\" lc rgb rgb(255,0,0) lw 2 dt 2 with lines, \\" << endl
+		  << spaces << "(h_0+theta_pro)/h_0 title \"{/Symbol q}_{pro}\" lc rgb rgb(0,128,0) lw 2 dt 2 with lines, \\" << endl
+		  << spaces << "(h_0+theta_tag)/h_0 title \"{/Symbol q}_{tag}\" lc rgb rgb(255,0,0) lw 2 dt 2 with lines, \\" << endl
 		  << spaces << "theta_p title \"{/Symbol q}_{p}\" lc rgb rgb(150,150,100) lw 2 dt 2 with lines, \\" << endl
 		  << spaces << "theta_d title \"{/Symbol q}_{d}\" lc rgb rgb(150,150,150) lw 2 dt 2 with lines" << endl;
 

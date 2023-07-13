@@ -12,10 +12,10 @@ zip -q -D code.zip * -x *.out *.o *.txt
 g++ -std=c++11 \
     -O1 NetworkMain.cpp \
     -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default \
-    -D TWO_NEURONS_ONE_SYNAPSE_MIN \
+    -D TWO_NEURONS_ONE_SYNAPSE_BASIC_LATE \
     -Wno-unused-result \
     -lboost_serialization -static \
-    -o "${out_dir}/2N1S_minimal.out"
+    -o "${out_dir}/2N1S_basic_late.out"
 rm -f code.zip
 
 cd "${current_working_dir}"

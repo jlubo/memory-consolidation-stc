@@ -1,7 +1,12 @@
 #!/bin/sh 
 
+/bin/sh compile_2N1S_basic_early
+/bin/sh compile_2N1S_basic_late
+/bin/sh compile_2N1S_conv
 /bin/sh compile_2N1S_Li2016
-/bin/sh compile_2N1S_minimal
 /bin/sh compile_activation_attractors
+/bin/sh compile_CA200
+/bin/sh compile_max_activity
+/bin/sh compile_onespike
 /bin/sh compile_organization_attractors
 /bin/sh compile_PFreq

@@ -473,7 +473,7 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 	ofstream* txt_net_t; // pointer to a data file containing all neuronal firing rates and synaptic weights at time t
 	ofstream* txt_net_tprime; // pointer to a data file containing all neuronal firing rates and synaptic weights at time tprime
 
-	ofstream logf("log.txt"); // log file containing information about data processing
+	ofstream logf(dateStr("_log.txt")); // log file containing information about data processing
 
 	bool data_to_plot = false; // indicates if there is still network data that has to be plotted
 	bool STC = true; // indicates if late-phase dynamics are (still) occurring
@@ -1279,22 +1279,22 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 	// "plotMinSimResults": overview over important observables for one synapse and one neuron (in the network)
 #if PROTEIN_POOLS == POOLS_C
 	#if defined MAX_ACTIVITY_NEURON
-	plotMinSimResults(1, 16, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), "traces_0.svg");
-	plotMinSimResults(7, 16, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), "traces_335.svg");
-	plotMinSimResults(14, -1, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), "traces_1940.svg");
+	plotMinSimResults(1, 16, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), dateStr("_traces_0.svg"));
+	plotMinSimResults(7, 16, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), dateStr("_traces_335.svg"));
+	plotMinSimResults(14, -1, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), dateStr("_traces_1940.svg"));
 	#elif defined ONESPIKE_EXC
-	plotMinSimResults(1, 16, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), "traces_6.svg");
-	plotMinSimResults(7, 16, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), "traces_68.svg");
-	plotMinSimResults(14, -1, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), "traces_1760.svg");
+	plotMinSimResults(1, 16, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), dateStr("_traces_6.svg"));
+	plotMinSimResults(7, 16, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), dateStr("_traces_68.svg"));
+	plotMinSimResults(14, -1, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), dateStr("_traces_1760.svg"));
 	#elif defined ONESPIKE_INH
-	plotMinSimResults(4, -1, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), "traces_17.svg");
-	plotMinSimResults(10, -1, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), "traces_1615.svg");
-	plotMinSimResults(12, -1, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), "traces_1690.svg");
+	plotMinSimResults(4, -1, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), dateStr("_traces_17.svg"));
+	plotMinSimResults(10, -1, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), dateStr("_traces_1615.svg"));
+	plotMinSimResults(12, -1, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), dateStr("_traces_1690.svg"));
 	#elif defined TWO_NEURONS_ONE_SYNAPSE
-	plotMinSimResults(1, 7, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), "traces_0.svg");
-	plotMinSimResults(4, 7, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), "traces_1.svg");
+	plotMinSimResults(1, 7, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), dateStr("_traces_0.svg"));
+	plotMinSimResults(4, 7, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), dateStr("_traces_1.svg"));
 	#else
-	plotMinSimResults(1, 9, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), "traces_6.svg");
+	plotMinSimResults(1, 9, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), dateStr("_traces_6.svg"));
 	#endif
 #endif
 // ==============================================================================================================================

@@ -203,7 +203,7 @@ int main(int argc, char** argv)
 	cout << "TWO_NEURONS_ONE_SYNAPSE*" << endl;
 	#endif
 	
-	#if defined TWO_NEURONS_ONE_SYNAPSE_MIN || defined TWO_NEURONS_ONE_SYNAPSE_CONV
+	#if defined TWO_NEURONS_ONE_SYNAPSE_BASIC_EARLY || defined TWO_NEURONS_ONE_SYNAPSE_CONV
 	output_period = 1;
 	#else
 	output_period = 100;

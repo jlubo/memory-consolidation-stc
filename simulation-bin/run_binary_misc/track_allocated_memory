@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# create and enter directory for the output
+if ! [[ -d 'pmap_output' ]]; then
+	mkdir 'pmap_output'
+fi
+
+# wait for the process to start up
+sleep 30s
+
+# loop that prints the pmap information to a file every 10 minutes
+while 
+	# find the process ID of the simulation process provided (name has to be provided as argument)
+	pid=$(pgrep $1)
+	echo $pid
+	
+	# loop condition
+	! [ "$pid" = "" ]
+do
+	# get and print the memory information ("Dirty" column returns dirty pages, both private and shared, in kilobytes; see https://linux.die.net/man/1/pmap)
+	timestamp=`date +"%Y-%m-%d_%H-%M-%S"`
+    sudo pmap -x ${pid} > pmap_output/pmap_output_${timestamp}_${pid}.log
+
+	# set the sleep interval
+	sleep $2
+done
+
+# gather the information in one file
+ls -1 pmap_output/ > memory_usage_files.txt
+grep -rh "total kB" pmap_output/*.log > memory_usage_data.txt
+paste memory_usage_files.txt memory_usage_data.txt > memory_usage.txt
+rm memory_usage_files.txt
+rm memory_usage_data.txt

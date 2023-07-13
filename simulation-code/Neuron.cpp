@@ -713,7 +713,7 @@ void processTimeStep(int tb_step, int tb_init)
 #endif
 	if (cst.isSet() && tb_init < 0 && abs(I_stim = cst.get(tb_step)) > EPSILON) // stimulation; get stimulus current in nA
 	{
-#if STIM_TYPE == POISSON_STIMULATION || defined TWO_NEURONS_ONE_SYNAPSE_MIN
+#if STIM_TYPE == POISSON_STIMULATION || defined TWO_NEURONS_ONE_SYNAPSE_BASIC_EARLY
 	#if NEURON_MODEL == MAT2
 		V = ad_th + EPSILON; // definite spiking (the magnitude of I_stim is not important as long as it is greater than zero)
 	#elif NEURON_MODEL == LIF

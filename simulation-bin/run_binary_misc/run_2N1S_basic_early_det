@@ -1,0 +1,9 @@
+#!/bin/sh
+
+mkdir 2N1S_basic_early_det
+cd 2N1S_basic_early_det
+cp ../2N1S_basic_early.out .
+
+./2N1S_basic_early.out -learn=BASIC_EARLY -Ca_pre=1.0 -Ca_post=0.2758 -purpose= -t_max=0.2 -sigma_plasticity=0
+
+cd ..
