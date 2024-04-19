@@ -1,0 +1,7 @@
+#!/bin/sh
+
+rm -f saved_state.txt
+rm -f connections.txt
+cp ../run_binary_paper1/connections.txt connections.txt
+./net_onespike_inh.out -Nl_exc=40 -Nl_inh=20 -t_max=0.2 -N_stim=10000 -pc=0.1 -learn=F1D0.002at0.1 -recall= -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0 -sigma_WN=0 -theta_p=3.0 -theta_d=1.2 -noff -output_period=1 -purpose="onespike_inh"
+

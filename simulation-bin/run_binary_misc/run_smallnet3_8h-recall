@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# simulate with timesteps of 0.2 ms
+rm -f saved_state.txt
+rm -f connections.txt
+cp connections_smallnet3.txt connections.txt
+./smallnet_ou.out -dt=2e-4 -Nl_exc=2 -Nl_inh=1 -t_max=28820 -N_stim=25 -learn=TRIPLETat10.0 -recall=F100D1at28810.0 -r=1 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0 -sigma_WN=0 -theta_p=3.0 -theta_d=1.2 -sigma_plasticity=0 -output_period=1 -purpose="smallnet3 det, dt=0.2ms, 8h, with recall"
+

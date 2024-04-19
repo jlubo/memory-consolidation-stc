@@ -5,7 +5,7 @@
 
 ### Copyright 2019-2022 Jannik Luboeinski
 ### licensed under Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-### Contact: jannik.lubo[at]gmx.de
+### Contact: mail[at]jlubo.net
 
 import numpy as np
 import sys

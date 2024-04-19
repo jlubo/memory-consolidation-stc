@@ -102,6 +102,49 @@
 	#warning "Special case: MAX_ACTIVITY_NEURON"
 #endif
 
+
+// Special case of a network that has one neuron stimulated with OU stimulus (similar to MEMORY_CONSOLIDATION_P1, ONESPIKE_EXC, MAX_ACTIVITY_NEURON)
+//#define SMALLNET_OU
+#ifdef SMALLNET_OU
+	#undef STIM_TYPE
+	#define STIM_TYPE OU_STIMULATION
+	#undef NEURON_MODEL
+	#define NEURON_MODEL LIF
+	#undef SYNAPSE_MODEL
+	#define SYNAPSE_MODEL MONOEXP
+	#undef PLASTICITY
+	#define PLASTICITY CALCIUM_AND_STC
+	#undef RAND_INIT_WEIGHTS
+	#define RAND_INIT_WEIGHTS OFF
+	#undef PROTEIN_POOLS
+	#define PROTEIN_POOLS POOLS_C
+	#undef STIPULATE_CA
+	#define STIPULATE_CA OFF
+	#undef CORE_SHAPE
+	#define CORE_SHAPE FIRST
+	#undef CORE_SIZE
+	#define CORE_SIZE 1
+	#undef COND_BASED_SYN
+	#define COND_BASED_SYN OFF
+	#undef SYN_SCALING
+	#define SYN_SCALING OFF
+	#undef DENDR_SPIKES
+	#define DENDR_SPIKES OFF
+	#undef LTP_FR_THRESHOLD
+	#define LTP_FR_THRESHOLD OFF
+	#undef LTD_FR_THRESHOLD
+	#define LTD_FR_THRESHOLD OFF
+	#undef FF_AFTER_LEARN
+	#define FF_AFTER_LEARN ON
+	#undef FF_AFTER_STIM
+	#define FF_AFTER_STIM OFF
+	#undef FF_AFTER_NETLOAD
+	#define FF_AFTER_NETLOAD ON
+	#undef OSCILL_INP
+	#define OSCILL_INP OFF
+	#warning "Special case: SMALLNET_OU"
+#endif
+
 // Special case to measure the plasticity between two neurons as a function of their firing rates (uses prot_learn and prot_recall to stimulate)
 // as in Luboeinski, 2021, doctoral thesis
 //#define PLASTICITY_OVER_FREQ
@@ -339,6 +382,50 @@
 	#undef PLASTICITY
 	#define PLASTICITY OFF // switches off plasticity
 	#warning "Special case: SEEK_I_0"
+#endif
+
+// Simulations of memory consolidation and recall (similar to MEMORY_CONSOLIDATION_P1)
+//#define MEMORY_CONSOLIDATION_NOSAVE
+#ifdef MEMORY_CONSOLIDATION_NOSAVE
+	#undef STIM_TYPE
+	#define STIM_TYPE OU_STIMULATION
+	#undef NEURON_MODEL
+	#define NEURON_MODEL LIF
+	#undef SYNAPSE_MODEL
+	#define SYNAPSE_MODEL MONOEXP
+	#undef PLASTICITY
+	#define PLASTICITY CALCIUM_AND_STC
+	#undef RAND_INIT_WEIGHTS
+	#define RAND_INIT_WEIGHTS OFF
+	#undef PROTEIN_POOLS
+	#define PROTEIN_POOLS POOLS_C
+	#undef STIPULATE_CA
+	#define STIPULATE_CA OFF
+	#undef CORE_SHAPE
+	#define CORE_SHAPE FIRST
+	#undef CORE_SIZE
+	#define CORE_SIZE CORE_SIZE_CMD // can be set via compiler option, see shell script "compile_sizes"
+	#undef COND_BASED_SYN
+	#define COND_BASED_SYN OFF
+	#undef SYN_SCALING
+	#define SYN_SCALING OFF
+	#undef DENDR_SPIKES
+	#define DENDR_SPIKES OFF
+	#undef LTP_FR_THRESHOLD
+	#define LTP_FR_THRESHOLD OFF
+	#undef LTD_FR_THRESHOLD
+	#define LTD_FR_THRESHOLD OFF
+	#undef FF_AFTER_LEARN
+	#define FF_AFTER_LEARN ON
+	#undef FF_AFTER_STIM
+	#define FF_AFTER_STIM OFF
+	#undef FF_AFTER_NETLOAD
+	#define FF_AFTER_NETLOAD ON
+	#undef OSCILL_INP
+	#define OSCILL_INP OFF
+	#undef SAVE_NET_STATE
+	#define SAVE_NET_STATE OFF // switches off saving the network state
+	#warning "Special case: MEMORY_CONSOLIDATION_NOSAVE"
 #endif
 
 // Simulations of consolidation of (topologically) spatial and temporal patterns with neuromodulator-dependent STC in Lehr, Luboeinski, Tetzlaff, 2022

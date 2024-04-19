@@ -6,7 +6,7 @@
 
 ### Copyright 2020-2022 Jannik Luboeinski
 ### License: Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-### Contact: jannik.lubo[at]gmx.de
+### Contact: mail[at]jlubo.net
 
 import numpy as np
 import os
@@ -24,6 +24,7 @@ n_thresh = 10 # number of spikes in a binning period to consider an attractor "a
 new_plots = True # defines if new spike raster plots shall be created using gnuplot
 adjust_thresh = 1.5 # factor to adjust the necessary distance between activation of assemblies
 exc_pop_size = 2500 # number of neurons in the excitatory population
+inh_pop_size = 900 # number of neurons in the excitatory population
 core_size = 600 # total size of one cell assembly
 
 # cell assemblies

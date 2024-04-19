@@ -33,6 +33,8 @@ double sigma_WN = 0.05; // nA s^1/2, standard deviation of the input current (e.
 double recall_fraction = 0.5; // the fraction of neurons in the cell assembly that is stimulated to trigger recall
 int N_stim = 25; // number of hypothetical synapses used for stimulation
 
+double V_th = -55.0; // mV, spiking treshold for the membrane potential
+
 double theta_p = 3.0; // the calcium threshold for early-phase potentiation
 double theta_d = 1.2; // the calcium threshold for early-phase depression
 double Ca_pre = 0.6; // the postsynaptic calcium contribution evoked by a presynaptic spike (Li et al., 2016, not adjusted: 1.0)
@@ -156,6 +158,8 @@ int main(int argc, char** argv)
 			t_max = read;
 		else if (strstr(argv[i], "-t_wfr=") == argv[i])
 			t_wfr = read;
+		else if (strstr(argv[i], "-dt=") == argv[i])
+			dt = read;
 		else if (strstr(argv[i], "-sigma_WN=") == argv[i] || strstr(argv[i], "-sigma_wn") == argv[i])
 			sigma_WN = read;
 		else if (strstr(argv[i], "-sigma_plasticity=") == argv[i])
@@ -164,6 +168,8 @@ int main(int argc, char** argv)
 			output_period = int(read);
 		else if (strstr(argv[i], "-net_output_period=") == argv[i]) // DEPRECATED
 			cout << "WARNING: command line option \'net_output_period\' is deprecated." << endl;
+		else if (strstr(argv[i], "-V_th=") == argv[i])
+			V_th = read;
 		else if (strstr(argv[i], "-theta_p=") == argv[i])
 			theta_p = read;
 		else if (strstr(argv[i], "-theta_d=") == argv[i])
@@ -235,11 +241,6 @@ int main(int argc, char** argv)
 	extractFileFromBinary("code.zip", data, data_end); // extracts code.zip out of the binary
 	extractFileFromBinary("plotFunctions.py", data2, data2_end); // extracts plotFunctions.py out of the binary
 	writeRunFile(string("run"), argc, argv); // writes the command line that was used to run this program in a file
-	if (nm_end < -EPSILON) 
-	{
-		nm_end = t_max;
-		cout << "End time of neuromodulation set to end time of the simulation." << endl;
-	}
 	
 	// Create NetworkSimulation object and set computational parameters
 	NetworkSimulation sn = NetworkSimulation(Nl_exc, Nl_inh, dt, t_max, p_c, sigma_plasticity, z_max, t_wfr, ff_enabled);
@@ -262,7 +263,7 @@ int main(int argc, char** argv)
 #endif //-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
 
 	sn.setParams(I_0, sigma_WN, tau_syn, w_ee, w_ei, w_ie, w_ii, oscill_inp_mean, oscill_inp_amp,
-                 prot_learn, prot_recall, N_stim, recall_fraction, theta_p, theta_d, Ca_pre, Ca_post, 
+                 prot_learn, prot_recall, N_stim, recall_fraction, V_th, theta_p, theta_d, Ca_pre, Ca_post, 
 	             theta_pro_P, theta_pro_C, theta_pro_D, nm_paradigm_index, nm_amp, nm_begin, nm_end, output_period); // set main parameters for the simulation
 
 #ifndef SEEK_I_0 //----------------------------------------------------------------------

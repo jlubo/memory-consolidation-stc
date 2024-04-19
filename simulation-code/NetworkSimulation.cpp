@@ -3,7 +3,7 @@
  ***                         long-term plasticity                      ***
  *************************************************************************/
 
-/*** Copyright 2017-2022 Jannik Luboeinski ***
+/*** Copyright 2017-2023 Jannik Luboeinski ***
  *** licensed under Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0) ***/
 
 #include <iostream>
@@ -90,6 +90,7 @@ vector<int> net_output {}; // vector of times selected for the output of network
 #ifdef SEEK_I_0
 double *seekic; // pointer to a variable to communicate with the main(...) function while seeking I_0
 #endif
+string separator; // string of characters for a separator in command line
 
 /*** saveParams ***
  * Saves the crucial parameters in a file *
@@ -302,7 +303,6 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 	const double h_0 = net.getInitialWeight(); // initial synaptic weight (in mV)
 	const double stim_strength = h_0 / net.getMembraneResistance(0); // set strength for stimulation of neurons (formal unit: nC)
 
-	const string separator = getSeparator(); cout << separator << endl; // string of characters for a separator in command line
 	if (t_max > 100.) // for simulations of more than 100 sec. only reserve space for 100 sec. (see Neuron::setSpikeHistoryMemory())
 		net.setSpikeStorageTime(int(ceil(100. / dt))); // reserve enough RAM for fast spike storage
 	else
@@ -319,8 +319,8 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 #else
 	if (Nl_exc == 2)
 	{
-#if defined MAX_ACTIVITY_NEURON // in the case of "small net"
-		exc_neuron_output = vector<int> {0,1,2,3};
+#if defined MAX_ACTIVITY_NEURON || defined SMALLNET_OU // in the case of "smallnet*"
+		exc_neuron_output = vector<int> {0,1,2,3,4};
 		inh_neuron_output = vector<int> {};
 		synapse_output = vector<Synapse> {Synapse(0,1),Synapse(0,2),Synapse(0,3),Synapse(2,3),Synapse(3,2)};
 #endif
@@ -513,14 +513,15 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 
 	if (st_full.getStimulationDuration() > 0) // stimulation information in logfile
 	{
-		logf << "Stimulation occurs between ";
-
 		if (st_learn.getStimulationDuration() > 0) // there is a learning stimulus
-			logf << dtos(tb_stim_start*dt, 3);
-		else // there is no learning stimulus
-			logf << dtos(tb_recall_start*dt, 3);
+		{
+			logf << "Learning stimulation between " << dtos(tb_stim_start*dt, 3) << " s and " << dtos(tb_stim_learn_end*dt, 3) << " s." << endl;
+		}
 
-		logf << " s and " << dtos(tb_stim_end*dt, 3) << " s" << endl;
+		if (st_recall.getStimulationDuration() > 0) // there is a recall stimulus
+		{
+			logf << "Recall stimulation between " << dtos(tb_recall_start*dt, 3) << " s and " << dtos(tb_stim_end*dt, 3) << " s." << endl;
+		}
 	}
 	else
 		logf << "No stimulation" << endl;
@@ -673,11 +674,11 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 		txt_data << fixed
 		         << "h(" << synapse_output[sn].presyn_neuron << "," << synapse_output[sn].postsyn_neuron << ")\t\t" // early-phase synaptic strength
 		         << "z(" << synapse_output[sn].presyn_neuron << "," << synapse_output[sn].postsyn_neuron << ")\t\t" // late-phase synaptic strength
-		         << "Ca(" << synapse_output[sn].presyn_neuron << "," << synapse_output[sn].postsyn_neuron << ")"; // synaptic calcium amount
-		if (sn < synapse_output.size()-1)
-			txt_data << "\t\t";
+		         << "Ca(" << synapse_output[sn].presyn_neuron << "," << synapse_output[sn].postsyn_neuron << ")\t\t"; // synaptic calcium amount
+		//if (sn < synapse_output.size()-1)
+		//	txt_data << "\t\t";
 	}
-	txt_data << "\r\n";
+	txt_data << "theta_pro\r\n";
 
   	// Write headline to mean weight file
 	txt_mean << "#Time\t\tEarly mean CA\t\tEarly SD CA\t\tLate mean CA\t\tLate SD CA\t\tProtein mean CA\t\tProtein SD CA\t\t"
@@ -886,15 +887,15 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 			// entering fast-forward mode
 #if FF_AFTER_LEARN == ON || FF_AFTER_STIM == ON || FF_AFTER_NETLOAD == ON
 			if ( 
-#if FF_AFTER_LEARN == ON
+	#if FF_AFTER_LEARN == ON
 			     (st_learn.isSet() && j == tb_stim_learn_end + rich_comp_buffer)  // end of learning stimulation plus buffer reached
-#endif
-#if FF_AFTER_STIM == ON
+	#endif
+	#if FF_AFTER_STIM == ON
 			     || (st_full.isSet() && j == tb_stim_end + rich_comp_buffer)  // end of all stimulation plus buffer reached
-#endif
-#if FF_AFTER_NETLOAD == ON
+	#endif
+	#if FF_AFTER_NETLOAD == ON
 			     || (j == tb_start && tb_start > 0) // network state loaded (or TODO: always in the beginning, i.e., also for tb_start = 0?)
-#endif
+	#endif
 			   )
 			{
 				vector<double> ps_end = net.getProteinSynthesisEnd();
@@ -905,15 +906,15 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 					compmode = 2; // enter fast-forward mode
 				}
 
-				logf << "Tags will have vanished at t = " << dtos(net.getTagVanishTime(), 3) << " s" << endl;
+				logf << "Tags will have vanished at t = " << dtos(net.getTagVanishTime(), 3) << " s." << endl;
 
-#if PROTEIN_POOLS == POOLS_C || PROTEIN_POOLS == POOLS_PCD
-				logf << "Protein synthesis (C) will have ended at t = " << dtos(ps_end[1], 3) << " s" << endl;
-#endif
-#if PROTEIN_POOLS == POOLS_PD || PROTEIN_POOLS == POOLS_PCD
-				logf << "Protein synthesis (P) will have ended at t = " << dtos(ps_end[0], 3) << " s" << endl
-				     << "Protein synthesis (D) will have ended at t = " << dtos(ps_end[2], 3) << " s" << endl;
-#endif
+	#if PROTEIN_POOLS == POOLS_C || PROTEIN_POOLS == POOLS_PCD
+				logf << "Protein synthesis (C) will have ended at t = " << dtos(ps_end[1], 3) << " s." << endl;
+	#endif
+	#if PROTEIN_POOLS == POOLS_PD || PROTEIN_POOLS == POOLS_PCD
+				logf << "Protein synthesis (P) will have ended at t = " << dtos(ps_end[0], 3) << " s." << endl
+				     << "Protein synthesis (D) will have ended at t = " << dtos(ps_end[2], 3) << " s." << endl;
+	#endif
 
 				net.resetPlasticity(false, false, true, false); // sets all calcium values to zero
 
@@ -1026,13 +1027,13 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 				txt_data << fixed
 				         << net.getEarlySynapticStrength(synapse_output[sn]) << "\t\t" // early-phase synaptic strength
 				         << net.getLateSynapticStrength(synapse_output[sn]) << "\t\t" // late-phase synaptic strength
-				         << net.getSynapticCalcium(synapse_output[sn]); // synaptic calcium amount
-				if (sn < synapse_output.size()-1)
-					txt_data << "\t\t";
+				         << net.getSynapticCalcium(synapse_output[sn]) << "\t\t"; // synaptic calcium amount
+				//if (sn < synapse_output.size()-1)
+				//	txt_data << "\t\t";
 			}
 #if PROTEIN_POOLS == POOLS_C || PROTEIN_POOLS == POOLS_PCD
-			txt_data << fixed 
-			         << "\t\t" << net.getThreshold(THRP_C, THRW_PRO);
+			txt_data << fixed
+			         << net.getThreshold(THRP_C, THRW_PRO);
 #endif
 			txt_data << "\r\n";
 
@@ -1061,7 +1062,7 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 
 			txt_mean << "\r\n";
 
-
+	#ifndef SMALLNET_OU
 			// Output of network plots (and, conditionally, clearing of spike time vectors)
 			if (netOutput(j)) // network plots at specified times (defined by net_output, mind the larger timesteps in FF mode!)
 
@@ -1118,7 +1119,8 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 					data_to_plot = true;
 				}
 			}
-#endif
+	#endif // SMALLNET_OU
+#endif // TWO_NEURONS_ONE_SYNAPSE
 		}
 
 	} // end of for(j)
@@ -1282,6 +1284,14 @@ int simulate(string working_dir, bool first_sim, string _purpose)
 	plotMinSimResults(1, 16, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), dateStr("_traces_0.svg"));
 	plotMinSimResults(7, 16, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), dateStr("_traces_335.svg"));
 	plotMinSimResults(14, -1, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), dateStr("_traces_1940.svg"));
+	#elif defined SMALLNET_OU
+	plotMinSimResults(1, -1, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), dateStr("_traces_neuron_0_synapse_-1.svg"));
+	plotMinSimResults(4, 16, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), dateStr("_traces_neuron_1_synapse_0to1.svg"));
+	plotMinSimResults(7, 19, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), dateStr("_traces_neuron_2_synapse_0to2.svg"));
+	plotMinSimResults(7, 28, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), dateStr("_traces_neuron_2_synapse_3to2.svg"));
+	plotMinSimResults(10, 22, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), dateStr("_traces_neuron_3_synapse_0to3.svg"));
+	plotMinSimResults(10, 25, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), dateStr("_traces_neuron_3_synapse_2to3.svg"));
+	plotMinSimResults(13, -1, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), dateStr("_traces_neuron_4_synapse_-1.svg"));
 	#elif defined ONESPIKE_EXC
 	plotMinSimResults(1, 16, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), dateStr("_traces_6.svg"));
 	plotMinSimResults(7, 16, h_0, net.getThreshold(THRP_P, THRW_TAG), net.getThreshold(THRP_C, THRW_PRO), net.getThreshold(THRP_P, THRW_CA), net.getThreshold(THRP_D, THRW_CA), dateStr("_traces_68.svg"));
@@ -1349,7 +1359,7 @@ void setSeekICVar(double *_seekic)
  * Sets the simulation parameters on given values and resets network(s) */
 void setParams(double _I_0, double _sigma_WN, double _tau_syn, double _w_ee, double _w_ei, double _w_ie, double _w_ii, 
                double _oscill_inp_mean, double _oscill_inp_amp,
-               string _prot_learn, string _prot_recall, int _N_stim, double _recall_fraction,
+               string _prot_learn, string _prot_recall, int _N_stim, double _recall_fraction, double _V_th,
                double _theta_p, double _theta_d, double _Ca_pre, double _Ca_post, 
                double _theta_pro_P, double _theta_pro_C, double _theta_pro_D,
                int _nm_paradigm_index, double _nm_amp, double _nm_begin, double _nm_end, int _output_period)
@@ -1370,9 +1380,20 @@ void setParams(double _I_0, double _sigma_WN, double _tau_syn, double _w_ee, dou
 	prot_recall = _prot_recall;
 	N_stim = _N_stim;
 	recall_fraction = _recall_fraction;
+	net.setVoltageThreshold(_V_th);
 	net.setCaConstants(_theta_p, _theta_d, _Ca_pre, _Ca_post);
 	net.setPSThresholds(_theta_pro_P, _theta_pro_C, _theta_pro_D);
-	net.setNeuromodulationParameters(_nm_paradigm_index, _nm_amp, _nm_begin, _nm_end);
+	int nm_end;
+	if (_nm_end < -EPSILON) 
+	{
+		nm_end = t_max;
+		cout << "End time of neuromodulation set to end time of the simulation." << endl;
+	}
+	else
+	{
+		nm_end = _nm_end;
+	}
+	net.setNeuromodulationParameters(_nm_paradigm_index, _nm_amp, _nm_begin, nm_end);
 	output_period = _output_period;
 	net.reset();
 }
@@ -1385,7 +1406,8 @@ NetworkSimulation(int _Nl_exc, int _Nl_inh, double _dt, double _t_max,
 	  t_wfr(_t_wfr), wfr(_t_wfr/dt), ff_enabled(_ff_enabled), z_max(_z_max),
 	  net(_dt, _Nl_exc, _Nl_inh, _pc, _sigma_plasticity, _z_max)
 {
-
+	separator = getSeparator();
+	cout << separator << endl;
 }
 
 };

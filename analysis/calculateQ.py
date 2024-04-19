@@ -3,9 +3,9 @@
 ###                   during recall of an input-defined cell assembly                  ###
 ##########################################################################################
 
-### Copyright 2018-2022 Jannik Luboeinski
+### Copyright 2018-2023 Jannik Luboeinski
 ### licensed under Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-### Contact: jannik.lubo[at]gmx.de
+### Contact: mail[at]jlubo.net
 
 import numpy as np
 from pathlib import Path
@@ -34,12 +34,14 @@ def calculateQ(v_as, v_as_err, v_ans, v_ans_err, v_ctrl, v_ctrl_err):
 # getSubpopulations
 # Retrieves the indices of the neurons belonging to the different network subpopulations
 # N_pop: the number of neurons in the whole population
-# core: array of the neurons belonging to the stimulated core
-# p_r: the fraction of core neurons that are stimulated for recall
+# core: array of the neurons belonging to the assembly core
+# p_r [optional]: the fraction of core neurons that are stimulated for recall (obsolete if 'core_recall' is provided)
+# core_recall [optional]: array of the neurons belonging to the assembly core that are stimulated for recall (makes 'p_r' parameter obsolete)
 # return: arrays of neuron indices of network subpopulations that receive 1. learning and recall stimulation, 2. learning but no recall stimulation, 3. neither learning nor recall stimulation
-def getSubpopulations(N_pop, core, p_r):
+def getSubpopulations(N_pop, core, p_r = 0., core_recall = None):
 
-	core_recall = core[0:int(np.floor(float(p_r)*core.shape[0]))]
+	if core_recall is None:
+		core_recall = core[0:int(np.floor(float(p_r)*core.shape[0]))]
 	core_norecall = core[np.logical_not(np.in1d(core, core_recall))]
 	control = np.delete(np.arange(N_pop), core)
 

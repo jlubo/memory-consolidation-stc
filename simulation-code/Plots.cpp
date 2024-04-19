@@ -904,8 +904,8 @@ void createNetworkPlotWeights(double t, double h_0, int Nl, double z_max)
 
 /*** plotMinSimResults ***
  * Creates a plot that displays crucial observables for one neuron and one synapse  *
- * - col_neur: the first column containing data of the targeted neuron (the membrane potential, the next two columns contain membrane current and, if applicable, protein amount) *
- * - col_syn: the first column containing data of the targeted synapse (the early-phase weight, the next two columns contain late-phase weight and calcium amount) *
+ * - col_neur: the column containing the membrane potential of the targeted neuron (the next two columns containing membrane current and, if applicable, protein amount) *
+ * - col_syn: the column containing the early-phase weight of the targeted synapse (the next two columns containing late-phase weight and calcium amount) *
  * - h_0: initial weight *
  * - theta_tag: tagging threshold *
  * - theta_pro: protein synthesis threshold *

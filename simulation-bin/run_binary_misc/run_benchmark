@@ -3,17 +3,20 @@
 benchmark () {
 	# name of the benchmark
 	name=$1
-	
+
 	# executable and arguments to be used for the benchmark
 	exec=$2
 	cmd="../$2.out $3"
 	echo -e "Benchmark for:\n  $cmd"
-	
+
+	# connectivity file
+        conn_file=$4
+
 	# number of trials to run
-	num_trials=$4
+	num_trials=$5
 
 	# sleep interval for memory tracking
-	slpintv=$5
+	slpintv=$6
 
 	# directory for storing the results
 	bmdir='benchmark_'$name
@@ -33,7 +36,10 @@ benchmark () {
 	cd $bmdir
 
 	# copy connectivity matrix
-	cp ../../run_binary_paper1/connections.txt .
+	#cp ../../run_binary_paper1/connections.txt .
+	if [[ -n ${conn_file} ]]; then
+		cp ../${conn_file} .
+	fi
 
 	# save system information
 	uname -a > sys_info.log
@@ -49,7 +55,8 @@ benchmark () {
 	screen -d -m hyperfine --runs ${num_trials} --export-json 'benchmark_hyperfine.json' "$cmd"
 
 	cd ..
-} 
+}
 
-#benchmark "2N1S_basic_late" "2N1S_basic_late" "-learn=BASIC_LATE -Ca_pre=1.0 -Ca_post=0.2758 -purpose= -t_max=28800.0" 10 "20s"
-benchmark "CA200" "net200" "-Nl_exc=40 -Nl_inh=20 -t_max=28820 -N_stim=25 -pc=0.1 -learn=TRIPLETf100 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose='8h-recall'" 10 "15m"
+#benchmark "2N1S_basic_late" "2N1S_basic_late" "-learn=BASIC_LATE -Ca_pre=1.0 -Ca_post=0.2758 -purpose= -t_max=28800.0" "connections_smallnet3.txt" 10 "20s"
+#benchmark "CA200" "net200" "-Nl_exc=40 -Nl_inh=20 -t_max=28820 -N_stim=25 -pc=0.1 -learn=TRIPLETf100 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose='8h-recall'" "" 10 "15m"
+benchmark "CA200_10s-recall" "net200" "-Nl_exc=40 -Nl_inh=20 -t_max=25 -N_stim=25 -pc=0.1 -learn=TRIPLETf100 -recall=F100D1at20.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose='10s-recall'" "" 10 "15m"

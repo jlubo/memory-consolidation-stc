@@ -19,7 +19,7 @@ while
 do
 	# get and print the memory information ("Dirty" column returns dirty pages, both private and shared, in kilobytes; see https://linux.die.net/man/1/pmap)
 	timestamp=`date +"%Y-%m-%d_%H-%M-%S"`
-    sudo pmap -x ${pid} > pmap_output/pmap_output_${timestamp}_${pid}.log
+	sudo pmap -x ${pid} > pmap_output/pmap_output_${timestamp}_${pid}.log
 
 	# set the sleep interval
 	sleep $2

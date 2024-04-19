@@ -20,7 +20,7 @@ from pathlib import Path
 # - req_suffix: string that the suffix of the name of a data file has to match
 # - columns: list of numbers of columns to be read from the data files and to be averaged over (e.g., [2, 3] for second and third column)
 # - columns_sum [optional]: list of numbers of columns to be read from the data files and to be summed and averaged over (e.g., [2, 3] for the sum of the second and third column)
-# - first_column_anyway [optional]: indicates if first column is to be treated as parameter (e.g., time) - it is then added regardless of 'columns'
+# - first_column_anyway [optional]: indicates if first column is to be treated as parameter (e.g., time) - it is then added apart from 'columns'
 # - skip_first_line [optional]: if True, leaves out the first line (needed if it contains column headings, for example)
 # - col_sep [optional]: character(s) separating the columns
 def averageFileColumns(outname, rootpath, protocol, req_contains, req_suffix, columns, \
@@ -177,9 +177,9 @@ def averageFileColumns(outname, rootpath, protocol, req_contains, req_suffix, co
 		for l in range(num_cols_eff):
 			fout.write(str(data[k][l]) + col_sep + str(data_stdev[k][l]))
 			if l < num_cols_eff-1: # as long as last column is not yet reached
-				 fout.write(col_sep)
+				fout.write(col_sep)
 			else: # after the last column
-				 fout.write("\n")
+				fout.write("\n")
 	fout.close()
 	
 #####################################

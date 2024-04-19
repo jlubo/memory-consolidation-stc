@@ -48,7 +48,7 @@
 	}
 
 	@Misc{LuboeinskiLehr2022code,
-	   title={Simulation code and analysis scripts for recurrent spiking neural networks with memory consolidation based on synaptic tagging and capture},
+	   title={Simulation code and analysis scripts for memory consolidation based on synaptic tagging and capture in recurrent spiking neural networks},
 	   author={Luboeinski, Jannik and Lehr, Andrew B.},
 	   year={2022},
 	   doi={10.5281/zenodo.4429195},

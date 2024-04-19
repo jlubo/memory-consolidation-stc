@@ -5,7 +5,7 @@
 
 ### Copyright 2020-2022 Jannik Luboeinski
 ### licensed under Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-### Contact: jannik.lubo[at]gmx.de
+### Contact: mail[at]jlubo.net
 
 ### example call from shell: python3 analyzeWeights.py "Weight Distributions and Mean Weight Matrix" "OVERLAP10 no AC, no ABC"
 

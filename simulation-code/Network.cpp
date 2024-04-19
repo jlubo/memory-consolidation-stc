@@ -1877,7 +1877,6 @@ void setStimulationEnd(int stim_end)
 		stimulation_end = stim_end;
 }
 
-
 /*** setSpikeStorageTime ***
  * Sets the number of timesteps for which spikes have to be kept in RAM *
  * - int storage_steps: the size of the storage timespan in timesteps */
@@ -1888,6 +1887,19 @@ void setSpikeStorageTime(int storage_steps)
 		neurons[m].setSpikeHistoryMemory(storage_steps);
 	}
 
+}
+
+/*** setVoltageThreshold ***
+ * Sets the value of the membrane threshold of all neurons *
+ * (has no effect in adaptive-threshold models) *
+ * NOTE: further below, there is an overload method for individual neurons *
+ * - _V_th: the membrane threshold in mV */
+void setVoltageThreshold(double _V_th)
+{
+	for (int m=0; m<N; m++)
+	{
+		neurons[m].setVoltageThreshold(_V_th);
+	}
 }
 
 /*** resetLastSpikeIndex ***
@@ -2027,6 +2039,7 @@ void setNeuromodulationParameters(int _nm_paradigm_index, double _nm_amp = NAN, 
 	if (_nm_paradigm_index < 0)
 	{
 		nm_protocol.clear();
+		//cout << "Neuromodulation protocol cleared." << endl;
 	}
 #if PROTEIN_POOLS == POOLS_C || PROTEIN_POOLS == POOLS_PCD
 	else if (_nm_paradigm_index == 0)
@@ -2462,6 +2475,21 @@ void setCurrentStimulus(Stimulus& _cst, int i, int j)
 void setCurrentStimulus(Stimulus& _cst, int m)
 {
 	neurons[m].setCurrentStimulus(_cst);
+}
+
+/*** setVoltageThreshold ***
+ * Sets the value of the membrane threshold for neuron (i|j)
+ * (has no effect in adaptive-threshold models)
+ * - _V_th: the membrane threshold in mV *
+ * - int i: the row where the neuron is located *
+ * - int j: the column where the neuron is located */
+void setVoltageThreshold(double _V_th, int i, int j)
+{
+	neurons[cNN(i,j)].setVoltageThreshold(_V_th);
+}
+void setVoltageThreshold(double _V_th, int m)
+{
+	neurons[m].setVoltageThreshold(_V_th);
 }
 
 /*** getNumberIncoming ***

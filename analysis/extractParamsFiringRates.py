@@ -3,17 +3,17 @@
 ###               mean firing rates of neuronal subpopulations            ###
 #############################################################################
 
-### Copyright 2021-2022 Jannik Luboeinski
+### Copyright 2021-2023 Jannik Luboeinski
 ### licensed under Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-### Contact: jannik.lubo[at]gmx.de
+### Contact: mail[at]jlubo.net
 
 import numpy as np
 from pathlib import Path
 from subprocess import call
 from shutil import copyfile
 import os
-import traceback
-from utilityFunctions import readParams, hasTimestamp
+from utilityFunctions import hasTimestamp, getTimestamp, readParams
+import json
 
 np.set_printoptions(threshold=1e10, linewidth=200) # extend console print range for numpy arrays
 Ne = 1600 # the number of excitatory neurons 
@@ -22,18 +22,19 @@ N = Ne + Ni # the number of neurons in the whole network
 
 # extractRecursion
 # Recursively looks for data directories and extracts parameters and the Q measure from them
-# directory: the directory to look in
+# sup_directory: the directory to look in
 # fout: file handle to output file
 # col_sep [optional]: characters separating columns in the data file
-def extractRecursion(directory, fout, col_sep = '\t\t'):
+# other_simulator [optional]: specifies if alternative simulator (such as Arbor) is being used
+def extractRecursion(sup_directory, fout, col_sep = '\t\t', other_simulator = False):
 
 	data_found = False # specifies if any data has been found
-	rawpaths = Path(directory)
+	rawpaths = Path(sup_directory)
 	MI = []
 
-	print("Contents of directory " + directory)
+	print("Contents of directory " + sup_directory)
 	print([str(x) for x in rawpaths.iterdir()])
-	rawpaths = Path(directory)
+	rawpaths = Path(sup_directory)
 
 	for x in sorted(rawpaths.iterdir()):
 
@@ -48,33 +49,43 @@ def extractRecursion(directory, fout, col_sep = '\t\t'):
 
 				data_found = True
 
-				if "_TRIPLET" in path_tail:
-					[timestamp, prev_desc] = path_tail.split("_TRIPLET", 1)
-				else:
-					[timestamp, desc] = path_tail.split(" ", 1)
+				timestamp = getTimestamp(path_tail)
 
 				print("========================")
-				print(timestamp + " in " + directory)
+				print(timestamp + " in " + sup_directory)
 				print("------------------------")
-				params = readParams(full_path + os.sep + timestamp + "_PARAMS.txt")
 
+				if other_simulator:
+					# load parameter configuration from JSON file
+					config = json.load(open(os.path.join(full_path, timestamp + "_config.json"), "r"))
+					Na = config['populations']['N_CA'] # core size
+
+					# write the timestamp to the output file
+					fout.write(timestamp + col_sep)
+
+				else:
+					params = readParams(full_path + os.sep + timestamp + "_PARAMS.txt")
+					Na = params[12] # core size
+
+					# write the timestamp to the output file
+					fout.write(timestamp + col_sep)
+
+					# write the parameter values to the output file
+					for i in range(len(params)):
+						fout.write(str(params[i]) + col_sep)
+									
 				# define the cell assembly
-				Na = params[12]
-				core = np.arange(Na) 
+				core = np.arange(Na)
 
-				# write the parameter values to the output file
-				fout.write(timestamp + col_sep)
-
-				for i in range(len(params)):
-					fout.write(str(params[i]) + col_sep)
-
-				# read out *_spike_raster.txt:
-				frpath = full_path + os.sep + timestamp + "_spike_raster.txt"
+				# read out spike data file
+				if other_simulator:
+					data_path = os.path.join(full_path, timestamp + "_spikes.txt")
+				else:
+					data_path = os.path.join(full_path, timestamp + "_spike_raster.txt")
 				try:
-					f = open(frpath)
-
+					f = open(data_path)
 				except IOError:
-					print('Error opening "' + frpath + '"')
+					print('Error opening "' + data_path + '"')
 					exit()
 
 				# read activities from file and determine mean activities for different regions
@@ -88,7 +99,10 @@ def extractRecursion(directory, fout, col_sep = '\t\t'):
 					segs = line.split(col_sep)
 
 					if (segs[0] != ""):
-						t = float(segs[0])
+						if other_simulator:
+							t = float(segs[0]) / 1000 # convert ms to s
+						else:
+							t = float(segs[0])
 
 						for j in range(len(tws)):
 							if t >= tws[j][0] and t < tws[j][1]: # time window for firing rate
@@ -104,7 +118,7 @@ def extractRecursion(directory, fout, col_sep = '\t\t'):
 								elif n < N:
 									inh_spikes[j] += 1
 								else:
-									print('Error reading from "' + frpath + '"')
+									print('Error reading from "' + full_path + '"')
 
 								break # exit the for-loop
 				f.close()
@@ -117,7 +131,7 @@ def extractRecursion(directory, fout, col_sep = '\t\t'):
 				fout.write("\n")
 
 			else:
-				ret = extractRecursion(directory + os.sep + path_tail, fout)
+				ret = extractRecursion(os.path.join(sup_directory, path_tail), fout, col_sep, other_simulator)
 				data_found = data_found or ret
 
 	return data_found
@@ -129,7 +143,12 @@ except IOError:
 	print('Error opening "firing_rates.txt"')
 	exit()
 
-if extractRecursion('.', fout):
+other_simulator = False
+if other_simulator:
+	col_sep = ' '
+else:
+	col_sep = '\t\t'
+if extractRecursion('.', fout, col_sep, other_simulator):
 	print("========================")
 
 fout.close()

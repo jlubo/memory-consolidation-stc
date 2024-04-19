@@ -1,0 +1,41 @@
+#!/bin/bash
+#SBATCH -J stand-alone
+#SBATCH -t 48:00:00
+#SBATCH -p medium
+#SBATCH -n 1
+#SBATCH -c 1
+#SBATCH -o out/%J_out
+#SBATCH -o out/%J_err
+#--SBATCH --qos=long
+#--SBATCH -C scratch
+#SBATCH -C cascadelake
+
+# create and change working directory
+if [ ! -d recall_varied_pattern_size ]; then
+  mkdir recall_varied_pattern_size
+fi
+cd recall_varied_pattern_size
+
+# trial number from commandline argument
+trial=$1
+
+# run simulations
+../net50.out -Nl_exc=40 -Nl_inh=20 -t_max=30 -N_stim=25 -pc=0.1 -learn=TRIPLETf100 -recall=F100D1at20.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Learn., 10s-recall ${trial}"
+../net50.out -Nl_exc=40 -Nl_inh=20 -t_max=28820 -N_stim=25 -pc=0.1 -learn=TRIPLETf100 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Learn., cons., 8h-recall ${trial}"
+
+../net100.out -Nl_exc=40 -Nl_inh=20 -t_max=30 -N_stim=25 -pc=0.1 -learn=TRIPLETf100 -recall=F100D1at20.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Learn., 10s-recall ${trial}"
+../net100.out -Nl_exc=40 -Nl_inh=20 -t_max=28820 -N_stim=25 -pc=0.1 -learn=TRIPLETf100 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Learn., cons., 8h-recall ${trial}"
+
+../net150.out -Nl_exc=40 -Nl_inh=20 -t_max=30 -N_stim=25 -pc=0.1 -learn=TRIPLETf100 -recall=F100D1at20.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Learn., 10s-recall ${trial}"
+../net150.out -Nl_exc=40 -Nl_inh=20 -t_max=28820 -N_stim=25 -pc=0.1 -learn=TRIPLETf100 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Learn., cons., 8h-recall ${trial}"
+
+../net200.out -Nl_exc=40 -Nl_inh=20 -t_max=30 -N_stim=25 -pc=0.1 -learn=TRIPLETf100 -recall=F100D1at20.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Learn., 10s-recall ${trial}"
+../net200.out -Nl_exc=40 -Nl_inh=20 -t_max=28820 -N_stim=25 -pc=0.1 -learn=TRIPLETf100 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Learn., cons., 8h-recall ${trial}"
+
+../net250.out -Nl_exc=40 -Nl_inh=20 -t_max=30 -N_stim=25 -pc=0.1 -learn=TRIPLETf100 -recall=F100D1at20.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Learn., 10s-recall ${trial}"
+../net250.out -Nl_exc=40 -Nl_inh=20 -t_max=28820 -N_stim=25 -pc=0.1 -learn=TRIPLETf100 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Learn., cons., 8h-recall ${trial}"
+
+../net300.out -Nl_exc=40 -Nl_inh=20 -t_max=30 -N_stim=25 -pc=0.1 -learn=TRIPLETf100 -recall=F100D1at20.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Learn., 10s-recall ${trial}"
+../net300.out -Nl_exc=40 -Nl_inh=20 -t_max=28820 -N_stim=25 -pc=0.1 -learn=TRIPLETf100 -recall=F100D1at28810.0 -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0.15 -sigma_WN=0.05 -theta_p=3.0 -theta_d=1.2 -purpose="Learn., cons., 8h-recall ${trial}"
+
+cd ..

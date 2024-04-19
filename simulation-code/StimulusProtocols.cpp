@@ -2,7 +2,7 @@
  ***     Pre-defined stimulus protocols for learning/consolidating cell assemblies     ***
  *****************************************************************************************/
 
-/*** Copyright 2017-2022 Jannik Luboeinski ***
+/*** Copyright 2017-2023 Jannik Luboeinski ***
  *** licensed under Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0) ***/
 
 /*** stimFunc ***
@@ -94,12 +94,12 @@ Stimulus createStimulusFromProtocols(string prot_learn, string prot_recall, doub
 		pt++; // skip 'F'
 		frequency = atof(pt);
 
-		if (pt3 > 0) // if time of occurrence is specified
+		if (pt3 != NULL) // if time of occurrence is specified
 			pt3[0] = '\0'; // terminate string for duration (replacing 'a' by '\0')
 		pt2++; // skip '\0'
 		duration = atof(pt2);
 
-		if (pt3 > 0) // if time of occurrence is specified
+		if (pt3 != NULL) // if time of occurrence is specified
 		{
 			pt3 += 2; // skip '\0' and 't'
 			at = atof(pt3);
@@ -189,7 +189,7 @@ Stimulus createStimulusFromProtocols(string prot_learn, string prot_recall, doub
 
 		frequency = 100.0; // Hz
 
-		if (pt2 > 0) // if time of occurrence is specified
+		if (pt2 != NULL) // if time of occurrence is specified
 		{
 			pt2 += 2; // skip 'a' and 't'
 			at = atof(pt2);
@@ -243,12 +243,12 @@ Stimulus createStimulusFromProtocols(string prot_learn, string prot_recall, doub
 		pt++; // skip 'F'
 		frequency = atof(pt);
 
-		if (pt3 > 0) // if time of occurrence is specified
+		if (pt3 != NULL) // if time of occurrence is specified
 			pt3[0] = '\0'; // terminate string for duration (replacing 'a' by '\0')
 		pt2++; // skip '\0'
 		duration = atof(pt2);
 
-		if (pt3 > 0) // if time of occurrence is specified
+		if (pt3 != NULL) // if time of occurrence is specified
 		{
 			pt3 += 2; // skip '\0' and 't'
 			at = atof(pt3);

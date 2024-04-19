@@ -1,0 +1,30 @@
+#!/bin/sh
+
+mkdir 2N1S_facilitated_spiking
+cd 2N1S_facilitated_spiking
+cp ../2N1S.out .
+
+num_trials=3
+V_th="-64" # mV
+
+for (( i=1; i <= $num_trials; ++i ))
+do
+    ./2N1S.out -learn=STET -Ca_pre=1.0 -Ca_post=0.2758 -V_th=$V_th -purpose= 
+done
+
+for (( i=1; i <= $num_trials; ++i ))
+do
+    ./2N1S.out -learn=WTET -Ca_pre=1.0 -Ca_post=0.2758 -V_th=$V_th -purpose= 
+done
+
+for (( i=1; i <= $num_trials; ++i ))
+do
+    ./2N1S.out -learn=SLFS -Ca_pre=1.0 -Ca_post=0.2758 -V_th=$V_th -purpose= 
+done
+
+for (( i=1; i <= $num_trials; ++i ))
+do
+    ./2N1S.out -learn=WLFS -Ca_pre=1.0 -Ca_post=0.2758 -V_th=$V_th -purpose= 
+done
+
+cd ..

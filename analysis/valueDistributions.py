@@ -4,7 +4,7 @@
 
 ### Copyright 2019-2022 Jannik Luboeinski
 ### licensed under Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-### Contact: jannik.lubo[at]gmx.de
+### Contact: mail[at]jlubo.net
 
 from utilityFunctions import *
 import sys
@@ -699,8 +699,8 @@ def marginalProbDist(a, binning = False, bin_edges = None, norm = None):
 
 	if binning == True:
 		if bin_edges is None: # generate bin_edges for 100 bins
-			bin_edges = np.linspace(np.min(h), np.max(h), 101, endpoint=True) # create array of bins (defined by their edges)
-			values_mean = np.delete(binh, -1) + (np.max(a)-np.min(a)) / 100 / 2 # use mean values instead of lower bounds as values of the bins
+			bin_edges = np.linspace(np.min(a), np.max(a), 101, endpoint=True) # create array of bins (defined by their edges)
+			values_mean = np.delete(bin_edges, -1) + (np.max(a)-np.min(a)) / 100 / 2 # use mean values instead of lower bounds as values of the bins
 		else:
 			values_mean = None
 

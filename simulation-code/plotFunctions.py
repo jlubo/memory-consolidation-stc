@@ -1031,8 +1031,10 @@ def plotMinOverview(data_file, col_neur, col_syn, h_0, theta_tag, theta_pro, the
 	axes[1].set_xlabel("Time (ms)")
 	axes[1].set_ylabel("Membrane potential (mV)")
 	axes[1].set_xlim(xlim_0, xlim_1, auto = xlim_auto)
-	ax1twin = axes[1].twinx()
+	axes[1].set_ylim(-71, -54)
+	ax1twin = axes[1].twinx() # create twin axis
 	ax1twin.set_ylabel("Current (nA)")
+	ax1twin.set_ylim(-2, 4)
 	
 	# plot data for axes[1] (and twin axis ax1twin)
 	ax1g1 = axes[1].plot(data_stacked[:,0], data_stacked[:,col_neur], color="#ff0000", label='Membrane pot.', marker='None', zorder=10)
@@ -1047,18 +1049,22 @@ def plotMinOverview(data_file, col_neur, col_syn, h_0, theta_tag, theta_pro, the
 	
 	# set axis labels for axes[2]
 	axes[2].set_xlabel("Time (ms)")
-	axes[2].set_ylabel("Calcium or protein amount")
+	axes[2].set_ylabel("Protein concentration (mM)")
 	axes[2].set_xlim(xlim_0, xlim_1, auto = xlim_auto)
+	ax2twin = axes[2].twinx() # create twin axis
+	ax2twin.set_ylabel("Calcium concentration")
 	
 	# plot data for axes[2]
 	if col_syn >= 1: # if synapse data exist
-		axes[2].plot(data_stacked[:,0], data_stacked[:,col_syn+2], color="#c8c896", label='Ca', marker='None', zorder=8)
+		ax2twin.plot(data_stacked[:,0], data_stacked[:,col_syn+2], color="#c8c896", label='Ca', marker='None', zorder=8)
 		axes[2].plot(data_stacked[:,0], data_stacked[:,col_neur+2], color="#008000", label='p', marker='None', zorder=7) # protein amount is also only shown if synapse data exist (which means that an E->E synapse is considered)
-		axes[2].axhline(y=theta_p, label='LTP thresh.', linestyle='dashed', color="#969664", zorder=7)
-		axes[2].axhline(y=theta_d, label='LTD thresh.', linestyle='dashed', color="#969696", zorder=6)
+		ax2twin.axhline(y=theta_p, label='LTP thresh.', linestyle='dashed', color="#969664", zorder=7)
+		ax2twin.axhline(y=theta_d, label='LTD thresh.', linestyle='dashed', color="#969696", zorder=6)
 	
 		# create legend for axes[2]
-		axes[2].legend() #loc=(0.75,0.65)) #"center right")
+		handles, labels = axes[2].get_legend_handles_labels()
+		handles_twin, labels_twin = ax2twin.get_legend_handles_labels()
+		axes[2].legend(handles + handles_twin, labels + labels_twin, loc="center left")
 	
 	# save figure as vector graphics
 	fig.savefig(store_path)

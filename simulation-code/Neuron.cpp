@@ -311,6 +311,17 @@ double getVoltageThreshold() const
 #endif
 }
 
+/*** setVoltageThreshold ***
+ * Sets the value of the membrane threshold of the neuron *
+ * (has no effect in adaptive-threshold models) *
+ * - _V_th: the membrane threshold in mV */
+void setVoltageThreshold(double _V_th) 
+{
+#if NEURON_MODEL == LIF
+	V_th = _V_th;
+#endif
+}
+
 /*** getCurrent ***
  * Returns total external current affecting the neuron *
  * - return: the instantaneous current in nA */
@@ -713,18 +724,22 @@ void processTimeStep(int tb_step, int tb_init)
 #endif
 	if (cst.isSet() && tb_init < 0 && abs(I_stim = cst.get(tb_step)) > EPSILON) // stimulation; get stimulus current in nA
 	{
+		// For Poisson or deterministic stimulation -> definite spiking
+		// (the magnitude of I_stim is not important as long as it is greater than zero)
 #if STIM_TYPE == POISSON_STIMULATION || defined TWO_NEURONS_ONE_SYNAPSE_BASIC_EARLY
 	#if NEURON_MODEL == MAT2
-		V = ad_th + EPSILON; // definite spiking (the magnitude of I_stim is not important as long as it is greater than zero)
+		V = ad_th + EPSILON;
 	#elif NEURON_MODEL == LIF
 		V = V_th + EPSILON;
 	#endif
 #else
+		// Else, standard current stimulation
 		V += R_mem * I_stim * (1. - exp(-delta_t/tau_mem));
 #endif
 	}
 
-	if (refractory > EPSILON // if in refractory period
+    // If in refractory period, remain at `V_reset`
+	if (refractory > EPSILON
 #if STIM_TYPE == POISSON_STIMULATION
 	   && poisson_neuron == false
 #endif
@@ -737,14 +752,15 @@ void processTimeStep(int tb_step, int tb_init)
 #endif
 		refractory -= delta_t;
 	}
+	// Else, check for threshold crossing
 	else
 	{
 #if NEURON_MODEL == LIF
-		if (V >= V_th) // threshold crossing
+		if (V >= V_th)
 		{
 			V = V_reset;
 #elif NEURON_MODEL == MAT2
-		if (V >= ad_th) // threshold crossing
+		if (V >= ad_th)
 		{
 #endif
 			refractory = t_ref;

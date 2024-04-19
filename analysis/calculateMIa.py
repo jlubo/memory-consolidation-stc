@@ -3,9 +3,9 @@
 ###                    in a network at two different times                          ###
 #######################################################################################
 
-### Copyright 2018-2022 Jannik Luboeinski
+### Copyright 2018-2023 Jannik Luboeinski
 ### licensed under Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-### Contact: jannik.lubo[at]gmx.de
+### Contact: mail[at]jlubo.net
 
 from utilityFunctions import *
 from valueDistributions import *
@@ -18,20 +18,20 @@ np.set_printoptions(threshold=1e10, linewidth=200) # extend console print range 
 # Calculates the mutual information and the self-information of the reference distribution from given firing rate distributions (reference/learning, and recall)
 # v_ref: the reference activity distribution (or the activity distribution during learning)
 # v_recall: the activity distribution during recall
+# output [optional]: decreasing level of console output ("full", or "none")
 # return: mutual information between reference/learning distribution and recall distribution, and self-information of reference distribution and recall distirbution
-def calculateMIa(v_ref, v_recall):
+def calculateMIa(v_ref, v_recall, output = "full"):
 
 	margEntropyActL = marginalEntropy(v_ref)
-	print("margEntropyActL = " + str(margEntropyActL))
-
 	margEntropyActR = marginalEntropy(v_recall)
-	print("margEntropyActR = " + str(margEntropyActR))
-
 	jointEntropyAct = jointEntropy(v_ref, v_recall)
-	print("jointEntropyAct = " + str(jointEntropyAct))
-
 	MIa = mutualInformation(margEntropyActL, margEntropyActR, jointEntropyAct)
-	print("MIa = " + str(MIa))
+
+	if output in ["full"]:
+		print("margEntropyActL = " + str(margEntropyActL))
+		print("margEntropyActR = " + str(margEntropyActR))
+		print("jointEntropyAct = " + str(jointEntropyAct))
+		print("MIa = " + str(MIa))
 
 	return MIa, margEntropyActL, margEntropyActR
 
@@ -44,19 +44,22 @@ def calculateMIa(v_ref, v_recall):
 # time_for_activity [optional]: the time that at which the activites shall be read out (some time during recall)
 # time_ref [optional]: the reference time (for getting the activity distribution during learning)
 # core [optional]: the neurons in the cell assembly (for stipulation; only required if no activity distribution during learning is available)
+# output [optional]: decreasing level of console output ("full", or "none")
 # return: mutual information between reference/learning distribution and recall distribution, and self-information of reference distribution
 def calculateMIaFromFile(nppath, timestamp, Nl_exc, time_for_activity = "20.1", time_ref = "11.0", core = np.array([])):
 
 	### Get data ###
 	if time_ref: # if provided, use reference firing rate distribution from file (for learned cell assembly)
 		times_for_readout_list = [time_ref, time_for_activity] # the simulation times at which the activities shall be read out
-		print("Using reference distribution at " + time_ref + "...")
+		if output in ["full"]:
+			print("Using reference distribution at " + time_ref + "...")
 	else: # use model firing rate distribution (for stipulated cell assembly)
 		times_for_readout_list = [time_for_activity]
 		v_model = np.zeros(Nl_exc**2)
 		v_model[core] = 1 # entropy/MI of this distribution for Nl_exc=40: 0.4689956
 		v_model = np.reshape(v_model, (Nl_exc,Nl_exc))
-		print("Using stipulated reference distribution...")
+		if output in ["full"]:
+			print("Using stipulated reference distribution...")
 
 	connections = [np.zeros((Nl_exc**2,Nl_exc**2)) for x in times_for_readout_list]
 	h = [np.zeros((Nl_exc**2,Nl_exc**2)) for x in times_for_readout_list]

@@ -2,4 +2,4 @@
 
 /bin/sh compile_2N1S
 /bin/sh compile_IRS
-/bin/sh compile_sizes
+/bin/sh compile_recall_varied_size

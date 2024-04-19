@@ -1,0 +1,53 @@
+#!/bin/sh
+
+current_working_dir=${PWD}
+cd ..
+
+out_dir="../simulation-bin/run_binary_misc"
+mkdir -p "${out_dir}"
+
+rm -f code.zip
+zip -q -D code.zip * -x *.out *.o *.txt
+g++ -std=c++11 -O1 NetworkMain.cpp -z noexecstack -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default \
+    -D MEMORY_CONSOLIDATION_NOSAVE \
+    -D CORE_SIZE_CMD=50 \
+    -I$HOME/.conda/envs/myenv_arbor_2/include \
+    -Wno-unused-result -lboost_serialization -static -o "${out_dir}/net50.out"
+rm -f code.zip
+zip -q -D code.zip * -x *.out *.o *.txt
+g++ -std=c++11 -O1 NetworkMain.cpp -z noexecstack -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default \
+    -D MEMORY_CONSOLIDATION_NOSAVE \
+    -D CORE_SIZE_CMD=100 \
+    -I$HOME/.conda/envs/myenv_arbor_2/include \
+    -Wno-unused-result -lboost_serialization -static -o "${out_dir}/net100.out"
+rm -f code.zip
+zip -q -D code.zip * -x *.out *.o *.txt
+g++ -std=c++11 -O1 NetworkMain.cpp -z noexecstack -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default \
+    -D MEMORY_CONSOLIDATION_NOSAVE \
+    -D CORE_SIZE_CMD=150 \
+    -I$HOME/.conda/envs/myenv_arbor_2/include \
+    -Wno-unused-result -lboost_serialization -static -o "${out_dir}/net150.out"
+rm -f code.zip
+zip -q -D code.zip * -x *.out *.o *.txt
+g++ -std=c++11 -O1 NetworkMain.cpp -z noexecstack -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default \
+    -D MEMORY_CONSOLIDATION_NOSAVE \
+    -D CORE_SIZE_CMD=200 \
+    -I$HOME/.conda/envs/myenv_arbor_2/include \
+    -Wno-unused-result -lboost_serialization -static -o "${out_dir}/net200.out"
+rm -f code.zip
+zip -q -D code.zip * -x *.out *.o *.txt
+g++ -std=c++11 -O1 NetworkMain.cpp -z noexecstack -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default \
+    -D MEMORY_CONSOLIDATION_NOSAVE \
+    -D CORE_SIZE_CMD=250 \
+    -I$HOME/.conda/envs/myenv_arbor_2/include \
+    -Wno-unused-result -lboost_serialization -static -o "${out_dir}/net250.out"
+rm -f code.zip
+zip -q -D code.zip * -x *.out *.o *.txt
+g++ -std=c++11 -O1 NetworkMain.cpp -z noexecstack -Wl,--format=binary -Wl,code.zip -Wl,plotFunctions.py -Wl,--format=default \
+    -D MEMORY_CONSOLIDATION_NOSAVE \
+    -D CORE_SIZE_CMD=300 \
+    -I$HOME/.conda/envs/myenv_arbor_2/include \
+    -Wno-unused-result -lboost_serialization -static -o "${out_dir}/net300.out"
+rm -f code.zip
+
+cd "${current_working_dir}"

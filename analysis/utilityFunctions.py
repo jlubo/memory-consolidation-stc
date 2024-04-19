@@ -1,12 +1,13 @@
-########################################################################################
-### Utility function for different purposes regarding the reading of simulation data ###
-########################################################################################
+#####################################################################################################
+### Utility functions for different purposes, mainly regarding the processing of simulation data. ###
+#####################################################################################################
 
-### Copyright 2017-2021 Jannik Luboeinski
+### Copyright 2017-2023 Jannik Luboeinski
 ### licensed under Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 
 import numpy as np
 import os
+import re
 from pathlib import Path
 epsilon = 1e-11 # very small number that is counted as zero
 
@@ -99,7 +100,7 @@ def readWeightVectorData(filename, N):
 # output_places [optional]: number of decimal places for output numbers
 # return: a string
 def ftos(f, output_places = 7):
-	return str(round(f, output_precision))
+	return str(round(f, output_places))
 
 ######################################
 # cond_print
@@ -109,6 +110,24 @@ def ftos(f, output_places = 7):
 def cond_print(pr, *args):
 	if pr:
 		print(*args)
+
+######################################
+# extractRandomPattern
+# Extracts from a provided log file the list of neurons of the randomly drawn pattern
+# - path: path to the log file
+# - return: list of neurons forming a random pattern (or None if no random pattern has been found)
+def extractRandomPattern(path):
+	neuron_list = None
+	with open(path, 'r') as f:
+		for line in f:
+			if line.startswith("Randomly drawn neurons for stimulation:"):
+				# extract content between the curly braces using regular expression
+				match = re.search(r'{(.*?)}', line)
+				if match:
+					# split the content by commas and strip spaces to get a list
+					neuron_list = [int(neuron.strip()) for neuron in match.group(1).split(',') if neuron.strip().isdigit()]
+				break
+	return neuron_list
 
 ######################################
 # readParams
@@ -186,13 +205,14 @@ def readParams(path):
 
 ######################################
 # hasTimestamp
-# Checks if the given filename starts with a timestamp
-# filename: a string
-# return: true if presumably there is a timestamp, false if not
-def hasTimestamp(filename):
+# Checks if the name of the given file starts with a 17-character timestamp of the format XX-XX-XX_XX-XX-XX
+# path: path pointing to the file
+# return: True if probably there is a timestamp, False if not
+def hasTimestamp(path):
 
 	try:
 		offset = 0 # number of characters after which the timestamp begins
+		filename = os.path.split(path)[1] # only consider the tail of the path
 		for prefix in ["data_", "tmp_data_"]:
 			if filename[0:len(prefix)] == prefix:
 				offset = len(prefix)
@@ -204,6 +224,25 @@ def hasTimestamp(filename):
 		pass
 
 	return False
+
+######################################
+# getTimestamp
+# Gets the 17-character timestamp from a given filename
+# filename: a string
+# return: the timestamp as a string, None if an exception occurs
+def getTimestamp(filename):
+
+	try:
+		offset = 0 # number of characters after which the timestamp begins
+		for prefix in ["data_", "tmp_data_"]:
+			if filename[0:len(prefix)] == prefix:
+				offset = len(prefix)
+
+		return filename[offset:offset+17] 
+	except:
+		pass
+
+	return None
 
 ######################################
 # mergeRawData
@@ -250,3 +289,53 @@ def mergeRawData(rootpath, substr, output_file, remove_raw=False, sep_str='\t\t'
 	for i in range(num_rows):
 		fout.write(all_data[i] + '\n')
 	fout.close()
+
+######################################
+# countNeuronData
+# Counts the datasets of neuron observables in a data file
+# filename: name of the file from which to read
+# return: number of the datasets or -1 if failed
+def countNeuronData(filename):
+	
+	f = open(filename, 'r')
+	line = f.readline() # read header line
+
+	if not line: # end of file is reached
+		return -1
+	f.close()
+
+	num_mem = len(re.findall(r'[ \t]V\(', line))
+	num_curr = len(re.findall(r'[ \t]I\_tot\(', line))
+	if num_curr == 0:
+		num_curr = len(re.findall(r'[ \t]I\(', line))
+	num_p = len(re.findall(r'[ \t]p\^C\(', line))
+
+	#print("num_mem =", num_mem, "num_curr=", num_curr, "num_p =", num_p)
+
+	if num_mem == num_curr == num_p: # check for consistency
+		return num_mem
+	else:
+		return -1
+
+######################################
+# countSynapseData
+# Counts the datasets of synapse observables in a data file
+# filename: name of the file from which to read
+# return: number of the datasets or -1 if failed
+def countSynapseData(filename):
+	
+	f = open(filename, 'r')
+	line = f.readline() # read header line
+
+	if not line: # end of file is reached
+		return -1
+	f.close()
+
+	num_h = line.count("h(")
+	num_z = line.count("z(")
+	num_Ca = line.count("Ca(")
+
+	if num_h == num_z == num_Ca: # check for consistency
+		return num_h
+	else:
+		return -1

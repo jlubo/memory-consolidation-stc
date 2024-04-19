@@ -1,5 +1,6 @@
 #!/bin/sh 
 
+/bin/sh compile_2N1S
 /bin/sh compile_2N1S_basic_early
 /bin/sh compile_2N1S_basic_late
 /bin/sh compile_2N1S_conv
@@ -10,3 +11,5 @@
 /bin/sh compile_onespike
 /bin/sh compile_organization_attractors
 /bin/sh compile_PFreq
+/bin/sh compile_recall_varied_size
+/bin/sh compile_smallnet_ou

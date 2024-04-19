@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# timesteps of 2e-4s
+rm -f saved_state.txt
+rm -f connections.txt
+cp connections_smallnet2.txt connections.txt
+./net_max_activity_neuron.out -dt=2e-4 -Nl_exc=2 -Nl_inh=0 -t_max=3 -N_stim=1000 -pc=0.1 -learn=F5000D30at0.0 -recall= -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0 -sigma_WN=0 -theta_p=3.0 -theta_d=1.2 -sigma_plasticity=0 -noff -output_period=1 -purpose="smallnet2 det max. activity, dt=0.2ms"
+
+# timesteps of 2e-6s
+rm -f saved_state.txt
+rm -f connections.txt
+cp connections_smallnet2.txt connections.txt
+./net_max_activity_neuron.out -dt=2e-6 -Nl_exc=2 -Nl_inh=0 -t_max=3 -N_stim=1000 -pc=0.1 -learn=F500000D30at0.0 -recall= -w_ei=2 -w_ie=4.0 -w_ii=4.0 -I_0=0 -sigma_WN=0 -theta_p=3.0 -theta_d=1.2 -sigma_plasticity=0 -noff -output_period=1 -purpose="smallnet2 det max. activity, dt=0.002ms"
+
